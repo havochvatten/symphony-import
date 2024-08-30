@@ -46,6 +46,8 @@ public class MetaValue {
     private String value;
     private String language;
 
+    public MetaValue() {}
+
     public MetaValue (String field, String value, String language) {
         this.bandId = -1;
         this.field = field;

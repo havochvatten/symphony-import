@@ -26,7 +26,7 @@ public class MetadataCsv extends MetadataBase {
     private final char separator;
     private final String newLine;
 
-    private final InputStream getBOMSafeStream() throws IOException {
+    private InputStream getBOMSafeStream() throws IOException {
         return BOMInputStream.builder().setInputStream(new FileInputStream(this.settings.inputFilePath)).get();
     }
 

@@ -115,17 +115,25 @@ public class DbInterface {
         }
     }
 
+    protected void clearBandData(int bvId) throws SQLException {
+        Connection conn = getConnection();
+        for (SymphonyCategory cat : SymphonyCategory.values()) {
+            qr.update(getConnection(), MetaValue.deleteQuery(schema, bvId, cat));
+            qr.update(getConnection(), SymphonyBand.deleteQuery(schema, bvId, cat));
+        }
+    }
+
     public void updateMetadata(MetadataBase metadata) throws SQLException, ParseException {
         Connection conn = getConnection();
         int blvId = metadata.settings.baselineVersion.getId();
         Integer bandId;
 
         if (metadata.confirmImport()) {
-            for (SymphonyCategory cat : metadata.bands.keySet()) {
-                if (metadata.settings.clear) {
-                    qr.update(conn, MetaValue.deleteQuery(schema, blvId, cat));
-                    qr.update(conn, SymphonyBand.deleteQuery(schema, blvId, cat));
-                }
+            if(metadata.settings.clear) {
+                clearBandData(blvId);
+            }
+
+            for (SymphonyCategory cat : SymphonyCategory.values()) {
 
                 for (SymphonyBand band : metadata.bands.get(cat)) {
                     bandId = qr.query(conn,

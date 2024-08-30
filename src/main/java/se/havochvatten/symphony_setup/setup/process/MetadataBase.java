@@ -121,7 +121,7 @@ public abstract class MetadataBase extends ProcedureBase implements IValidatedPr
             importPBandsCount = bands.get(SymphonyCategory.PRESSURE).size();
 
         boolean exECount = settings.ecosystemBandsCount < importEBandsCount,
-                exPCount = settings.pressureBandsCount < importPBandsCount,
+                exPCount = settings.pressureBandsCount  < importPBandsCount,
                 partial  = settings.ecosystemBandsCount > importEBandsCount ||
                            settings.pressureBandsCount  > importPBandsCount;
 

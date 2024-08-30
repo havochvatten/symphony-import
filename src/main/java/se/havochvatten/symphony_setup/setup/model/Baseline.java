@@ -15,12 +15,14 @@ public class Baseline {
 
     public BaselineVersion version;
     public Map<SymphonyCategory, BaselineComponent> components;
+
+    private boolean incomplete = false;
     private static final Hints g2h = new Hints(Hints.FORCE_LONGITUDE_FIRST_AXIS_ORDER, Boolean.TRUE);
 
     public Baseline(BaselineVersion version) throws Exception {
         for(String path : version.tiffFilePaths().values()) {
             if (!new File(path).isFile()) {
-                throw new Exception("halledudanemejendå");
+                throw new Exception("File not found at path: " + path);
             }
         }
         components =
@@ -47,16 +49,14 @@ public class Baseline {
             GridCoverage2D coverage = readTiff(pathEntry.getValue());
             GridSampleDimension[] c_bands = coverage.getSampleDimensions();
 
-            if (c_bands.length != bands[cOrdinal].length) {
-               // TODO: Validering.
+            if (c_bands.length > coverage.getSampleDimensions().length) {
+                throw new RuntimeException("Inconsistent data"); // TODO: Supply verbose instruction on how to fix.
             }
 
-            for (int ci = 0; ci < c_bands.length; ++ci) {
-                SymphonyBand band = bands[cOrdinal][ci];
+            incomplete |= bands[cOrdinal].length < coverage.getSampleDimensions().length;
 
-                if (!(band.getBandNumber() == ci)) {
-                    // TODO: Validering - ett bandindex saknas: inkomplett metadata
-                }
+            for (int ci = 0; ci < bands[cOrdinal].length; ++ci) {
+                SymphonyBand band = bands[cOrdinal][ci];
 
                 band.setDefaultLanguage(this.version.getLocale());
                 components.get(category).bands.put(band.getBandNumber(), band);
@@ -77,6 +77,10 @@ public class Baseline {
                 band.setMetaValue(mv.getLanguage(), mv);
             }
         }
+    }
+
+    public boolean isIncomplete() {
+        return incomplete;
     }
 
     public BaselineVersion getVersion() {

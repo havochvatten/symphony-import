@@ -21,3 +21,5 @@ target
 .history/*
 *.code-workspace
 *.war
+
+src/test/resources/test.properties
