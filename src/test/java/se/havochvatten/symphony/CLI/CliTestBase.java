@@ -15,8 +15,10 @@ import static com.github.stefanbirkner.systemlambda.SystemLambda.withTextFromSys
 
 public abstract class CliTestBase extends TestBase {
 
-    protected final List<String> requiredArgs;
     private static final PrintStream standardOut = System.out;
+    protected static final String NEW_LINE = System.lineSeparator();
+
+    protected final List<String> requiredArgs;
 
     protected final ByteArrayOutputStream displaceOut = new ByteArrayOutputStream();
 

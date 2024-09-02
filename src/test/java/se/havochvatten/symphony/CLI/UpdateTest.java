@@ -11,8 +11,14 @@ public class UpdateTest extends CliTestBase {
 
     @Test
     public void invokeWithoutBaselineVersionAndAbort() {
+        // cli arguments
+        // -u   [update]
+        // -md  [metadata import] ( path to import )            // repeatable argument
+        // -mdL [metadata language] ( ISO-639 language code )   // repeatable argument like above
+        // -bv  [baseline version database id] (omitted in this case ,
+        //                                      should trigger the interaction tested below)
 
-        String[] args = testCaseArgs("-md", csvFilePartial, "-mdL", "sv");
+        String[] args = testCaseArgs("-u", "-md", csvFilePartial, "-mdL", "sv");
 
         // queue input to abort: ('a')
         queueInteraction(() -> {
@@ -20,13 +26,12 @@ public class UpdateTest extends CliTestBase {
 
             String output = displaceOut.toString();
 
-//          The below assertion strangely doesn't work?
-//            assertTrue(output.startsWith(
-//                "Update procedure invoked without specifying baseline version id."
-//            ));
-//            assertTrue(output.endsWith(
-//                "Update aborted interactively."
-//            ));
+            assertTrue(output.startsWith(
+                "Update procedure invoked without specifying baseline version id."
+            ));
+            assertTrue(output.endsWith(
+                "Update aborted interactively." + NEW_LINE
+            ));
         }, "a");
     }
 
@@ -38,7 +43,7 @@ public class UpdateTest extends CliTestBase {
         // -mdL [metadata language] ( ISO-639 language code )   // repeatable argument like above
         // -bv  [baseline version database id]
 
-        String[] args = testCaseArgs("-md", csvFilePartial, "-mdL", "sv", "-bv", String.valueOf(bvId), "-u");
+        String[] args = testCaseArgs( "-u", "-md", csvFilePartial, "-mdL", "sv", "-bv", String.valueOf(bvId));
 
         // queue input to abort import: (any key but 'y')
         queueInteraction(() -> {
