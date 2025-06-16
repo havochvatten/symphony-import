@@ -16,16 +16,16 @@
     <java.version>17</java.version>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
-    <version.apache.poi>5.3.0</version.apache.poi>
-    <version.commons-cli>1.8.0</version.commons-cli>
+    <version.apache.poi>5.4.1</version.apache.poi>
+    <version.commons-cli>1.9.0</version.commons-cli>
     <version.commons-dbcp2>2.12.0</version.commons-dbcp2>
     <version.commons-dbutils>1.8.1</version.commons-dbutils>
     <version.commons-csv>1.11.0</version.commons-csv>
-    <version.geotools>31.3</version.geotools>
+    <version.geotools>31.7</version.geotools>
     <version.junit>5.11.0</version.junit>
     <version.system-lambda>1.2.1</version.system-lambda>
     <version.log4j>2.23.1</version.log4j>
-    <version.postgresql-jdbc-driver>42.7.3</version.postgresql-jdbc-driver>
+    <version.postgresql-jdbc-driver>42.7.7</version.postgresql-jdbc-driver>
   </properties>
 
   <dependencies>
