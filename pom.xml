@@ -24,7 +24,7 @@
     <version.geotools>31.7</version.geotools>
     <version.junit>5.11.0</version.junit>
     <version.system-lambda>1.2.1</version.system-lambda>
-    <version.log4j>2.23.1</version.log4j>
+    <version.log4j>2.24.1</version.log4j>
     <version.postgresql-jdbc-driver>42.7.7</version.postgresql-jdbc-driver>
   </properties>
 
