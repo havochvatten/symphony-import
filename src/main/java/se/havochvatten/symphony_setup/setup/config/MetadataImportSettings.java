@@ -17,7 +17,11 @@ public class MetadataImportSettings extends BandsBasedSettingsBase {
 
         argMissingDesc      = "Insufficient arguments to carry out the Metadata import procedure";
         validationErrorDesc = "Metadata import - invalid settings";
-        typeDescriptor      = "metadata";
         inputOption         = "md";
+    }
+
+    @Override
+    public String getTypeDescriptor() {
+        return "metadata";
     }
 }

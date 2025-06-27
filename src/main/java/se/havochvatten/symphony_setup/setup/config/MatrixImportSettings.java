@@ -12,7 +12,6 @@ public class MatrixImportSettings extends BandsBasedSettingsBase {
 
         argMissingDesc      = "Insufficient arguments for carrying out the sensitivity matrix import procedure";
         validationErrorDesc = "Sensitivity matrix import - invalid settings";
-        typeDescriptor      = "matrix";
         inputOption         = "mx";
     }
 
@@ -30,5 +29,10 @@ public class MatrixImportSettings extends BandsBasedSettingsBase {
 
     public void setAreaId(Integer areaId) {
         this.areaId = areaId;
+    }
+
+    @Override
+    public String getTypeDescriptor() {
+        return "metadata";
     }
 }

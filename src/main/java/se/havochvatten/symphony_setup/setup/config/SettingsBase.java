@@ -14,7 +14,6 @@ public abstract class SettingsBase extends ProcedureBase {
 
     public final BaselineVersion baselineVersion;
 
-    protected String typeDescriptor;
     protected String inputOption;
     public String inputFilePath;
     public SupportedTabularFileFormat format;
@@ -49,9 +48,7 @@ public abstract class SettingsBase extends ProcedureBase {
         }
     }
 
-    public String getTypeDescriptor() {
-        return typeDescriptor;
-    }
+    public abstract String getTypeDescriptor();
 
     public boolean validate() {
         boolean valid =  super.validate();
