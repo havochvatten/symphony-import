@@ -1,9 +1,6 @@
 package se.havochvatten.symphony_setup.setup.process;
 
-import org.apache.commons.cli.ParseException;
 import se.havochvatten.symphony_setup.setup.config.MetadataImportSettings;
-import se.havochvatten.symphony_setup.setup.model.IValidatedProcedure;
-import se.havochvatten.symphony_setup.setup.model.ProcedureBase;
 import se.havochvatten.symphony_setup.setup.model.SymphonyBand;
 import se.havochvatten.symphony_setup.setup.model.SymphonyCategory;
 
@@ -11,7 +8,8 @@ import java.util.*;
 
 import static se.havochvatten.symphony_setup.setup.SymphonySetup.Util.parseNullableBoolean;
 
-public abstract class MetadataBase extends ProcedureBase implements IValidatedProcedure {
+public abstract class MetadataBase extends ImportProcedure<MetadataImportSettings> {
+
     protected static final String SYMPHONY_CATEGORY = "symphonycategory";
     protected static final String BANDNUMBER = "bandnumber";
     protected static final String SYMPHONY_THEME = "symphonytheme";
@@ -22,7 +20,6 @@ public abstract class MetadataBase extends ProcedureBase implements IValidatedPr
 
     protected static final String[] reqFields = new String[]{ BANDNUMBER, SYMPHONY_CATEGORY, TITLE };
 
-    public final MetadataImportSettings settings;
     public final Map<SymphonyCategory, List<SymphonyBand>> bands =
         Map.of( SymphonyCategory.ECOSYSTEM, new ArrayList<>(),
                 SymphonyCategory.PRESSURE,  new ArrayList<>());
@@ -36,22 +33,11 @@ public abstract class MetadataBase extends ProcedureBase implements IValidatedPr
         }
     }
 
-    public MetadataBase(MetadataImportSettings settings) {
-        this.settings = settings;
-    }
+    public MetadataBase(MetadataImportSettings settings) { super(settings); }
 
-    protected void process() throws ParseException {
-        try {
-            if (!validate()) {
-                throw new ParseException(errorMessage());
-            }
-
-            if (!collectBands()) {
-                throw new ParseException(errorMessage());
-            }
-        } catch (Exception e) {
-            throw new ParseException(e.getMessage());
-        }
+    @Override
+    protected String getImportItemName() {
+        return settings.fileName();
     }
 
     protected boolean validateFieldSet(Set<String> allFields) {
@@ -82,9 +68,9 @@ public abstract class MetadataBase extends ProcedureBase implements IValidatedPr
 
             if (c == null) {
                 validationErrors.add(
-                    String.format("Invalid value (\"%s\") encountered in column « symphonycategory ».\n" +
+                    String.format("Invalid value (\"%s\") encountered in column « %s ».\n" +
                             "The allowed category values are, exclusively: '%s' and '%s' (case-insensitive).\n",
-                        catStr, SymphonyCategory.ECOSYSTEM.getDbVal(), SymphonyCategory.PRESSURE.getDbVal()));
+                        catStr, SYMPHONY_CATEGORY, SymphonyCategory.ECOSYSTEM.getDbVal(), SymphonyCategory.PRESSURE.getDbVal()));
             }
 
             validationErrors.add("Make sure the input metadata table is sound.");
@@ -112,9 +98,6 @@ public abstract class MetadataBase extends ProcedureBase implements IValidatedPr
             preBandNumber - 1,
             parseNullableBoolean(defaultSelected));
     }
-
-    public abstract boolean validate();
-    public abstract boolean collectBands();
 
     public boolean confirmImport() {
         int importEBandsCount = bands.get(SymphonyCategory.ECOSYSTEM).size(),
@@ -150,21 +133,18 @@ public abstract class MetadataBase extends ProcedureBase implements IValidatedPr
             return false;
         }
 
-        Scanner prompt = new Scanner(System.in);
-
-        System.out.println(String.format("Pending metadata import: \"%s\"", settings.fileName()));
-        System.out.println(String.format("---------------------------%s", "-".repeat(settings.fileName().length())));
+        String partialNotice = null;
 
         if (partial) {
-            System.out.println(
+            partialNotice = String.format(
                 "Note: the provided metadata table is _partial_: only a subset of all bands defined in the GeoTIFF" +
-                "files are included.");
-            System.out.println(
-                String.format("%s bands: %s | %s bands: %s",
-                              Ecosystem, eProportion, Pressure, pProportion));
+                "files are included.\n" +
+                "%s bands: %s | %s bands: %s",
+                Ecosystem, eProportion, Pressure, pProportion
+            );
         }
-        System.out.println("\nProceed with the import? ('y' to confirm)");
-        System.out.print("> ");
+
+        Scanner prompt = pendingImportMessage(partialNotice);
 
         return prompt.nextLine().trim().equalsIgnoreCase("y");
     }

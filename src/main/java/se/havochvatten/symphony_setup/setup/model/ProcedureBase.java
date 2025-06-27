@@ -1,13 +1,20 @@
 package se.havochvatten.symphony_setup.setup.model;
 
 import org.apache.commons.cli.Option;
+import se.havochvatten.symphony_setup.setup.config.SupportedTabularFileFormat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static se.havochvatten.symphony_setup.setup.SymphonySetup.options;
 
 public abstract class ProcedureBase implements IValidatedProcedure {
+    protected static final Set<String> SUPPORTED_EXT =
+        Set.of(Arrays.stream(SupportedTabularFileFormat.values())
+            .map(Enum::name).toArray(String[]::new));
+
     protected final List<String> missingArgs = new ArrayList<>();
     protected final List<String> validationErrors = new ArrayList<>();
     protected final List<String> validationMessages = new ArrayList<>();
@@ -17,6 +24,17 @@ public abstract class ProcedureBase implements IValidatedProcedure {
 
     public boolean validate() {
         return this.missingArgs.isEmpty();
+    }
+
+    public String parsingMessage() {
+        if (!validationMessages.isEmpty()) {
+            StringBuilder msg = new StringBuilder(parsingMessageBanner).append(":\n");
+            for (String pnotice : validationMessages) {
+                msg.append(pnotice).append("\n");
+            }
+            return msg.toString();
+        }
+        return null;
     }
 
     public String errorMessage() {
@@ -42,16 +60,5 @@ public abstract class ProcedureBase implements IValidatedProcedure {
         } else {
             return null;
         }
-    }
-
-    public String parsingMessage() {
-        if (!validationMessages.isEmpty()) {
-            StringBuilder msg = new StringBuilder(parsingMessageBanner).append(":\n");
-            for (String pnotice : validationMessages) {
-                msg.append(pnotice).append("\n");
-            }
-            return msg.toString();
-        }
-        return null;
     }
 }

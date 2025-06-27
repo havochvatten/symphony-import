@@ -2,12 +2,16 @@ package se.havochvatten.symphony_setup.setup;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.lang3.ArrayUtils;
+import se.havochvatten.symphony_setup.setup.config.CSVSettings;
+import se.havochvatten.symphony_setup.setup.config.MatrixImportSettings;
 import se.havochvatten.symphony_setup.setup.config.MetadataImportSettings;
+import se.havochvatten.symphony_setup.setup.config.SettingsBase;
 import se.havochvatten.symphony_setup.setup.database.DbInterface;
+import se.havochvatten.symphony_setup.setup.model.Baseline;
 import se.havochvatten.symphony_setup.setup.model.BaselineVersion;
-import se.havochvatten.symphony_setup.setup.process.MetadataBase;
-import se.havochvatten.symphony_setup.setup.process.MetadataCsv;
-import se.havochvatten.symphony_setup.setup.process.MetadataXlsx;
+import se.havochvatten.symphony_setup.setup.model.converter.DefaultMatrixArgConverter;
+import se.havochvatten.symphony_setup.setup.model.converter.UpdateModeConverter;
+import se.havochvatten.symphony_setup.setup.process.*;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -40,8 +44,19 @@ public class SymphonySetup {
                metadataOption    = new Option("md",   "metadata", true, "description"),
                mdLanguageOption  = new Option("mdL",  "metadataLang", true, "description"),
 
+               matrixOption             = new Option("mx", "matrix", true, "description"),
+               matrixNameOption         = new Option("mxN", "matrixName", true, "description"),
+               matrixCalcAreaOption     = new Option("mxA", "matrixArea", true, "description"),
+               matrixTitleLangOption    = new Option("mxL", "matrixLang", true, "description"),
+               matrixDefaultOption = new Option("mxD", "matrixDefault", false, "description"),
+
                csvDelimOption    = new Option("csvS", "delimiter", true, "description"),
                csvNewLineOption  = new Option("csvN", "newline", true, "description");
+
+        Option[] multiValuedOptions = new Option[] {
+            metadataOption, mdLanguageOption,
+            matrixOption, matrixNameOption, matrixTitleLangOption, matrixCalcAreaOption, matrixDefaultOption
+        };
 
         newBaselineOption.setOptionalArg(true);
         updateOption.setOptionalArg(true);
@@ -49,6 +64,21 @@ public class SymphonySetup {
         dbOption.setRequired(true);
         dbPwOption.setRequired(true);
         dbuOption.setRequired(true);
+
+        for (Option option : multiValuedOptions) {
+            option.setArgs(Option.UNLIMITED_VALUES);
+        }
+
+        updateOption.setType(UpdateMode.class);
+        updateOption.setConverter(new UpdateModeConverter());
+
+        matrixDefaultOption.setType(Boolean.class);
+        matrixDefaultOption.setConverter(new DefaultMatrixArgConverter());
+
+        OptionGroup baseInvocations = new OptionGroup();
+        baseInvocations.addOption(newBaselineOption);
+        baseInvocations.addOption(updateOption);
+        baseInvocations.addOption(statusOption);
 
         options.addOption(newBaselineOption);
         options.addOption(configFileOption);
@@ -61,13 +91,28 @@ public class SymphonySetup {
         options.addOption(updateOption); options.addOption(baselineVOption);
         options.addOption(metadataOption); options.addOption(mdLanguageOption);
 
+        options.addOption(matrixOption); options.addOption(matrixNameOption); options.addOption(matrixTitleLangOption);
+        options.addOption(matrixCalcAreaOption); options.addOption(matrixDefaultOption);
+
         options.addOption(csvDelimOption); options.addOption(csvNewLineOption);
     }
 
     public static final Set<String> SYM_LANG = Set.of("en", "fr", "sv");
     public static final Set<String> ISO_LANG = Set.of(Locale.getISOLanguages());
 
-    public static UpdateMode updateMode = UpdateMode.UPDATE;
+    private CSVSettings getCSVSettings() {
+        String sepValue = setupCmd.getOptionValue("csvS");
+        String nlValue = setupCmd.getOptionValue("csvN");
+        Character separator = sepValue == null ? null : sepValue.charAt(0);
+        String newLine =
+            nlValue == null || !nlValue.equalsIgnoreCase("windows") ?
+                null : "\r\n";
+
+        return new CSVSettings(separator, newLine);
+    }
+
+    public UpdateMode updateMode = UpdateMode.UPDATE;
+    public boolean clear() { return updateMode == UpdateMode.REPLACE; }
 
     public SymphonySetup(String[] args) {
         try {
@@ -77,12 +122,12 @@ public class SymphonySetup {
             System.err.println(e.getMessage());
         }
     }
-
     // WIP
     private void execute() throws ParseException {
 
         db = getDb();
 
+        // 'f' = Configuration file option passed (path)
         if (setupCmd.hasOption("f")) {
             int nonMandatory = Arrays.stream(setupCmd.getOptions())
                                     .filter(o -> !o.isRequired()).toList().size();
@@ -93,26 +138,45 @@ public class SymphonySetup {
             throw new ParseException("File-based import is not yet implemented");
 
         } else {
+
+        // 's' = Status option - print state of baseline
             if (setupCmd.hasOption("s")) {
                 throw new ParseException("Status option is not yet implemented");
             }
 
-            if (setupCmd.hasOption("u")) {
+        // 'n' = Import new baseline
+        // 'u' = Update existing baseline
+            if (setupCmd.hasOption("u") || setupCmd.hasOption("n")) {
+
                 try {
-                    updateMode = UpdateMode.parse(setupCmd.getOptionValue("u"));
-
-                    currentBaselineVersion = db.getBaselineVersion(null);
-
-                    if (currentBaselineVersion == null) {
-                        throw new ParseException("No baseline version is present in this database.\n" +
-                                                 "Use the -n option to install compliant baseline data");
+                    if (setupCmd.hasOption("u") && setupCmd.hasOption("n")) {
+                        throw new ParseException("Invalid invocation:\n" +
+                            "Either 'u' or 'n' options can be used, " +
+                            "but not both.");
                     }
 
-                    selectedBaselineVersion = getBaselineVersion();
+                    if (setupCmd.hasOption("u")) {
 
-                    if (selectedBaselineVersion == null) {
-                        // Process was aborted by user interaction
-                        return;
+                        updateMode = setupCmd.getParsedOptionValue("u");
+
+                        currentBaselineVersion = db.getBaselineVersion(null);
+
+                        if (currentBaselineVersion == null) {
+                            throw new ParseException("No baseline version is present in this database.\n" +
+                                "Use the -n option to install compliant baseline data");
+                        }
+
+                        selectedBaselineVersion = getBaselineVersion();
+
+                        if (selectedBaselineVersion == null) {
+                            // Process was aborted by user interaction
+                            return;
+                        }
+                    }
+
+                    if (setupCmd.hasOption("n")) {
+                        // updateMode = UpdateMode.UPDATE;
+                        throw new ParseException("Install baseline version is not yet implemented");
                     }
 
                     if (setupCmd.hasOption("md")) {
@@ -120,15 +184,12 @@ public class SymphonySetup {
                     }
 
                     if (setupCmd.hasOption("mx")) {
-                        throw new ParseException("Matrix import not implemented");
+                        importSensitivityMatrix();
                     }
+
                 } catch (Exception e) {
                     throw new ParseException(e.getMessage());
                 }
-            }
-
-            if (setupCmd.hasOption("n")) {
-                throw new ParseException("Install baseline version is not yet implemented");
             }
         }
 
@@ -181,49 +242,46 @@ public class SymphonySetup {
         return db.getBaselineVersion(bvId);
     }
 
-    private void importMetadata() throws Exception {
-        List<MetadataImportSettings> metadataToImport = new ArrayList<>();
-        String[] mdFile = setupCmd.getOptionValues("md");
-        String[] mdLanguageOpt = setupCmd.getOptionValues("mdL");
+    private <T extends SettingsBase> List<T> processSettings(String opt, String langOpt, Class<T> settingsType)
+        throws Exception {
+        List<T> settings = new ArrayList<>();
+        String[] files = setupCmd.getOptionValues(opt);
+        String[] languageParams = setupCmd.getOptionValues(langOpt);
         String currentDefaultLang = selectedBaselineVersion.getLocale();
 
-        for (int i = 0; i < mdFile.length; ++i) {
-            MetadataImportSettings mdSettings;
+        for (int i = 0; i < files.length; ++i) {
+            boolean hasLang = languageParams != null && languageParams.length > i;
 
-            boolean clear = updateMode == UpdateMode.REPLACE;
-            boolean hasLang = mdLanguageOpt != null && mdLanguageOpt.length > i;
+            T settingObj = SettingsBase.create(settingsType, selectedBaselineVersion, files[i],
+                                hasLang ? languageParams[i] : null, currentDefaultLang, clear(), i);
 
-            mdSettings = new MetadataImportSettings(selectedBaselineVersion, mdFile[i],
-                hasLang ? mdLanguageOpt[i] : null,
-                currentDefaultLang, clear, i);
-
-            if (!mdSettings.validate()) {
-                throw new ParseException(mdSettings.errorMessage());
+            if (!settingObj.validate()) {
+                throw new ParseException(settingObj.errorMessage());
             }
 
-            metadataToImport.add(mdSettings);
-            String parsingMessage = mdSettings.parsingMessage();
+            settings.add(settingObj);
+            String parsingMessage = settingObj.parsingMessage();
 
             if (parsingMessage != null) {
                 System.out.println(parsingMessage);
             }
 
-            currentDefaultLang = hasLang ? mdLanguageOpt[i] : currentDefaultLang;
+            currentDefaultLang = hasLang ? languageParams[i] : currentDefaultLang;
         }
+
+        return settings;
+    }
+
+    private void importMetadata() throws Exception {
+        List<MetadataImportSettings> metadataToImport =
+            processSettings("md", "mdL", MetadataImportSettings.class);
 
         for (MetadataImportSettings mdSettings : metadataToImport) {
             MetadataBase md;
 
             switch (mdSettings.format) {
                 case CSV -> {
-                    String sepValue = setupCmd.getOptionValue("csvS");
-                    String nlValue = setupCmd.getOptionValue("csvN");
-                    Character separator = sepValue == null ? null : sepValue.charAt(0);
-                    String newLine =
-                        nlValue == null || !nlValue.equalsIgnoreCase("windows") ?
-                            null : "\r\n";
-
-                    md = new MetadataCsv(mdSettings, separator, newLine);
+                    md = new MetadataCsv(mdSettings, getCSVSettings());
                 }
                 case ODS -> throw new ParseException("Metadata as ODS not implemented");
                 case XLSX -> md = new MetadataXlsx(mdSettings);
@@ -231,6 +289,79 @@ public class SymphonySetup {
             }
 
             db.updateMetadata(md);
+        }
+    }
+
+    private void importSensitivityMatrix() throws Exception {
+        Baseline selectedBaseline = getDb().getBaseline(selectedBaselineVersion.getId());
+
+        if (selectedBaseline.isMetaIncomplete()) {
+            throw new ParseException("Matrix import is not possible for baseline version " +
+                                     "with incomplete meta band coverage");
+        }
+
+        String[] matrixNames, matrixAreas, matrixFiles,
+                 _matrixAreas = setupCmd.getOptionValues("mxA");
+        boolean[] matrixDefault;
+
+        matrixAreas = _matrixAreas == null ? new String[0] : _matrixAreas;
+
+        matrixFiles = setupCmd.getOptionValues("mx");
+        matrixNames = setupCmd.getOptionValues("mxN");
+
+        matrixDefault = new boolean[matrixFiles.length];
+
+        if (setupCmd.hasOption("mxD")) {
+            Boolean[] _matrixDefault = setupCmd.getParsedOptionValues("mxD");
+
+            for (int i = 0; i < _matrixDefault.length; ++i) {
+                matrixDefault[i] = _matrixDefault[i];
+            }
+        }
+
+        if (!(setupCmd.hasOption("mxN"))) {
+            throw new ParseException("Matrix import: Matrix name ('-mxN') must be specified");
+        }
+
+        if (matrixFiles.length > matrixNames.length) {
+            throw new ParseException(
+                String.format("Too few matrix names: %d expected, %d provided",
+                              matrixFiles.length, matrixNames.length)
+            );
+        }
+
+        int lastDefaultMatrixIndex = ArrayUtils.lastIndexOf(matrixDefault, true);
+
+        if (lastDefaultMatrixIndex > -1) {
+            if (!setupCmd.hasOption("mxA") ||
+                setupCmd.getOptionValues("mxA").length < lastDefaultMatrixIndex + 1) {
+                throw new ParseException("Matrix import: Calculation area ('-mxA') must be specified " +
+                                         "for a default matrix");
+            }
+        }
+
+        List<MatrixImportSettings> matricesToImport =
+            processSettings("mx", "mxL", MatrixImportSettings.class);
+
+        for (int i = 0; i < matricesToImport.size(); ++i) {
+            MatrixBase mx;
+
+            MatrixImportSettings mxSetting = matricesToImport.get(i);
+            mxSetting.setMatrixName(matrixNames[i]);
+            mxSetting.setAreaId(matrixAreas.length > i
+                                ? Integer.parseInt(matrixAreas[i])
+                                : null);
+
+            switch (mxSetting.format) {
+                case CSV -> {
+                    mx = new MatrixCsv(mxSetting, selectedBaseline, getCSVSettings());
+                }
+                case ODS -> throw new ParseException("Sensitivity matrix as ODS not implemented");
+                case XLSX -> throw new ParseException("");
+                default -> throw new ParseException("Unknown sensitivity matrix file format");
+            }
+
+            db.updateMatrix(mx);
         }
     }
 
@@ -279,22 +410,6 @@ public class SymphonySetup {
     }
 
     public enum UpdateMode {
-        UPDATE, REPLACE;
-
-        public static UpdateMode parse(String uValue) throws ParseException {
-
-            if (uValue == null ||
-                uValue.equalsIgnoreCase("update") ||
-                uValue.equalsIgnoreCase("u"))
-                return UpdateMode.UPDATE;
-
-            if (uValue.equalsIgnoreCase("replace") ||
-                uValue.equalsIgnoreCase("r"))
-                return UpdateMode.REPLACE;
-
-            throw new ParseException(
-                "Unrecognized update mode (\"" + uValue + "\" given).\n" +
-                "Supported update modes are `update` (default) and `replace` only.");
-        }
+        UPDATE, REPLACE
     }
 }

@@ -5,6 +5,7 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.ColumnListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import se.havochvatten.symphony_setup.setup.model.*;
+import se.havochvatten.symphony_setup.setup.process.MatrixBase;
 import se.havochvatten.symphony_setup.setup.process.MetadataBase;
 
 import java.sql.Connection;
@@ -163,5 +164,42 @@ public class DbInterface {
         } else {
             throw new ParseException("Metadata import aborted interactively.");
         }
+    }
+
+    public void updateMatrix(MatrixBase matrix) throws SQLException, ParseException {
+        Connection conn = getConnection();
+
+        if (matrix.confirmImport()) {
+            int mxId = qr.insert(conn, MatrixBase.insertSensMatrix(schema), idHandler,
+                matrix.settings.getMatrixName(),
+                matrix.settings.baselineVersion.getId());
+
+            String[] valuesToInsert = matrix.getSensitivities().stream()
+                .map(s -> s.insertRowValue(mxId)).toArray(String[]::new);
+
+            qr.execute(conn, String.format("%s %s",
+                Sensitivity.insertRowColumns(schema),
+                String.join(",", valuesToInsert)));
+        } else {
+            throw new ParseException("Matrix import aborted interactively.");
+        }
+    }
+
+    static String titlesQuery(int bverId) {
+        return  String.format("SELECT mb.metaband_id FROM symphony.meta_bands mb " +
+                                "JOIN symphony.baselineversion bl ON " +
+                                "mb.metaband_bver_id = bl.bver_id " +
+                                "JOIN symphony.meta_values m " +
+                                "ON  m.metaval_band_id = mb.metaband_id " +
+                                "AND m.metaval_language = ? " +
+                                "AND m.metaval_field = 'title' " +
+                                "WHERE " +
+                                "mb.metaband_bver_id = %d " +
+                                "AND mb.metaband_category = ? " +
+                                "AND m.metaval_value = ?", bverId);
+    }
+
+    public Integer getBandIdByCategoryTitleAndBaseline(int bverId, SymphonyCategory cat, String title) throws SQLException {
+        return qr.query(getConnection(), titlesQuery(bverId), idHandler, cat.getDbVal(), title);
     }
 }

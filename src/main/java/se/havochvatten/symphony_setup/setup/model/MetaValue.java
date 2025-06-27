@@ -15,9 +15,9 @@ public class MetaValue {
             "SELECT mv.metaval_band_id, mv.metaval_field, mv.metaval_value, mv.metaval_language " +
             "FROM %1$s.meta_values mv " +
             "JOIN %1$s.meta_bands mb ON mv.metaval_band_id = mb.metaband_id " +
-            "WHERE mb.metaband_bver_id = %2$d AND UPPER(mb.metaband_category) = '%3$s' " +
+            "WHERE mb.metaband_bver_id = %2$d AND mb.metaband_category = '%3$s' " +
                 "ORDER BY mv.metaval_band_id",
-            schema, bvId, category.name()
+            schema, bvId, category.getDbVal()
         );
     }
 
@@ -26,6 +26,16 @@ public class MetaValue {
         return String.format("DELETE FROM %s.meta_values mv WHERE mv.metaval_band_id IN " +
             "(SELECT metaband_id FROM symphony.meta_bands WHERE metaband_bver_id = %d AND UPPER(metaband_category) = '%s')",
             schema, bvId, category.name());
+    }
+
+    public static String getAllValuesByFieldQuery(String schema, int bvId, SymphonyCategory type, String language, String field) {
+        return String.format("SELECT mv.value FROM %1$s.meta_values mv " +
+            "JOIN %1$s.meta_bands mb ON mv.metaval_band_id = mb.metaband_id " +
+            "WHERE mb.metaband_bver_id = %2$d AND " +
+            "mb.metaband_category = '%3$s' AND " +
+            "mv.metaval_language = '%4$s' AND " +
+            "mv.meta_field = '%5$s'",
+            schema, bvId, type.getDbVal(), language, field);
     }
 
     public static ResultSetHandler<List<MetaValue>> handler;

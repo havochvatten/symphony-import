@@ -118,6 +118,10 @@ public class SymphonyBand {
     }
 
     public String getTitle() {
-        return meta.get(this.defaultLanguage).get("title");
+        return getTitle(defaultLanguage);
+    }
+
+    public String getTitle(String language) {
+        return meta.get(language).get("title");
     }
 }
