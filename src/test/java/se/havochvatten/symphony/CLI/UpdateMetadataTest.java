@@ -7,10 +7,10 @@ import se.havochvatten.symphony_setup.setup.model.SymphonyCategory;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class UpdateTest extends CliTestBase {
+class UpdateMetadataTest extends CliTestBase {
 
     @Test
-    public void invokeWithoutBaselineVersionAndAbort() {
+    void invokeWithoutBaselineVersionAndAbort() {
         // cli arguments
         // -u   [update]
         // -md  [metadata import] ( path to import )            // repeatable argument
@@ -18,7 +18,7 @@ public class UpdateTest extends CliTestBase {
         // -bv  [baseline version database id] (omitted in this case ,
         //                                      should trigger the interaction tested below)
 
-        String[] args = testCaseArgs("-u", "-md", csvFilePartial, "-mdL", "sv");
+        String[] args = testCaseArgs("-u", "-md", csvMetaFilePartialSV, "-mdL", "sv");
 
         // queue input to abort: ('a')
         queueInteraction(() -> {
@@ -36,14 +36,14 @@ public class UpdateTest extends CliTestBase {
     }
 
     @Test
-    public void invokeWithBaselineVersionAndAbort() {
+    void invokeWithBaselineVersionAndAbort() {
         // cli arguments
         // -u   [update]
         // -md  [metadata import] ( path to import )            // repeatable argument
         // -mdL [metadata language] ( ISO-639 language code )   // repeatable argument like above
         // -bv  [baseline version database id]
 
-        String[] args = testCaseArgs( "-u", "-md", csvFilePartial, "-mdL", "sv", "-bv", String.valueOf(bvId));
+        String[] args = testCaseArgs( "-u", "-md", csvMetaFilePartialSV, "-mdL", "sv", "-bv", String.valueOf(bvId));
 
         // queue input to abort import: (any key but 'y')
         queueInteraction(() -> {
@@ -68,20 +68,19 @@ public class UpdateTest extends CliTestBase {
     }
 
     @Test
-    public void invokeWithBaselineVersionAndImportPartialCSV() throws Exception {
+    void invokeWithBaselineVersionAndImportPartialCSV() throws Exception {
         // cli arguments
         // -u   [update]
         // -md  [metadata import] ( path to import )            // repeatable argument
         // -mdL [metadata language] ( ISO-639 language code )   // repeatable argument like above
         // -bv  [baseline version database id]
 
-        String[] args = testCaseArgs("-u", "-md", csvFilePartial, "-mdL", "sv", "-bv", String.valueOf(bvId));
+        String[] args = testCaseArgs("-u", "-md", csvMetaFilePartialSV, "-mdL", "sv", "-bv", String.valueOf(bvId));
 
         // queue input to commence import procedure ('y')
         queueInteraction(() -> {
             new SymphonySetup(args);
 
-            assertEquals(displaceOut.toString().substring(0, 24), "Pending metadata import:");
             assertTrue(displaceOut.toString().startsWith(
                 "Pending metadata import:")
             );
@@ -89,11 +88,10 @@ public class UpdateTest extends CliTestBase {
             try {
                 Baseline bl = getDbInterface().getBaseline(bvId);
 
-                //
                 assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.keySet().size());
                 assertEquals(3, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.keySet().size());
 
-                assertTrue(bl.isIncomplete());
+                assertTrue(bl.isMetaIncomplete());
 
             } catch (Exception e) {
                 fail();
@@ -102,14 +100,14 @@ public class UpdateTest extends CliTestBase {
     }
 
     @Test
-    public void invokeWithBaselineVersionAndImportPartialExcel() throws Exception {
+    void invokeWithBaselineVersionAndImportPartialExcel() throws Exception {
         // cli arguments
         // -u   [update]
         // -md  [metadata import]   ( path )
         // -mdL [metadata language] ( language )
         // -bv  [baseline version database id]
 
-        String[] args = testCaseArgs("-u", "-md", excelFilePartial, "-mdL", "sv", "-bv", String.valueOf(bvId));
+        String[] args = testCaseArgs("-u", "-md", excelMetaFilePartial, "-mdL", "sv", "-bv", String.valueOf(bvId));
 
         // queue input to commence import procedure ('y')
         queueInteraction(() -> {
@@ -127,7 +125,7 @@ public class UpdateTest extends CliTestBase {
                 assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.keySet().size());
                 assertEquals(3, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.keySet().size());
 
-                assertTrue(bl.isIncomplete());
+                assertTrue(bl.isMetaIncomplete());
 
             } catch (Exception e) {
                 fail();
@@ -136,7 +134,7 @@ public class UpdateTest extends CliTestBase {
     }
 
     @Test
-    public void invokeWithMultipleImportFormats() {
+    void invokeWithMultipleImportFormats() {
         // cli arguments
         // -u   [update]
         // -md  [metadata import] ( path ) -md ( path )  // repeatable argument
@@ -144,8 +142,8 @@ public class UpdateTest extends CliTestBase {
         // -bv  [baseline version database id]
 
         String[] args = testCaseArgs("-u",
-            "-md", xlsxFilePartialEco,
-            "-md", csvFilePartialPressure,
+            "-md", xlsxMetaFilePartialEcoSV,
+            "-md", csvMetaFilePartialPressureSV,
             "-mdL", "sv", "-bv", String.valueOf(bvId));
 
         // queue input to commence import procedure (2x 'y' to confirm both files)
@@ -162,7 +160,39 @@ public class UpdateTest extends CliTestBase {
                 assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.keySet().size());
                 assertEquals(4, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.keySet().size());
 
-                assertFalse(bl.isIncomplete());
+                assertFalse(bl.isMetaIncomplete());
+
+            } catch (Exception e) {
+                fail();
+            }
+        }, "y", "y");
+    }
+
+    @Test
+    void invokeWithMultipleLanguages() {
+        // cli arguments
+        // -u   [update]
+        // -md  [metadata import] ( path ) -md ( path )  // repeatable argument
+        // -mdL [metadata language] ( language )         // single argument for multiple files: will fall back to last
+        // -bv  [baseline version database id]
+
+        String[] args = testCaseArgs("-u",
+            "-md", csvMetaFileCompleteSV,
+            "-md", csvMetaFileCompleteEN,
+            "-mdL", "sv", "en",
+            "-bv", String.valueOf(bvId));
+
+        // queue input to commence import procedure (2x 'y' to confirm both files)
+        queueInteraction(() -> {
+            new SymphonySetup(args);
+
+            try {
+                Baseline bl = getDbInterface().getBaseline(bvId);
+
+                assertEquals("Artificial reef",
+                    bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.get(1).getTitle("en"));
+                assertEquals("Konstgjort rev",
+                    bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.get(1).getTitle("sv"));
 
             } catch (Exception e) {
                 fail();

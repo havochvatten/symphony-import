@@ -1,13 +1,14 @@
 package se.havochvatten.symphony.setup.database;
 
 import org.apache.commons.dbutils.handlers.ScalarHandler;
+import org.apache.commons.io.IOUtils;
 import se.havochvatten.symphony.CLI.CliTestBase;
 import se.havochvatten.symphony_setup.setup.database.DbInterface;
-import se.havochvatten.symphony_setup.setup.model.MetaValue;
-import se.havochvatten.symphony_setup.setup.model.SymphonyBand;
-import se.havochvatten.symphony_setup.setup.model.SymphonyCategory;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -21,6 +22,8 @@ public class DbTestInterface extends DbInterface {
 
     private static final String deleteBaselineVersionQuery =
         "DELETE FROM %s.baselineversion bv WHERE bv.bver_id = ?";
+    private static final String deleteSensitivityMatricesQuery =
+        "DELETE FROM %s.sensitivitymatrix WHERE sensm_bver_id = ?";
     private static final String getBaselineVersionIdSequenceQuery =
         "SELECT seq FROM (SELECT pg_get_serial_sequence('%s.baselineversion', 'bver_id') seq) res";
     private static final String resetBaselineVersionIdSequenceQuery =
@@ -29,6 +32,29 @@ public class DbTestInterface extends DbInterface {
     private static final ScalarHandler<String> stringHandler = new ScalarHandler<>();
 
     private Integer testBvId = null;
+    private Integer testCalcAreaId = null;
+
+    public String sensitivityControlQuery(String isoLang, String ecoTitle, String prTitle, String mxName) {
+        return MessageFormat.format("SELECT sens_value FROM {0}.sensitivity s " +
+            "JOIN {0}.sensitivitymatrix sm ON sm.sensm_id = s.sens_sensm_id " +
+            "JOIN {0}.meta_bands mbe ON mbe.metaband_id = s.sens_eco_band_id " +
+            "JOIN {0}.meta_bands mbp ON mbp.metaband_id = s.sens_pres_band_id " +
+            "JOIN {0}.meta_values mbev ON mbev.metaval_band_id = mbe.metaband_id " +
+            "JOIN {0}.meta_values mbpv ON mbpv.metaval_band_id = mbp.metaband_id " +
+            "WHERE sm.sensm_name = ''{4}'' " +
+            "AND mbev.metaval_language = ''{1}'' AND mbev.metaval_field = ''title'' " +
+            "AND mbpv.metaval_language = ''{1}'' AND mbpv.metaval_field = ''title'' " +
+
+            "AND   mbev.metaval_value = ''{2}'' " +
+            "AND   mbpv.metaval_value = ''{3}''", schema, isoLang, ecoTitle, prTitle, mxName);
+    }
+
+    public Double readSensitivityValue(String isoLang, String ecoTitle, String prTitle, String mxName)
+        throws SQLException {
+        return getFirstDoubleValueByQuery(
+            sensitivityControlQuery(isoLang, ecoTitle, prTitle, mxName)
+        );
+    }
 
     public DbTestInterface(String database, String username, String password,
                            String schema, String port, String host) {
@@ -71,10 +97,29 @@ public class DbTestInterface extends DbInterface {
         return testBvId;
     }
 
+
+
+    public Double getFirstDoubleValueByQuery(String query) throws SQLException {
+        Connection conn = getConnection();
+        PreparedStatement stmt = conn.prepareStatement(query);
+
+        ResultSet result = stmt.executeQuery();
+
+        if (result.next()) {
+            return result.getDouble(1);
+        } else {
+            return null;
+        }
+    }
+
     public void cleanTestBaselineVersion() {
         try (Connection conn = getConnection()) {
 
             clearBandData(testBvId);
+
+            qr.update(conn,
+                String.format(deleteSensitivityMatricesQuery, schema),
+                testBvId);
 
             // Delete dummy baseline
             qr.update(conn,
