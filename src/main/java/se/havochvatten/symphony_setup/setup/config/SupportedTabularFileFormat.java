@@ -1,5 +1,5 @@
 package se.havochvatten.symphony_setup.setup.config;
 
-public enum SupportedMetadataFormat {
+public enum SupportedTabularFileFormat {
     CSV, XLSX, ODS
 }

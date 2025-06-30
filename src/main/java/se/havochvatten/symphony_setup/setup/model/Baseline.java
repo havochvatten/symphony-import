@@ -9,6 +9,7 @@ import org.geotools.util.factory.Hints;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 
 public class Baseline {
@@ -16,7 +17,7 @@ public class Baseline {
     public BaselineVersion version;
     public Map<SymphonyCategory, BaselineComponent> components;
 
-    private boolean incomplete = false;
+    private boolean metaIncomplete = false;
     private static final Hints g2h = new Hints(Hints.FORCE_LONGITUDE_FIRST_AXIS_ORDER, Boolean.TRUE);
 
     public Baseline(BaselineVersion version) throws Exception {
@@ -53,7 +54,7 @@ public class Baseline {
                 throw new RuntimeException("Inconsistent data"); // TODO: Supply verbose instruction on how to fix.
             }
 
-            incomplete |= bands[cOrdinal].length < coverage.getSampleDimensions().length;
+            metaIncomplete |= bands[cOrdinal].length < coverage.getSampleDimensions().length;
 
             for (int ci = 0; ci < bands[cOrdinal].length; ++ci) {
                 SymphonyBand band = bands[cOrdinal][ci];
@@ -79,8 +80,8 @@ public class Baseline {
         }
     }
 
-    public boolean isIncomplete() {
-        return incomplete;
+    public boolean isMetaIncomplete() {
+        return metaIncomplete;
     }
 
     public BaselineVersion getVersion() {
@@ -89,5 +90,9 @@ public class Baseline {
 
     public Map<SymphonyCategory, BaselineComponent> getComponents() {
         return components;
+    }
+
+    public Collection<SymphonyBand> bandsByCategory(SymphonyCategory category) {
+        return components.get(category).bands.values();
     }
 }

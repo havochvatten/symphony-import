@@ -1,5 +1,6 @@
 package se.havochvatten.symphony;
 
+import org.junit.jupiter.api.AfterEach;
 import se.havochvatten.symphony.setup.database.DbTestInterface;
 
 import java.io.File;
@@ -10,20 +11,25 @@ import java.util.Properties;
 
 public abstract class TestBase {
 
-    private static final String resourcesPath = "src/test/resources/";
+    private static final String RESOURCES_PATH = "src/test/resources/";
 
-    protected static String propertiesPath          = resourcesPath + "test.properties";
-    protected static String csvFilePartial          = resourcesPath + "import/metadata-wellformed-partial.csv";
-    protected static String csvFileComplete         = resourcesPath + "import/metadata-wellformed-complete.csv";
+    protected static String propertiesPath          = RESOURCES_PATH + "test.properties";
+    protected static String csvMetaFilePartialSV    = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.csv";
+    protected static String csvMetaFileCompleteSV   = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.csv";
+    protected static String csvMetaFileCompleteEN   = RESOURCES_PATH + "import/metadata-wellformed-complete-en.csv";
 
-    protected static String excelFilePartial        = resourcesPath + "import/metadata-wellformed-partial.xlsx";
-    protected static String excelFileComplete       = resourcesPath + "import/metadata-wellformed-complete.xlsx";
+    protected static String excelMetaFilePartial        = RESOURCES_PATH + "import/metadata-wellformed-partial.xlsx";
+    protected static String excelMetaFileCompleteSV     = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.xlsx";
 
-    protected static String csvFileFaulty1          = resourcesPath + "import/metadata-faulty_bandnumber.csv";
-    protected static String xlsxFileFaulty1         = resourcesPath + "import/metadata-faulty_bandnumber.xlsx";
+    protected static String csvMetaFileFaulty1      = RESOURCES_PATH + "import/metadata-faulty_bandnumber.csv";
+    protected static String xlsxMetaFileFaulty1     = RESOURCES_PATH + "import/metadata-faulty_bandnumber.xlsx";
 
-    protected static String xlsxFilePartialEco      = resourcesPath + "import/metadata-wellformed-partial-Eco.xlsx";
-    protected static String csvFilePartialPressure  = resourcesPath  + "import/metadata-wellformed-partial-Pressure.csv";
+    protected static String xlsxMetaFilePartialEcoSV =      RESOURCES_PATH + "import/metadata-wellformed-partial-Eco-sv.xlsx";
+    protected static String csvMetaFilePartialPressureSV =  RESOURCES_PATH + "import/metadata-wellformed-partial-Pressure-sv.csv";
+
+    protected static String csvMatrixFileSV = RESOURCES_PATH + "import/matrix-wellformed-sv.csv";
+    protected static String csvMatrixFileEN = RESOURCES_PATH + "import/matrix-wellformed-en.csv";
+    protected static String csvMatrixCompleteName   = "Complete sensitivity matrix TEST";
 
     protected String database = "symphony";
     protected final String dbSchema;
@@ -31,9 +37,10 @@ public abstract class TestBase {
     protected final Integer dbPort;
     protected final String dbUser;
     protected final String dbPassword;
+    protected boolean providedBaseline = true;
 
     protected DbTestInterface dbInterface = null;
-    protected final int bvId;
+    protected final Integer bvId;
 
     protected Properties getProperties() {
         File propertiesFile = new File(propertiesPath);
@@ -96,11 +103,16 @@ public abstract class TestBase {
         dbSchema = propertiesList.contains("db.schema") ?
             properties.getProperty("db.schema") :                   null;
 
-        bvId = getDbInterface().installTestBaselineVersion();
+        if (providedBaseline) {
+            bvId = getDbInterface().installTestBaselineVersion();
+        } else {
+            bvId = null;
+        }
     }
 
-//    @AfterAll
-//    public void cleanUp() {
-//        getDbInterface().cleanTestBaselineVersion();
-//    }
+    @AfterEach
+    public void tearDown() {
+        getDbInterface().cleanTestBaselineVersion();
+    }
 }
+

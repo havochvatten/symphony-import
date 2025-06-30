@@ -1,10 +1,8 @@
 package se.havochvatten.symphony_setup.setup.process;
 
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.commons.csv.DuplicateHeaderMode;
-import org.apache.commons.io.input.BOMInputStream;
+import se.havochvatten.symphony_setup.setup.config.CSVSettings;
 import se.havochvatten.symphony_setup.setup.config.MetadataImportSettings;
 import se.havochvatten.symphony_setup.setup.model.MetaValue;
 import se.havochvatten.symphony_setup.setup.model.SymphonyBand;
@@ -16,60 +14,41 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static se.havochvatten.symphony_setup.setup.SymphonySetup.Util.tryParseInt;
+import static se.havochvatten.symphony_setup.setup.config.CSVSettings.getBOMSafeStream;
 
 public class MetadataCsv extends MetadataBase {
 
-    // Previous import scripts for Symphony metadata have presupposed a nonstandard
-    // CSV format (using semicolon as the field delimiter).
-    private static final char defaultSeparator = ';';
-    private static final String defaultNewLine = "\n";
-    private final char separator;
-    private final String newLine;
-
-    private InputStream getBOMSafeStream() throws IOException {
-        return BOMInputStream.builder().setInputStream(new FileInputStream(this.settings.inputFilePath)).get();
-    }
-
-    private CSVFormat getFormat() {
-        return CSVFormat.DEFAULT.builder()
-                .setDelimiter(separator)
-                .setRecordSeparator(newLine)
-                .setDuplicateHeaderMode(DuplicateHeaderMode.DISALLOW)
-                .build();
-    }
+    CSVSettings csvSettings;
 
     private final Set<String> allFields = new HashSet<>();
 
-    public MetadataCsv(MetadataImportSettings settings, Character separator, String newLine) throws ParseException {
+    public MetadataCsv(MetadataImportSettings settings, CSVSettings csvSettings) throws ParseException {
         super(settings);
-
-        this.separator = separator == null ? defaultSeparator : separator;
-        this.newLine = newLine == null ? defaultNewLine : newLine;
-
+        this.csvSettings = csvSettings;
         process();
     }
 
     @Override
     public boolean validate() {
-        try (InputStream fs = getBOMSafeStream()) {
+        try (InputStream fs = getBOMSafeStream(this.settings.inputFilePath)) {
             Reader fsr = new InputStreamReader(fs, StandardCharsets.UTF_8);
 
-            Iterable<CSVRecord> csvAll = getFormat().parse(fsr);
+            Iterable<CSVRecord> csvAll = csvSettings.getFormat().parse(fsr);
             csvAll.iterator().next().iterator().forEachRemaining(r -> allFields.add(r.toLowerCase()));
 
             return validateFieldSet(allFields);
         } catch (IOException e) {
-            validationErrors.add("Error reading input file: " + this.settings.inputFilePath);
+            validationErrors.add("Error reading input metadata file: " + this.settings.inputFilePath);
             return false;
         }
     }
 
     @Override
-    public boolean collectBands() {
-        try (InputStream fs = getBOMSafeStream()) {
+    public boolean collect() {
+        try (InputStream fs = getBOMSafeStream(this.settings.inputFilePath)) {
             Reader fsr = new InputStreamReader(fs, StandardCharsets.UTF_8);
 
-            Iterable<CSVRecord> csvBands = getFormat().withHeader().parse(fsr);
+            Iterable<CSVRecord> csvBands = csvSettings.getFormat().withHeader().parse(fsr);
             for (CSVRecord csvBand : csvBands) {
                 String cStr = csvBand.get(SYMPHONY_CATEGORY);
                 SymphonyCategory c = getCategory(cStr);
@@ -93,7 +72,7 @@ public class MetadataCsv extends MetadataBase {
             }
 
         } catch (IOException e) {
-            validationErrors.add("Error reading input file: " + this.settings.inputFilePath);
+            validationErrors.add("Error reading input metadata file: " + this.settings.inputFilePath);
             return false;
         }
         return true;

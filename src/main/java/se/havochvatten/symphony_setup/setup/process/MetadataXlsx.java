@@ -80,7 +80,7 @@ public class MetadataXlsx extends MetadataBase {
     }
 
     @Override
-    public boolean collectBands() {
+    public boolean collect() {
         try (FileInputStream fs = new FileInputStream(this.settings.inputFilePath)) {
             Sheet sheet = new XSSFWorkbook(fs).getSheetAt(0);
 
