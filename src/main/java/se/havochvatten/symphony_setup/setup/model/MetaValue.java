@@ -21,10 +21,10 @@ public class MetaValue {
         );
     }
 
-    // Explicitly not relying on cascade delete via fk metaval_band_id to parent band
+    // Explicitly _not_ relying on cascade delete via fk metaval_band_id to parent band
     public static String deleteQuery(String schema, int bvId, SymphonyCategory category) {
-        return String.format("DELETE FROM %s.meta_values mv WHERE mv.metaval_band_id IN " +
-            "(SELECT metaband_id FROM symphony.meta_bands WHERE metaband_bver_id = %d AND UPPER(metaband_category) = '%s')",
+        return String.format("DELETE FROM %1$s.meta_values mv WHERE mv.metaval_band_id IN " +
+            "(SELECT metaband_id FROM %1$s.meta_bands WHERE metaband_bver_id = %2$d AND UPPER(metaband_category) = '%3$s')",
             schema, bvId, category.name());
     }
 

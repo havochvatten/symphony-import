@@ -2,15 +2,14 @@ package se.havochvatten.symphony_setup.setup;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.lang3.ArrayUtils;
-import se.havochvatten.symphony_setup.setup.config.CSVSettings;
-import se.havochvatten.symphony_setup.setup.config.MatrixImportSettings;
-import se.havochvatten.symphony_setup.setup.config.MetadataImportSettings;
-import se.havochvatten.symphony_setup.setup.config.SettingsBase;
+import se.havochvatten.symphony_setup.setup.config.*;
 import se.havochvatten.symphony_setup.setup.database.DbInterface;
 import se.havochvatten.symphony_setup.setup.model.Baseline;
 import se.havochvatten.symphony_setup.setup.model.BaselineVersion;
-import se.havochvatten.symphony_setup.setup.model.converter.DefaultMatrixArgConverter;
+import se.havochvatten.symphony_setup.setup.model.converter.MatrixCalcAreaConverter;
+import se.havochvatten.symphony_setup.setup.model.converter.BooleanYesNoConverter;
 import se.havochvatten.symphony_setup.setup.model.converter.UpdateModeConverter;
+import se.havochvatten.symphony_setup.setup.model.option.CalcAreaOption;
 import se.havochvatten.symphony_setup.setup.process.*;
 
 import java.sql.SQLException;
@@ -50,12 +49,21 @@ public class SymphonySetup {
                matrixTitleLangOption    = new Option("mxL", "matrixLang", true, "description"),
                matrixDefaultOption = new Option("mxD", "matrixDefault", false, "description"),
 
+               nationalAreaTypeOption = new Option("na", "nationalArea", true, "description"),
+               nationalAreaPolygonOption = new Option("naP", "nationalAreaPolygon", true, "description"),
+               nationalAreaCountryISO = new  Option("naC", "nationalAreaCountryISO", true, "description"),
+
+               calcAreaNamePropertyOption = new Option("caP", "calcAreaNameProperty", true, "description"),
+               calcAreaPackage          = new Option("caF", "calcAreaFile", true, "description"),
+               calcAreaDefaultOption    = new Option("caD", "calcAreaDefault", true, "description"),
+
                csvDelimOption    = new Option("csvS", "delimiter", true, "description"),
                csvNewLineOption  = new Option("csvN", "newline", true, "description");
 
         Option[] multiValuedOptions = new Option[] {
             metadataOption, mdLanguageOption,
-            matrixOption, matrixNameOption, matrixTitleLangOption, matrixCalcAreaOption, matrixDefaultOption
+            matrixOption, matrixNameOption, matrixTitleLangOption, matrixCalcAreaOption, matrixDefaultOption,
+            nationalAreaTypeOption, nationalAreaPolygonOption, nationalAreaCountryISO
         };
 
         newBaselineOption.setOptionalArg(true);
@@ -73,7 +81,10 @@ public class SymphonySetup {
         updateOption.setConverter(new UpdateModeConverter());
 
         matrixDefaultOption.setType(Boolean.class);
-        matrixDefaultOption.setConverter(new DefaultMatrixArgConverter());
+        matrixDefaultOption.setConverter(new BooleanYesNoConverter("default matrix"));
+
+        calcAreaDefaultOption.setType(Boolean.class);
+        calcAreaDefaultOption.setConverter(new BooleanYesNoConverter("default calculation area"));
 
         OptionGroup baseInvocations = new OptionGroup();
         baseInvocations.addOption(newBaselineOption);
@@ -91,8 +102,13 @@ public class SymphonySetup {
         options.addOption(updateOption); options.addOption(baselineVOption);
         options.addOption(metadataOption); options.addOption(mdLanguageOption);
 
+        options.addOption(nationalAreaTypeOption);  options.addOption(nationalAreaPolygonOption);
+        options.addOption(nationalAreaCountryISO);
+
         options.addOption(matrixOption); options.addOption(matrixNameOption); options.addOption(matrixTitleLangOption);
         options.addOption(matrixCalcAreaOption); options.addOption(matrixDefaultOption);
+
+        options.addOption(calcAreaPackage); options.addOption(calcAreaNamePropertyOption);
 
         options.addOption(csvDelimOption); options.addOption(csvNewLineOption);
     }
@@ -122,9 +138,76 @@ public class SymphonySetup {
             System.err.println(e.getMessage());
         }
     }
+
+    private boolean checkNationalAreaInvocation() throws ParseException {
+        return false;
+    }
+
+    private void importBaselineData() throws ParseException {
+        // 's' = Status option - print state of baseline
+        if (setupCmd.hasOption("s")) {
+            throw new ParseException("Status option is not yet implemented");
+        }
+
+        // 'n' = Import new baseline
+        // 'u' = Update existing baseline
+        if (setupCmd.hasOption("u") || setupCmd.hasOption("n")) {
+
+            try {
+                if (setupCmd.hasOption("u") && setupCmd.hasOption("n")) {
+                    throw new ParseException("Invalid invocation:\n" +
+                        "Either 'u' or 'n' options can be used, " +
+                        "but not both.");
+                }
+
+                if (setupCmd.hasOption("u")) {
+
+                    updateMode = setupCmd.getParsedOptionValue("u");
+
+                    currentBaselineVersion = db.getBaselineVersion(null);
+
+                    if (currentBaselineVersion == null) {
+                        throw new ParseException("No baseline version is present in this database.\n" +
+                            "Use the -n option to install compliant baseline data");
+                    }
+
+                    selectedBaselineVersion = getBaselineVersion();
+
+                    if (selectedBaselineVersion == null) {
+                        // Process was aborted by user interaction
+                        return;
+                    }
+                }
+
+                if (setupCmd.hasOption("n")) {
+                    // updateMode = UpdateMode.UPDATE;
+                    throw new ParseException("Install baseline version is not yet implemented");
+                }
+
+                if (setupCmd.hasOption("md")) {
+                    importMetadata();
+                }
+
+                if (setupCmd.hasOption("mx")) {
+                    importSensitivityMatrix();
+                }
+
+                if (setupCmd.hasOption("caF")) {
+                    importCalculationAreaPolygons();
+                }
+
+            } catch (Exception e) {
+                throw new ParseException(e.getMessage());
+            }
+        }
+    }
+
+    private void importNationalAreas() throws ParseException {
+        // import national areas
+    }
+
     // WIP
     private void execute() throws ParseException {
-
         db = getDb();
 
         // 'f' = Configuration file option passed (path)
@@ -137,62 +220,11 @@ public class SymphonySetup {
 
             throw new ParseException("File-based import is not yet implemented");
 
+        } else if (checkNationalAreaInvocation()) {
+            importNationalAreas();
         } else {
-
-        // 's' = Status option - print state of baseline
-            if (setupCmd.hasOption("s")) {
-                throw new ParseException("Status option is not yet implemented");
-            }
-
-        // 'n' = Import new baseline
-        // 'u' = Update existing baseline
-            if (setupCmd.hasOption("u") || setupCmd.hasOption("n")) {
-
-                try {
-                    if (setupCmd.hasOption("u") && setupCmd.hasOption("n")) {
-                        throw new ParseException("Invalid invocation:\n" +
-                            "Either 'u' or 'n' options can be used, " +
-                            "but not both.");
-                    }
-
-                    if (setupCmd.hasOption("u")) {
-
-                        updateMode = setupCmd.getParsedOptionValue("u");
-
-                        currentBaselineVersion = db.getBaselineVersion(null);
-
-                        if (currentBaselineVersion == null) {
-                            throw new ParseException("No baseline version is present in this database.\n" +
-                                "Use the -n option to install compliant baseline data");
-                        }
-
-                        selectedBaselineVersion = getBaselineVersion();
-
-                        if (selectedBaselineVersion == null) {
-                            // Process was aborted by user interaction
-                            return;
-                        }
-                    }
-
-                    if (setupCmd.hasOption("n")) {
-                        // updateMode = UpdateMode.UPDATE;
-                        throw new ParseException("Install baseline version is not yet implemented");
-                    }
-
-                    if (setupCmd.hasOption("md")) {
-                        importMetadata();
-                    }
-
-                    if (setupCmd.hasOption("mx")) {
-                        importSensitivityMatrix();
-                    }
-
-                } catch (Exception e) {
-                    throw new ParseException(e.getMessage());
-                }
-            }
+            importBaselineData();
         }
-
     }
 
     private BaselineVersion getBaselineVersion() throws SQLException {
@@ -242,7 +274,7 @@ public class SymphonySetup {
         return db.getBaselineVersion(bvId);
     }
 
-    private <T extends SettingsBase> List<T> processSettings(String opt, String langOpt, Class<T> settingsType)
+    private <T extends TextualSettingsBase> List<T> processSettings(String opt, String langOpt, Class<T> settingsType)
         throws Exception {
         List<T> settings = new ArrayList<>();
         String[] files = setupCmd.getOptionValues(opt);
@@ -252,7 +284,7 @@ public class SymphonySetup {
         for (int i = 0; i < files.length; ++i) {
             boolean hasLang = languageParams != null && languageParams.length > i;
 
-            T settingObj = SettingsBase.create(settingsType, selectedBaselineVersion, files[i],
+            T settingObj = TextualSettingsBase.create(settingsType, selectedBaselineVersion, files[i],
                                 hasLang ? languageParams[i] : null, currentDefaultLang, clear(), i);
 
             if (!settingObj.validate()) {
@@ -300,16 +332,21 @@ public class SymphonySetup {
                                      "with incomplete meta band coverage");
         }
 
-        String[] matrixNames, matrixAreas, matrixFiles,
-                 _matrixAreas = setupCmd.getOptionValues("mxA");
-        boolean[] matrixDefault;
+        options.getOption("mxA").setConverter(
+            new MatrixCalcAreaConverter(
+                getDb().getAvailableCalculationAreaIds(),
+                setupCmd.getOptionValues("caN"))
+            );
 
-        matrixAreas = _matrixAreas == null ? new String[0] : _matrixAreas;
+        String[] matrixNames, matrixFiles;
+        CalcAreaOption[] matrixAreas = setupCmd.getParsedOptionValues("mxA");
+
+        matrixAreas = matrixAreas == null ? new CalcAreaOption[0] : matrixAreas;
 
         matrixFiles = setupCmd.getOptionValues("mx");
         matrixNames = setupCmd.getOptionValues("mxN");
 
-        matrixDefault = new boolean[matrixFiles.length];
+        boolean[] matrixDefault = new boolean[matrixFiles.length];
 
         if (setupCmd.hasOption("mxD")) {
             Boolean[] _matrixDefault = setupCmd.getParsedOptionValues("mxD");
@@ -349,13 +386,11 @@ public class SymphonySetup {
             MatrixImportSettings mxSetting = matricesToImport.get(i);
             mxSetting.setMatrixName(matrixNames[i]);
             mxSetting.setAreaId(matrixAreas.length > i
-                                ? Integer.parseInt(matrixAreas[i])
+                                ? matrixAreas[i].getExistingId()
                                 : null);
 
             switch (mxSetting.format) {
-                case CSV -> {
-                    mx = new MatrixCsv(mxSetting, selectedBaseline, getCSVSettings());
-                }
+                case CSV -> mx = new MatrixCsv(mxSetting, selectedBaseline, getCSVSettings());
                 case ODS -> throw new ParseException("Sensitivity matrix as ODS not implemented");
                 case XLSX -> throw new ParseException("");
                 default -> throw new ParseException("Unknown sensitivity matrix file format");
@@ -363,6 +398,15 @@ public class SymphonySetup {
 
             db.updateMatrix(mx);
         }
+    }
+
+    private void importCalculationAreaPolygons() throws Exception {
+        String caPackage = setupCmd.getOptionValue("caF"),
+            caNameProperty = setupCmd.hasOption("caP") ?
+                             setupCmd.getOptionValue("caP") : "name";
+
+        CalcAreaImportSettings calcAreaSettings =
+            new CalcAreaImportSettings(selectedBaselineVersion, caPackage, clear());
     }
 
     private DbInterface getDb() {
