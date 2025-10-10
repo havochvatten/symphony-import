@@ -7,17 +7,19 @@ import java.io.IOException;
 
 import static se.havochvatten.symphony_setup.setup.model.Baseline.readTiff;
 
-public abstract class BandsBasedSettingsBase extends SettingsBase {
+public abstract class BandsBasedSettingsBase extends TextualSettingsBase {
     public final int ecosystemBandsCount;
     public final int pressureBandsCount;
 
     protected BandsBasedSettingsBase(
         BaselineVersion baselineVersion,
         String inputFilePath,
+        String inputFileOption,
+        String typeDescriptor,
         String language,
         String defaultLanguage, boolean clear, int order) throws Exception {
 
-        super(baselineVersion, inputFilePath, language, defaultLanguage, clear, order);
+        super(baselineVersion, inputFilePath, inputFileOption, typeDescriptor, language, defaultLanguage, clear, order);
         GridCoverage2D coverage;
 
         try {
