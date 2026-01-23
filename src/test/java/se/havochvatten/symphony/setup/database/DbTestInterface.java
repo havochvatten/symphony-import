@@ -19,14 +19,21 @@ public class DbTestInterface extends DbInterface {
         CliTestBase.class.getResource("/baseline/symphony-import-test-BaselineE.tiff").getPath();
     private static final String TEST_TIFF_P_PATH =
         CliTestBase.class.getResource("/baseline/symphony-import-test-BaselineP.tiff").getPath();
+    private static final String BASELINE_EXTENT_POLY_PATH ="/baseline/test-baseline-extent.json";
 
-    private static final String deleteBaselineVersionQuery =
+    private static final String deleteBaselineVersionStatement =
         "DELETE FROM %s.baselineversion bv WHERE bv.bver_id = ?";
-    private static final String deleteSensitivityMatricesQuery =
+    private static final String deleteSensitivityMatricesStatement =
         "DELETE FROM %s.sensitivitymatrix WHERE sensm_bver_id = ?";
+    private static final String deleteNationalAreasStatement =
+        "DELETE FROM %s.nationalarea WHERE true";
+    private static final String deleteCalculationAreasStatement =
+        "DELETE FROM %s.calculationarea WHERE true";
+    private static final String deleteCalculationAreaPolygonsStatement =
+        "DELETE FROM %s.capolygon WHERE true";
     private static final String getBaselineVersionIdSequenceQuery =
         "SELECT seq FROM (SELECT pg_get_serial_sequence('%s.baselineversion', 'bver_id') seq) res";
-    private static final String resetBaselineVersionIdSequenceQuery =
+    private static final String resetSequenceStatement =
         "ALTER SEQUENCE %s RESTART WITH %d";
 
     private static final ScalarHandler<String> stringHandler = new ScalarHandler<>();
@@ -97,7 +104,53 @@ public class DbTestInterface extends DbInterface {
         return testBvId;
     }
 
+    public int installDummyCalculationArea(int matrixId, boolean makeDefault) {
+        if (testBvId == null) {
+            throw new IllegalStateException("Fatal error: test baseline version not installed.");
+        }
 
+        if (testCalcAreaId == null) {
+            try (Connection conn = getConnection()) {
+                String insertAreaQuery = String.format("INSERT INTO %s.calculationarea " +
+                        "(carea_name, carea_default, carea_default_sensm_id, " +
+                        "carea_maxvalue, carea_atype_id) " +
+                        "VALUES ('TEST-CalculationArea', %s, ?, NULL, NULL)",
+                    schema, makeDefault ? "true" : "false");
+
+                String polygonDef = IOUtils.resourceToString(BASELINE_EXTENT_POLY_PATH, StandardCharsets.UTF_8);
+
+                PreparedStatement insertStmt =
+                    conn.prepareStatement(insertAreaQuery, RETURN_GENERATED_KEYS);
+
+                insertStmt.setObject(1, matrixId, Types.INTEGER);
+
+                insertStmt.executeUpdate();
+                ResultSet rs = insertStmt.getGeneratedKeys();
+
+                if (rs.next()) {
+                    testCalcAreaId = rs.getInt(1);
+                    insertStmt.close();
+
+                    String insertPolygonQuery =
+                        String.format("INSERT INTO %s.capolygon (cap_carea_id, cap_polygon) VALUES " +
+                            "(%d, '%s')", schema, testCalcAreaId, polygonDef);
+
+                    conn.createStatement().execute(insertPolygonQuery);
+
+                } else {
+                    insertStmt.close();
+                    throw new SQLException("Failure inserting dummy calculation area");
+                }
+
+            } catch (SQLException e) {
+                throw new RuntimeException("Database transaction error");
+            } catch (IOException ioe) {
+                throw new RuntimeException("Test resource access error");
+            }
+        }
+
+        return testCalcAreaId;
+    }
 
     public Double getFirstDoubleValueByQuery(String query) throws SQLException {
         Connection conn = getConnection();
@@ -118,12 +171,12 @@ public class DbTestInterface extends DbInterface {
             clearBandData(testBvId);
 
             qr.update(conn,
-                String.format(deleteSensitivityMatricesQuery, schema),
+                String.format(deleteSensitivityMatricesStatement, schema),
                 testBvId);
 
             // Delete dummy baseline
             qr.update(conn,
-                String.format(deleteBaselineVersionQuery, schema),
+                String.format(deleteBaselineVersionStatement, schema),
                 testBvId);
 
             // Get IDENTITY sequence literal
@@ -132,13 +185,35 @@ public class DbTestInterface extends DbInterface {
 
             if(!idSequence.isEmpty()) {
                 qr.execute(conn,
-                    String.format(resetBaselineVersionIdSequenceQuery, idSequence, testBvId));
+                    String.format(resetSequenceStatement, idSequence, testBvId));
             } else {
                 // Would be a weird error. Should throw?
             }
 
         } catch (SQLException e) {
             throw new RuntimeException("Error cleaning up baseline version for test", e);
+        }
+    }
+
+    public void cleanNationalAreas() {
+        try (Connection conn = getConnection()) {
+            // Delete national areas
+            qr.update(conn,
+                String.format(deleteNationalAreasStatement, schema));
+        } catch (SQLException e) {
+            throw new RuntimeException("Error purging national areas table", e);
+        }
+    }
+
+    public void cleanCalculationAreas() {
+        try (Connection conn = getConnection()) {
+            // Delete calculation areas
+            qr.update(conn,
+                String.format(deleteCalculationAreaPolygonsStatement, schema));
+            qr.update(conn,
+                String.format(deleteCalculationAreasStatement, schema));
+        } catch (SQLException e) {
+            throw new RuntimeException("Error purging calculation areas", e);
         }
     }
 }
