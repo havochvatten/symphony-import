@@ -23,7 +23,7 @@ public abstract class CliTestBase extends TestBase {
     protected final ByteArrayOutputStream displaceErr = new ByteArrayOutputStream();
 
     public CliTestBase() {
-       super();
+        super();
         requiredArgs = Arrays.asList("-db", database, "-dbU", dbUser, "-dbP", dbPassword);
         System.setOut(new PrintStream(displaceOut));
         System.setErr(new PrintStream(displaceErr));

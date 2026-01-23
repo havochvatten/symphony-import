@@ -38,7 +38,7 @@ public class MetaValue {
             schema, bvId, type.getDbVal(), language, field);
     }
 
-    public static ResultSetHandler<List<MetaValue>> handler;
+    public static final ResultSetHandler<List<MetaValue>> handler;
     static {
         RowProcessor rp = new BasicRowProcessor(
             new BeanProcessor(

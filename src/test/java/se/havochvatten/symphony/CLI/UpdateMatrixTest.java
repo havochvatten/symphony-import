@@ -11,7 +11,7 @@ import java.sql.SQLException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class UpdateMatrixTest extends CliTestBase {
+class UpdateMatrixTest extends CliTestBase {
 
     @Test
     void invokeCompleteImportWithMatrixOption() {
@@ -119,7 +119,6 @@ public class UpdateMatrixTest extends CliTestBase {
                     "Matrix import is not possible for baseline version with incomplete meta band coverage",
                     displaceErr.toString().trim()
                 );
-
             }, "y");
     }
 }

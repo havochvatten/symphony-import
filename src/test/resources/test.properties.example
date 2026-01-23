@@ -2,3 +2,4 @@
 db.user = postgres
 db.password = password
 db.database = symphony
+db.schema = symphony

@@ -11,6 +11,7 @@ import se.havochvatten.symphony_setup.setup.model.converter.BooleanYesNoConverte
 import se.havochvatten.symphony_setup.setup.model.converter.UpdateModeConverter;
 import se.havochvatten.symphony_setup.setup.model.option.CalcAreaOption;
 import se.havochvatten.symphony_setup.setup.process.*;
+import se.havochvatten.symphony_setup.setup.config.CalcAreaImportSettings.*;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -24,6 +25,8 @@ public class SymphonySetup {
     private BaselineVersion currentBaselineVersion;
 
     public static final Options options = new Options();
+
+    public static final Set<String> NationalAreaOptionAliases;
 
     static {
         Option newBaselineOption = new Option("n", "newBaseline", false, "description"),
@@ -49,13 +52,14 @@ public class SymphonySetup {
                matrixTitleLangOption    = new Option("mxL", "matrixLang", true, "description"),
                matrixDefaultOption = new Option("mxD", "matrixDefault", false, "description"),
 
-               nationalAreaTypeOption = new Option("na", "nationalArea", true, "description"),
-               nationalAreaPolygonOption = new Option("naP", "nationalAreaPolygon", true, "description"),
-               nationalAreaCountryISO = new  Option("naC", "nationalAreaCountryISO", true, "description"),
+               nationalAreaTypeOption       = new Option("na", "nationalArea", true, "description"),
+               nationalAreaPolygonOption    = new Option("naP", "nationalAreaPolygon", true, "description"),
+               nationalAreaCountryISO       = new  Option("naC", "nationalAreaCountryISO", true, "description"),
 
-               calcAreaNamePropertyOption = new Option("caP", "calcAreaNameProperty", true, "description"),
-               calcAreaPackage          = new Option("caF", "calcAreaFile", true, "description"),
-               calcAreaDefaultOption    = new Option("caD", "calcAreaDefault", true, "description"),
+               calcAreaNamePropertyOption   = new Option("caP", "calcAreaNameProperty", true, "description"),
+               calcAreaPackageOption        = new Option("caF", "calcAreaFile", true, "description"),
+               calcAreaDefaultOption        = new Option("caD", "calcAreaDefault", true, "description"),
+               calcAreaAllDefaultOption     = new Option("caDA", "calcAreaAllDefault", false, "description"),
 
                csvDelimOption    = new Option("csvS", "delimiter", true, "description"),
                csvNewLineOption  = new Option("csvN", "newline", true, "description");
@@ -63,7 +67,8 @@ public class SymphonySetup {
         Option[] multiValuedOptions = new Option[] {
             metadataOption, mdLanguageOption,
             matrixOption, matrixNameOption, matrixTitleLangOption, matrixCalcAreaOption, matrixDefaultOption,
-            nationalAreaTypeOption, nationalAreaPolygonOption, nationalAreaCountryISO
+            nationalAreaTypeOption, nationalAreaPolygonOption, nationalAreaCountryISO,
+            calcAreaDefaultOption
         };
 
         newBaselineOption.setOptionalArg(true);
@@ -75,6 +80,7 @@ public class SymphonySetup {
 
         for (Option option : multiValuedOptions) {
             option.setArgs(Option.UNLIMITED_VALUES);
+            option.setValueSeparator(',');
         }
 
         updateOption.setType(UpdateMode.class);
@@ -82,9 +88,6 @@ public class SymphonySetup {
 
         matrixDefaultOption.setType(Boolean.class);
         matrixDefaultOption.setConverter(new BooleanYesNoConverter("default matrix"));
-
-        calcAreaDefaultOption.setType(Boolean.class);
-        calcAreaDefaultOption.setConverter(new BooleanYesNoConverter("default calculation area"));
 
         OptionGroup baseInvocations = new OptionGroup();
         baseInvocations.addOption(newBaselineOption);
@@ -108,9 +111,15 @@ public class SymphonySetup {
         options.addOption(matrixOption); options.addOption(matrixNameOption); options.addOption(matrixTitleLangOption);
         options.addOption(matrixCalcAreaOption); options.addOption(matrixDefaultOption);
 
-        options.addOption(calcAreaPackage); options.addOption(calcAreaNamePropertyOption);
+        options.addOption(calcAreaPackageOption); options.addOption(calcAreaNamePropertyOption);
+        options.addOption(calcAreaDefaultOption); options.addOption(calcAreaAllDefaultOption);
 
         options.addOption(csvDelimOption); options.addOption(csvNewLineOption);
+
+        NationalAreaOptionAliases =
+            Set.of(nationalAreaTypeOption.getKey(),
+                   nationalAreaPolygonOption.getKey(),
+                   nationalAreaCountryISO.getKey());
     }
 
     public static final Set<String> SYM_LANG = Set.of("en", "fr", "sv");
@@ -140,7 +149,36 @@ public class SymphonySetup {
     }
 
     private boolean checkNationalAreaInvocation() throws ParseException {
+        if (NationalAreaOptionAliases.stream().anyMatch(setupCmd::hasOption)) {
+            boolean allRequired = NationalAreaOptionAliases.stream().allMatch(setupCmd::hasOption),
+                correctOptions = Arrays.stream(optionsExceptRequired()).allMatch(NationalAreaOptionAliases::contains);
+
+            if (allRequired && correctOptions) {
+                boolean includesBoundaryType =
+                    Arrays.asList(setupCmd.getOptionValues("nationalArea")).contains("BOUNDARY");
+
+                if (!includesBoundaryType) {
+                    throw new ParseException("National area import must include the BOUNDARY type");
+                }
+
+                return true;
+            }
+            if (!correctOptions) {
+                    throw new ParseException("Invalid invocation:\n" +
+                        "both baseline and national area import options were provided.");
+            }
+            // implying allRequired is false
+            throw new ParseException("Invalid invocation:\n" +
+                "some required national area import option was missing.\n " +
+                "(-na, -naP, -naC are all required for the national area import procedure).");
+        }
         return false;
+    }
+
+    private String[] optionsExceptRequired() {
+        return Arrays.stream(setupCmd.getOptions())
+            .filter(o -> !o.isRequired())
+            .map(Option::getKey).toArray(String[]::new);
     }
 
     private void importBaselineData() throws ParseException {
@@ -167,14 +205,15 @@ public class SymphonySetup {
                     currentBaselineVersion = db.getBaselineVersion(null);
 
                     if (currentBaselineVersion == null) {
-                        throw new ParseException("No baseline version is present in this database.\n" +
+                        throw new ParseException("No baseline version is present in the target database.\n" +
                             "Use the -n option to install compliant baseline data");
                     }
 
                     selectedBaselineVersion = getBaselineVersion();
 
-                    if (selectedBaselineVersion == null) {
-                        // Process was aborted by user interaction
+                    if (selectedBaselineVersion == null && setupCmd.hasOption("bv")) {
+                        System.out.println("Baseline version with id " + setupCmd.getOptionValue("bv") +
+                            " was not found in the target database. Aborting.");
                         return;
                     }
                 }
@@ -203,10 +242,50 @@ public class SymphonySetup {
     }
 
     private void importNationalAreas() throws ParseException {
-        // import national areas
+        String[] areaTypes = setupCmd.getOptionValues("nationalArea"),
+            areaPolygonPaths = setupCmd.getOptionValues("nationalAreaPolygon"),
+            areaCountryISO = setupCmd.getOptionValues("nationalAreaCountryISO");
+
+        // method will be called after checking that the options are set
+        // area types and polygons must be same length, country ISO must either be single argument or same as other two
+        if (areaTypes.length == areaPolygonPaths.length &&
+           (areaTypes.length == areaCountryISO.length || areaCountryISO.length == 1)) {
+            NationalAreaRowInsert[] areaInserts = new NationalAreaRowInsert[areaTypes.length];
+
+            for (int ti = 0; ti < areaTypes.length; ++ti) {
+                String iso = areaCountryISO.length == areaTypes.length ? areaCountryISO[ti] : areaCountryISO[0];
+                areaInserts[ti] = new NationalAreaRowInsert(areaTypes[ti], iso, areaPolygonPaths[ti]);
+            }
+
+            Scanner prompt = new Scanner(System.in);
+            String areaIdentifiers = String.join(", ", areaTypes);
+
+            System.out.println(String.format("Pending national areas import: %s", areaIdentifiers));
+            System.out.println(String.format("-------------------------------%s", "-".repeat(
+                areaIdentifiers.length())));
+
+            System.out.println("\nProceed with the import? ('y' to confirm)");
+            System.out.print("> ");
+
+            if (!prompt.nextLine().trim().equalsIgnoreCase("y")) {
+                System.out.println("National areas import aborted interactively.");
+                return;
+            }
+
+            try {
+                db.updateNationalAreas(areaInserts);
+            } catch (SQLException e) {
+                throw new ParseException(e.getMessage());
+            }
+        } else {
+            if (areaTypes.length != areaPolygonPaths.length) {
+                throw new ParseException("National area polygon path arguments must match number of specified area types.");
+            } else {
+                throw new ParseException("Area country ISO arguments must match number of specified area types, or be single.");
+            }
+        }
     }
 
-    // WIP
     private void execute() throws ParseException {
         db = getDb();
 
@@ -400,13 +479,24 @@ public class SymphonySetup {
         }
     }
 
-    private void importCalculationAreaPolygons() throws Exception {
-        String caPackage = setupCmd.getOptionValue("caF"),
-            caNameProperty = setupCmd.hasOption("caP") ?
-                             setupCmd.getOptionValue("caP") : "name";
+    private void importCalculationAreaPolygons() throws ParseException, SQLException {
+        String  caNameProperty = setupCmd.hasOption("caP") ?
+                                 setupCmd.getOptionValue("caP") : "name";
 
-        CalcAreaImportSettings calcAreaSettings =
-            new CalcAreaImportSettings(selectedBaselineVersion, caPackage, clear());
+        CalcAreaProcedure calcAreaProcedure =
+            new CalcAreaProcedure(
+                new CalcAreaImportSettings(
+                    selectedBaselineVersion,
+                    setupCmd.getOptionValue("caF"),
+                    caNameProperty,
+                    clear(),
+                    setupCmd.hasOption("caDA"),
+                    setupCmd.getOptionValues("caD"))
+            );
+
+        if (calcAreaProcedure.confirmImport()) {
+            db.importCalculationAreas(calcAreaProcedure.areas);
+        }
     }
 
     private DbInterface getDb() {

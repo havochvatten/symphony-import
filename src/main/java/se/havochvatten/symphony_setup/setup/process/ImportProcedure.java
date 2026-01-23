@@ -4,6 +4,7 @@ import org.apache.commons.cli.ParseException;
 import se.havochvatten.symphony_setup.setup.config.SettingsBase;
 import se.havochvatten.symphony_setup.setup.model.ProcedureBase;
 
+import javax.annotation.Nullable;
 import java.util.Scanner;
 
 public abstract class ImportProcedure<T extends SettingsBase> extends ProcedureBase {
@@ -33,7 +34,7 @@ public abstract class ImportProcedure<T extends SettingsBase> extends ProcedureB
         }
     }
 
-    protected Scanner pendingImportMessage(String notice) {
+    protected Scanner pendingImportMessage(@Nullable String notice) {
         Scanner prompt = new Scanner(System.in);
 
         System.out.println(String.format("Pending %s import: \"%s\"", settings.getTypeDescriptor(), getImportItemName()));
