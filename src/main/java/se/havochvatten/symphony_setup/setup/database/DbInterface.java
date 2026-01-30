@@ -2,18 +2,28 @@ package se.havochvatten.symphony_setup.setup.database;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.dbutils.handlers.ArrayHandler;
 import org.apache.commons.dbutils.handlers.ColumnListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
+import org.geotools.geojson.geom.GeometryJSON;
+import se.havochvatten.symphony_setup.setup.config.CalcAreaImportSettings;
 import se.havochvatten.symphony_setup.setup.model.*;
 import se.havochvatten.symphony_setup.setup.process.MatrixBase;
 import se.havochvatten.symphony_setup.setup.process.MetadataBase;
+import se.havochvatten.symphony_setup.setup.process.NationalAreaRowInsert;
 
+import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
+
+import static se.havochvatten.symphony_setup.setup.process.NationalAreaRowInsert.TYPE_BOUNDARY;
 
 public class DbInterface {
 
@@ -29,7 +39,9 @@ public class DbInterface {
     protected final QueryRunner qr = new QueryRunner();
 
     private Connection activeConnection = null;
-    protected static final ScalarHandler<Integer> idHandler = new ScalarHandler<>();
+    public static final ScalarHandler<Integer> idHandler = new ScalarHandler<>();
+
+    static GeometryJSON json = new GeometryJSON();
 
     protected Connection getConnection() throws SQLException {
         if (activeConnection == null || activeConnection.isClosed()) {
@@ -62,7 +74,7 @@ public class DbInterface {
      * @return BaselineVersion
      * @throws SQLException Inner QueryRunner.query(...) invocation may throw
      */
-    public BaselineVersion getBaselineVersion(Integer baselineVersionId) throws SQLException {
+    public BaselineVersion getBaselineVersion(@Nullable Integer baselineVersionId) throws SQLException {
 
         Connection conn = getConnection();
 
@@ -85,6 +97,14 @@ public class DbInterface {
 
         ColumnListHandler<Integer> versionIdsHandler = new ColumnListHandler<>(1);
         return qr.query(conn, BaselineVersion.selectAvailableVersions(this.schema), versionIdsHandler)
+                        .stream().mapToInt(Integer::valueOf).toArray();
+    }
+
+    public int[] getAvailableCalculationAreaIds() throws SQLException {
+        Connection conn = getConnection();
+
+        ColumnListHandler<Integer> areaIdsHandler = new ColumnListHandler<>(1);
+        return qr.query(conn, String.format("SELECT carea_id FROM %s.calculationarea", this.schema), areaIdsHandler)
                         .stream().mapToInt(Integer::valueOf).toArray();
     }
 
@@ -119,8 +139,8 @@ public class DbInterface {
     protected void clearBandData(int bvId) throws SQLException {
         Connection conn = getConnection();
         for (SymphonyCategory cat : SymphonyCategory.values()) {
-            qr.update(getConnection(), MetaValue.deleteQuery(schema, bvId, cat));
-            qr.update(getConnection(), SymphonyBand.deleteQuery(schema, bvId, cat));
+            qr.update(conn, MetaValue.deleteQuery(schema, bvId, cat));
+            qr.update(conn, SymphonyBand.deleteQuery(schema, bvId, cat));
         }
     }
 
@@ -185,21 +205,77 @@ public class DbInterface {
         }
     }
 
-    static String titlesQuery(int bverId) {
-        return  String.format("SELECT mb.metaband_id FROM symphony.meta_bands mb " +
-                                "JOIN symphony.baselineversion bl ON " +
-                                "mb.metaband_bver_id = bl.bver_id " +
-                                "JOIN symphony.meta_values m " +
-                                "ON  m.metaval_band_id = mb.metaband_id " +
-                                "AND m.metaval_language = ? " +
-                                "AND m.metaval_field = 'title' " +
-                                "WHERE " +
-                                "mb.metaband_bver_id = %d " +
-                                "AND mb.metaband_category = ? " +
-                                "AND m.metaval_value = ?", bverId);
+    public void updateNationalAreas(NationalAreaRowInsert[] areaInserts) throws SQLException {
+        Connection conn = getConnection();
+
+        String[] areaCountryISOs = Arrays.stream(areaInserts).map(NationalAreaRowInsert::getCountryISO).toArray(String[]::new);
+
+        for  (NationalAreaRowInsert areaInsert : areaInserts) {
+            this.qr.update(this.activeConnection, NationalAreaRowInsert.cleanQuery(schema), areaInsert.getCountryISO(), areaInsert.getNationalAreaType());
+            this.qr.update(this.activeConnection, NationalAreaRowInsert.insertQuery(schema),
+                areaInsert.getCountryISO(), areaInsert.getPolygon(), areaInsert.getNationalAreaType());
+        }
+
+        // sanitize table
+        for (String iso :areaCountryISOs) {
+            this.qr.update(conn,
+                String.format("DELETE FROM %s.nationalarea WHERE narea_type = ?", schema),
+                NationalAreaRowInsert.TYPE_TYPES);
+
+            String types = jsonStringArray(
+                Arrays.stream(this.qr.query(conn,
+                    String.format("SELECT narea_type FROM %s.nationalarea WHERE narea_countryiso3 = ? AND NOT narea_type = ?", schema),
+                    new ArrayHandler(), iso, TYPE_BOUNDARY))
+                        .map(Object::toString).toArray(String[]::new));
+
+            this.qr.update(conn,
+                String.format("INSERT INTO %s.nationalarea (narea_countryiso3, narea_type, narea_types) VALUES (?, ?, ?)", schema),
+                iso, NationalAreaRowInsert.TYPE_TYPES, types);
+        }
+
+        System.out.println("National areas import finished.");
+    }
+
+    static String titlesQuery(String schema, int bverId) {
+        return String.format(
+            "SELECT mb.metaband_id FROM %1$s.meta_bands mb " +
+                "JOIN %1$s.baselineversion bl ON " +
+                    "mb.metaband_bver_id = bl.bver_id " +
+                "JOIN %1$s.meta_values m ON " +
+                    "m.metaval_band_id = mb.metaband_id " +
+                    "AND m.metaval_language = ? " +
+                    "AND m.metaval_field = 'title' " +
+            "WHERE " +
+                "mb.metaband_bver_id = %2$d " +
+                "AND mb.metaband_category = ? " +
+                "AND m.metaval_value = ?", schema, bverId);
     }
 
     public Integer getBandIdByCategoryTitleAndBaseline(int bverId, SymphonyCategory cat, String title) throws SQLException {
-        return qr.query(getConnection(), titlesQuery(bverId), idHandler, cat.getDbVal(), title);
+        return qr.query(getConnection(), titlesQuery(schema, bverId), idHandler, cat.getDbVal(), title);
+    }
+
+    public static String jsonStringArray(String[] array) {
+        return Arrays.stream(array)
+            .map(s -> "\"" + s.replace("\"", "\\\"") + "\"")
+            .collect(Collectors.joining(",", "[", "]"));
+    }
+
+    public <T> T query(String query, ResultSetHandler<T> handler, String ...args) throws SQLException {
+        return qr.query(getConnection(), query, handler, (Object[]) args);
+    }
+
+    public void importCalculationAreas(CalculationArea[] calculationAreas) throws SQLException, ParseException {
+        for (CalculationArea ca : calculationAreas) {
+            Integer matrixId = this.query(
+                String.format("SELECT sensm_id FROM %s.sensitivitymatrix WHERE sensm_name = ?", schema),
+                idHandler, ca.getMatrixName());
+            if (matrixId == null) {
+                throw new ParseException(String.format("No sensitivity matrix with name %s found", ca.getMatrixName()));
+            }
+            qr.insert(getConnection(),
+                CalculationArea.calcAreaInsert(schema, json.toString(ca.getPolygon())), idHandler,
+                ca.getAreaName(), matrixId, ca.isDefault());
+        }
     }
 }

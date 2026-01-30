@@ -6,6 +6,7 @@ import se.havochvatten.symphony.setup.database.DbTestInterface;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Properties;
 
@@ -30,6 +31,11 @@ public abstract class TestBase {
     protected static String csvMatrixFileSV = RESOURCES_PATH + "import/matrix-wellformed-sv.csv";
     protected static String csvMatrixFileEN = RESOURCES_PATH + "import/matrix-wellformed-en.csv";
     protected static String csvMatrixCompleteName   = "Complete sensitivity matrix TEST";
+
+    protected static String nationalAreaBoundary = RESOURCES_PATH + "import/national-area/test-national-boundary.json";
+    protected static String nationalAreaSelectable =  RESOURCES_PATH + "import/national-area/test-national-selectable.json";
+
+    protected static String calculationAreaPackage = RESOURCES_PATH + "import/calcarea-package.gpkg";
 
     protected String database = "symphony";
     protected final String dbSchema;
@@ -113,6 +119,7 @@ public abstract class TestBase {
     @AfterEach
     public void tearDown() {
         getDbInterface().cleanTestBaselineVersion();
+        getDbInterface().cleanCalculationAreas();
     }
 }
 

@@ -56,7 +56,7 @@ public class MatrixCsv extends MatrixBase {
 
             if(!validateMatrixBands(SymphonyCategory.PRESSURE, pressureKeys)) {
                 return false;
-            };
+            }
         } catch (IOException e) {
             validationErrors.add("Error reading input matrix file: " + this.settings.inputFilePath);
             return false;

@@ -17,7 +17,7 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <version.apache.poi>5.4.1</version.apache.poi>
-    <version.commons-cli>1.10.0-SNAPSHOT</version.commons-cli>
+    <version.commons-cli>1.11.0</version.commons-cli>
     <version.commons-dbcp2>2.12.0</version.commons-dbcp2>
     <version.commons-dbutils>1.8.1</version.commons-dbutils>
     <version.commons-csv>1.11.0</version.commons-csv>
@@ -77,6 +77,11 @@
     <dependency>
       <groupId>org.geotools</groupId>
       <artifactId>gt-epsg-hsql</artifactId>
+      <version>${version.geotools}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.geotools</groupId>
+      <artifactId>gt-geojson</artifactId>
       <version>${version.geotools}</version>
     </dependency>
     <dependency>
