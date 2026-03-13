@@ -68,7 +68,7 @@ class UpdateMetadataTest extends CliTestBase {
     }
 
     @Test
-    void invokeWithBaselineVersionAndImportPartialCSV() throws Exception {
+    void invokeWithBaselineVersionAndImportPartialCSV() {
         // cli arguments
         // -u   [update]
         // -md  [metadata import] ( path to import )            // repeatable argument
@@ -100,7 +100,7 @@ class UpdateMetadataTest extends CliTestBase {
     }
 
     @Test
-    void invokeWithBaselineVersionAndImportPartialExcel() throws Exception {
+    void invokeWithBaselineVersionAndImportPartialExcel() {
         // cli arguments
         // -u   [update]
         // -md  [metadata import]   ( path )
@@ -113,7 +113,6 @@ class UpdateMetadataTest extends CliTestBase {
         queueInteraction(() -> {
             new SymphonySetup(args);
 
-            assertEquals(displaceOut.toString().substring(0, 24), "Pending metadata import:");
             assertTrue(displaceOut.toString().startsWith(
                 "Pending metadata import:")
             );

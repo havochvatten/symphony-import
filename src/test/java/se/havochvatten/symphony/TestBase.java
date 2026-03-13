@@ -6,7 +6,6 @@ import se.havochvatten.symphony.setup.database.DbTestInterface;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Properties;
 
@@ -19,7 +18,7 @@ public abstract class TestBase {
     protected static String csvMetaFileCompleteSV   = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.csv";
     protected static String csvMetaFileCompleteEN   = RESOURCES_PATH + "import/metadata-wellformed-complete-en.csv";
 
-    protected static String excelMetaFilePartial        = RESOURCES_PATH + "import/metadata-wellformed-partial.xlsx";
+    protected static String excelMetaFilePartial        = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.xlsx";
     protected static String excelMetaFileCompleteSV     = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.xlsx";
 
     protected static String csvMetaFileFaulty1      = RESOURCES_PATH + "import/metadata-faulty_bandnumber.csv";
