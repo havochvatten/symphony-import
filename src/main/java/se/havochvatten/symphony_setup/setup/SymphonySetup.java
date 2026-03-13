@@ -2,6 +2,7 @@ package se.havochvatten.symphony_setup.setup;
 
 import org.apache.commons.cli.*;
 import org.apache.commons.lang3.ArrayUtils;
+import org.geotools.gce.geotiff.GeoTiffFormat;
 import se.havochvatten.symphony_setup.setup.config.*;
 import se.havochvatten.symphony_setup.setup.database.DbInterface;
 import se.havochvatten.symphony_setup.setup.model.Baseline;
@@ -13,9 +14,18 @@ import se.havochvatten.symphony_setup.setup.model.option.CalcAreaOption;
 import se.havochvatten.symphony_setup.setup.process.*;
 import se.havochvatten.symphony_setup.setup.config.CalcAreaImportSettings.*;
 
+import javax.annotation.Nullable;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.geotools.coverage.grid.io.GridFormatFinder.findFormat;
 
 public class SymphonySetup {
 
@@ -27,6 +37,7 @@ public class SymphonySetup {
     public static final Options options = new Options();
 
     public static final Set<String> NationalAreaOptionAliases;
+    public static final Set<String> RequiredNewBaselineOptionAliases;
 
     static {
         Option newBaselineOption = new Option("n", "newBaseline", false, "description"),
@@ -62,7 +73,14 @@ public class SymphonySetup {
                calcAreaAllDefaultOption     = new Option("caDA", "calcAreaAllDefault", false, "description"),
 
                csvDelimOption    = new Option("csvS", "delimiter", true, "description"),
-               csvNewLineOption  = new Option("csvN", "newline", true, "description");
+               csvNewLineOption  = new Option("csvN", "newline", true, "description"),
+
+               newBaselineLocale = new Option("bvL", "baselineVersionLocale", true, "description"),
+               newBaselineName  = new Option("bvN", "baselineVersionName", true, "description"),
+               newBaselineDesc  = new Option("bvD", "baselineVersionDesc", true, "description"),
+               newBaselineValidDate = new Option("bvV", "baselineVersionDate", true, "description"),
+               newBaselineEcoPath = new Option("bvpE", "baselineEcoPath", true, "description"),
+               newBaselinePressurePath = new Option("bvpP", "baselinePressurePath", true, "description");
 
         Option[] multiValuedOptions = new Option[] {
             metadataOption, mdLanguageOption,
@@ -116,10 +134,16 @@ public class SymphonySetup {
 
         options.addOption(csvDelimOption); options.addOption(csvNewLineOption);
 
+        options.addOption(newBaselineName); options.addOption(newBaselineDesc); options.addOption(newBaselineValidDate);
+        options.addOption(newBaselineLocale); options.addOption(newBaselineEcoPath); options.addOption(newBaselinePressurePath);
+
         NationalAreaOptionAliases =
             Set.of(nationalAreaTypeOption.getKey(),
                    nationalAreaPolygonOption.getKey(),
                    nationalAreaCountryISO.getKey());
+
+        RequiredNewBaselineOptionAliases =
+            Set.of(newBaselineName.getKey(), newBaselineEcoPath.getKey(), newBaselinePressurePath.getKey());
     }
 
     public static final Set<String> SYM_LANG = Set.of("en", "fr", "sv");
@@ -145,6 +169,30 @@ public class SymphonySetup {
             execute();
         } catch (ParseException e) {
             System.err.println(e.getMessage());
+        }
+    }
+
+    private boolean checkNewBaselineInvocation() throws ParseException, SQLException {
+        if (RequiredNewBaselineOptionAliases.stream().allMatch(setupCmd::hasOption)) {
+            String baselineVersionName =  setupCmd.getOptionValue("bvN");
+            Integer bvId = db.baselineVersionIdByName(baselineVersionName);
+            Integer optBvId = Util.tryParseInt(setupCmd.getOptionValue("bv"));
+            if (optBvId != null) {
+                throw new ParseException(String.format(
+                    "Error: ambiguos invocation.%n-n and -bv options cannot be issued at the same time.")
+                );
+            }
+
+            if (bvId == null) {
+                return true;
+            } else {
+                throw new ParseException(
+                    String.format("Error: The provided baseline version name '%s' already exists.%nIts id in the database is: %d",
+                        baselineVersionName, bvId));
+            }
+
+        } else {
+            throw new ParseException("");
         }
     }
 
@@ -219,8 +267,28 @@ public class SymphonySetup {
                 }
 
                 if (setupCmd.hasOption("n")) {
-                    // updateMode = UpdateMode.UPDATE;
-                    throw new ParseException("Install baseline version is not yet implemented");
+                    updateMode = UpdateMode.UPDATE;
+
+                    Scanner prompt = new Scanner(System.in);
+                    String pendingNewBaselineName = setupCmd.getOptionValue("bvN");
+
+                    if (checkNewBaselineInvocation()) {
+                        System.out.println(String.format("Pending baseline version installation: %s", pendingNewBaselineName));
+                        System.out.println(String.format("---------------------------------------%s", "-".repeat(
+                            pendingNewBaselineName.length())));
+
+                        System.out.println("\nProceed with the import? ('y' to confirm)");
+                        System.out.print("> ");
+
+                        if (!prompt.nextLine().trim().equalsIgnoreCase("y")) {
+                            System.out.println("Baseline version installation aborted interactively.");
+                            return;
+                        }
+
+                        selectedBaselineVersion = db.getBaselineVersion(importNewBaselineVersion());
+                    } else {
+                        throw new ParseException("...");
+                    }
                 }
 
                 if (setupCmd.hasOption("md")) {
@@ -499,6 +567,57 @@ public class SymphonySetup {
         }
     }
 
+    private int importNewBaselineVersion() throws ParseException, SQLException {
+        String bvDescription = setupCmd.hasOption("bvD") ? setupCmd.getOptionValue("bvD") : "",
+            bvLocale = setupCmd.hasOption("bvL") ? setupCmd.getOptionValue("bvL") : "en";
+        LocalDate bvValidDate = null;
+
+        if (setupCmd.hasOption("bvV")) {
+            String bvDateOption = setupCmd.getOptionValue("bvV");
+            try {
+                bvValidDate = LocalDate.parse(bvDateOption);
+            } catch (DateTimeParseException e) {
+                throw new ParseException(
+                    String.format("Date provided in an invalid format: %s\nTry again using ISO 8601 (YYYY-MM-DD) for the input.", bvDateOption));
+            }
+        } else {
+            bvValidDate = LocalDate.now();
+        }
+
+        for (Option rasterOption: new Option[]{ options.getOption("bvpE"), options.getOption("bvpP") }) {
+            String rasterFilePathValue = setupCmd.getOptionValue(rasterOption);
+            Path rasterFilePath = Path.of(rasterFilePathValue).normalize();
+
+            if (!Files.exists(rasterFilePath)) {
+                throw new ParseException(String.format("Raster file (%s) not found", rasterFilePathValue));
+            }
+
+            if (!Files.isReadable(rasterFilePath)) {
+                throw new ParseException(String.format("Raster file (%s) not readable", rasterFilePathValue));
+            }
+
+            if (!(findFormat(new File(rasterFilePathValue)) instanceof GeoTiffFormat)) {
+                throw new ParseException(String.format("File (%s) is not a valid GeoTiff raster", rasterFilePathValue));
+            }
+        }
+
+        if (!ISO_LANG.contains(bvLocale)) {
+            throw new ParseException(
+                String.format("The provided baseline locale ('%s'), is not a valid ISO 639-1 language code.", bvLocale));
+        }
+
+        BaselineVersion baselineVersionToInstall = new BaselineVersion(
+            setupCmd.getOptionValue("bvN"),
+            bvDescription,
+            bvValidDate,
+            setupCmd.getOptionValue("bvpE"),
+            setupCmd.getOptionValue("bvpP"),
+            bvLocale
+        );
+
+        return db.insertBaselineVersion(baselineVersionToInstall);
+    }
+
     private DbInterface getDb() {
         return db = new DbInterface(
             setupCmd.getOptionValue("db"), setupCmd.getOptionValue("dbU"), setupCmd.getOptionValue("dbP"),
@@ -514,6 +633,7 @@ public class SymphonySetup {
             }
         }
 
+        @Nullable
         public static Boolean parseNullableBoolean(String str) {
             if (str == null) return null;
 

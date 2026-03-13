@@ -6,8 +6,8 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.ArrayHandler;
 import org.apache.commons.dbutils.handlers.ColumnListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
+import org.apache.commons.dbutils.handlers.columns.IntegerColumnHandler;
 import org.geotools.geojson.geom.GeometryJSON;
-import se.havochvatten.symphony_setup.setup.config.CalcAreaImportSettings;
 import se.havochvatten.symphony_setup.setup.model.*;
 import se.havochvatten.symphony_setup.setup.process.MatrixBase;
 import se.havochvatten.symphony_setup.setup.process.MetadataBase;
@@ -90,6 +90,13 @@ public class DbInterface {
         }
 
         return baseLineSet.get(0);
+    }
+
+    public Integer baselineVersionIdByName(String bvName) throws SQLException {
+        Integer bvId = qr.query(getConnection(),
+            String.format("SELECT bver_id from %s.baselineversion WHERE bver_name = '%s'", this.schema, bvName),
+            idHandler);
+        return bvId;
     }
 
     public int[] getAvailableBaselineVersionIds() throws SQLException {
@@ -234,6 +241,13 @@ public class DbInterface {
         }
 
         System.out.println("National areas import finished.");
+    }
+
+    public int insertBaselineVersion(BaselineVersion baselineVersion) throws SQLException {
+        Connection conn = getConnection();
+        return qr.insert(conn, BaselineVersion.preBaselineVersionInsert(schema), idHandler,
+            baselineVersion.getName(),
+            baselineVersion.getDescription(), baselineVersion.getValidFrom(), baselineVersion.getEcoFilePath(), baselineVersion.getPressureFilePath(), baselineVersion.getLocale());
     }
 
     static String titlesQuery(String schema, int bverId) {

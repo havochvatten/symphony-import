@@ -13,6 +13,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class UpdateMatrixTest extends CliTestBase {
 
+    public UpdateMatrixTest() {
+        super(true);
+    }
+
     @Test
     void invokeCompleteImportWithMatrixOption() {
         // cli arguments
@@ -80,15 +84,7 @@ class UpdateMatrixTest extends CliTestBase {
                 Baseline bl = getDbInterface().getBaseline(bvId);
 
                 try {
-
-                    for (SymphonyBand ecoBand : bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.values()) {
-                        for (SymphonyBand prBand : bl.getComponents().get(SymphonyCategory.PRESSURE).bands.values()) {
-                            assertEquals(
-                                dbInterface.readSensitivityValue("sv", ecoBand.getTitle("sv"), prBand.getTitle("sv"), csvMatrixCompleteName),
-                                dbInterface.readSensitivityValue("en", ecoBand.getTitle("en"), prBand.getTitle("en"), csvMatrixCompleteName)
-                            );
-                        }
-                    }
+                    assertBilingualMatrixBaseline(bl);
                 } catch (SQLException sqlx) {
                     System.err.println(sqlx.getMessage());
                     fail("SQL error occurred: " + sqlx.getMessage());

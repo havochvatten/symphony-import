@@ -2,7 +2,6 @@ package se.havochvatten.symphony.setup.database;
 
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.io.IOUtils;
-import se.havochvatten.symphony.CLI.CliTestBase;
 import se.havochvatten.symphony_setup.setup.database.DbInterface;
 
 import java.io.IOException;
@@ -13,12 +12,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
+import static se.havochvatten.symphony.TestBase.TEST_TIFF_E_PATH;
+import static se.havochvatten.symphony.TestBase.TEST_TIFF_P_PATH;
 
 public class DbTestInterface extends DbInterface {
-    private static final String TEST_TIFF_E_PATH =
-        CliTestBase.class.getResource("/baseline/symphony-import-test-BaselineE.tiff").getPath();
-    private static final String TEST_TIFF_P_PATH =
-        CliTestBase.class.getResource("/baseline/symphony-import-test-BaselineP.tiff").getPath();
     private static final String BASELINE_EXTENT_POLY_PATH ="/baseline/test-baseline-extent.json";
 
     private static final String deleteBaselineVersionStatement =
@@ -165,27 +162,27 @@ public class DbTestInterface extends DbInterface {
         }
     }
 
-    public void cleanTestBaselineVersion() {
+    public void cleanBaselineVersion(int bvId) {
         try (Connection conn = getConnection()) {
 
-            clearBandData(testBvId);
+            clearBandData(bvId);
 
             qr.update(conn,
-                String.format(deleteSensitivityMatricesStatement, schema),
-                testBvId);
+                    String.format(deleteSensitivityMatricesStatement, schema),
+                    bvId);
 
             // Delete dummy baseline
             qr.update(conn,
-                String.format(deleteBaselineVersionStatement, schema),
-                testBvId);
+                    String.format(deleteBaselineVersionStatement, schema),
+                    bvId);
 
             // Get IDENTITY sequence literal
             String idSequence = qr.query(conn,
-                String.format(getBaselineVersionIdSequenceQuery, schema), stringHandler);
+                    String.format(getBaselineVersionIdSequenceQuery, schema), stringHandler);
 
             if(!idSequence.isEmpty()) {
                 qr.execute(conn,
-                    String.format(resetSequenceStatement, idSequence, testBvId));
+                        String.format(resetSequenceStatement, idSequence, bvId));
             } else {
                 // Would be a weird error. Should throw?
             }
@@ -193,6 +190,10 @@ public class DbTestInterface extends DbInterface {
         } catch (SQLException e) {
             throw new RuntimeException("Error cleaning up baseline version for test", e);
         }
+    }
+
+    public void cleanTestBaselineVersion() {
+        cleanBaselineVersion(testBvId);
     }
 
     public void cleanNationalAreas() {

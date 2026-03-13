@@ -9,6 +9,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class UpdateMetadataTest extends CliTestBase {
 
+    public UpdateMetadataTest() {
+        super(true);
+    }
+
     @Test
     void invokeWithoutBaselineVersionAndAbort() {
         // cli arguments
