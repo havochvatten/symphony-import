@@ -13,6 +13,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.imageName>symphony-setup-tool</project.imageName>
     <java.version>17</java.version>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
@@ -26,6 +27,8 @@
     <version.system-lambda>1.2.1</version.system-lambda>
     <version.log4j>2.24.1</version.log4j>
     <version.postgresql-jdbc-driver>42.7.7</version.postgresql-jdbc-driver>
+    <version.graalvm-buildtools>0.11.4</version.graalvm-buildtools>
+    <entryPoint>se.havochvatten.symphony_setup.SymphonySetupEntry</entryPoint>
   </properties>
 
   <dependencies>
@@ -101,7 +104,6 @@
       <artifactId>log4j-core</artifactId>
       <version>${version.log4j}</version>
     </dependency>
-
   </dependencies>
   <build>
     <plugins>
@@ -113,21 +115,25 @@
           </descriptorRefs>
           <archive>
             <manifest>
-              <mainClass>se.havochvatten.symphony_setup.SymphonySetupEntry</mainClass>
+              <mainClass>${entryPoint}</mainClass>
               <addClasspath>true</addClasspath>
             </manifest>
           </archive>
           <appendAssemblyId>false</appendAssemblyId>
         </configuration>
-        <executions>
-          <execution>
-            <id>assemble</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.graalvm.buildtools</groupId>
+        <artifactId>native-maven-plugin</artifactId>
+        <version>${version.graalvm-buildtools}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <imageName>${project.imageName}</imageName>
+          <buildArgs>
+            <buildArg>--no-fallback</buildArg>
+            <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+          </buildArgs>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-clean-plugin</artifactId>
@@ -149,4 +155,86 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>package-jar</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>assemble</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>native-win</id>
+      <properties>
+        <native.classifier>windows-x64</native.classifier>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <configuration>
+              <buildArgs combine.children="append">
+                <buildArg>--target=windows-x64</buildArg>
+                <buildArg>-H:+StaticExecutableWithDynamicLibC</buildArg>
+              </buildArgs>
+            </configuration>
+            <executions>
+              <execution>
+                <id>build-native-win</id>
+                <goals>
+                  <goal>compile-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>native-linux</id>
+      <properties>
+        <native.classifier>linux-x64</native.classifier>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <configuration>
+              <buildArgs combine.children="append">
+                <buildArg>--target=linux-x64</buildArg>
+                <buildArg>-H:+StaticExecutableWithDynamicLibC</buildArg>
+              </buildArgs>
+            </configuration>
+            <executions>
+              <execution>
+                <id>build-native-linux</id>
+                <goals>
+                  <goal>compile-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
