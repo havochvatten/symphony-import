@@ -105,7 +105,7 @@ public class SymphonySetup {
                    "National area country code."),
 
                calcAreaPackageOption        = new Option("caF", "calcAreaFile", true,
-                    "Path to GeoPackage file with calculation areas. See documentation for expected format and required internal attributes."),
+                    "Path to GeoPackage file comprising calculation area polygons. See documentation for expected format and required internal attributes."),
                calcAreaNamePropertyOption   = new Option("caP", "calcAreaNameProperty", true,
                    "\"Name property\" to use for calculation area name ('carea_name' column) value in the GeoPackage file specified by '-caF'.\n" +
                        "The default is 'name'."),
