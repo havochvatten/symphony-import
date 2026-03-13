@@ -31,10 +31,10 @@ class UpdateMetadataTest extends CliTestBase {
             String output = displaceOut.toString();
 
             assertTrue(output.startsWith(
-                "Update procedure invoked without specifying baseline version id."
+                    "Tool invoked without specifying baseline version id."
             ));
             assertTrue(output.endsWith(
-                "Update aborted interactively." + NEW_LINE
+                    "Task aborted interactively." + NEW_LINE
             ));
         }, "a");
     }
@@ -62,8 +62,8 @@ class UpdateMetadataTest extends CliTestBase {
                 Baseline bl = getDbInterface().getBaseline(bvId);
 
                 // assert import was aborted: no band information was added (expect 0)
-                assertEquals(0, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.keySet().size());
-                assertEquals(0, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.keySet().size());
+                assertEquals(0, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.size());
+                assertEquals(0, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.size());
 
             } catch (Exception e) {
                 fail();
@@ -92,8 +92,8 @@ class UpdateMetadataTest extends CliTestBase {
             try {
                 Baseline bl = getDbInterface().getBaseline(bvId);
 
-                assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.keySet().size());
-                assertEquals(3, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.keySet().size());
+                assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.size());
+                assertEquals(3, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.size());
 
                 assertTrue(bl.isMetaIncomplete());
 
@@ -125,8 +125,8 @@ class UpdateMetadataTest extends CliTestBase {
                 Baseline bl = getDbInterface().getBaseline(bvId);
 
                 //
-                assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.keySet().size());
-                assertEquals(3, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.keySet().size());
+                assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.size());
+                assertEquals(3, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.size());
 
                 assertTrue(bl.isMetaIncomplete());
 
@@ -160,8 +160,8 @@ class UpdateMetadataTest extends CliTestBase {
             try {
                 Baseline bl = getDbInterface().getBaseline(bvId);
 
-                assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.keySet().size());
-                assertEquals(4, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.keySet().size());
+                assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.size());
+                assertEquals(4, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.size());
 
                 assertFalse(bl.isMetaIncomplete());
 

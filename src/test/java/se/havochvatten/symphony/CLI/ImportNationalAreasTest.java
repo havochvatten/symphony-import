@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ImportNationalAreasTest extends CliTestBase {
 
-    public String[] args;
+    public final String[] args;
 
     public static String getAllNatAreasForCountryCodeQuery(String schema) {
         return String.format("SELECT narea_id, narea_type, narea_areas, narea_countryiso3 " +

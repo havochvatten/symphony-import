@@ -7,38 +7,45 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 public abstract class TestBase {
 
-    private static final String RESOURCES_PATH = "src/test/resources/";
+    protected static final String RESOURCES_PATH = "src/test/resources/";
 
-    protected static String propertiesPath          = RESOURCES_PATH + "test.properties";
-    protected static String csvMetaFilePartialSV    = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.csv";
-    protected static String csvMetaFileCompleteSV   = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.csv";
-    protected static String csvMetaFileCompleteEN   = RESOURCES_PATH + "import/metadata-wellformed-complete-en.csv";
+    protected static final String propertiesPath          = RESOURCES_PATH + "test.properties";
+    protected static final String csvMetaFilePartialSV    = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.csv";
+    protected static final String csvMetaFileCompleteSV   = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.csv";
+    protected static final String csvMetaFileCompleteEN   = RESOURCES_PATH + "import/metadata-wellformed-complete-en.csv";
 
-    protected static String excelMetaFilePartial        = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.xlsx";
-    protected static String excelMetaFileCompleteSV     = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.xlsx";
+    protected static final String excelMetaFilePartial        = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.xlsx";
+    protected static final String excelMetaFileCompleteSV     = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.xlsx";
 
-    protected static String csvMetaFileFaulty1      = RESOURCES_PATH + "import/metadata-faulty_bandnumber.csv";
-    protected static String xlsxMetaFileFaulty1     = RESOURCES_PATH + "import/metadata-faulty_bandnumber.xlsx";
+    protected static final String csvMetaFileFaulty1      = RESOURCES_PATH + "import/metadata-faulty_bandnumber.csv";
+    protected static final String xlsxMetaFileFaulty1     = RESOURCES_PATH + "import/metadata-faulty_bandnumber.xlsx";
 
-    protected static String xlsxMetaFilePartialEcoSV =      RESOURCES_PATH + "import/metadata-wellformed-partial-Eco-sv.xlsx";
-    protected static String csvMetaFilePartialPressureSV =  RESOURCES_PATH + "import/metadata-wellformed-partial-Pressure-sv.csv";
+    protected static final String xlsxMetaFilePartialEcoSV =      RESOURCES_PATH + "import/metadata-wellformed-partial-Eco-sv.xlsx";
+    protected static final String csvMetaFilePartialPressureSV =  RESOURCES_PATH + "import/metadata-wellformed-partial-Pressure-sv.csv";
 
-    protected static String csvMatrixFileSV = RESOURCES_PATH + "import/matrix-wellformed-sv.csv";
-    protected static String csvMatrixFileEN = RESOURCES_PATH + "import/matrix-wellformed-en.csv";
-    protected static String csvMatrixCompleteName   = "Complete sensitivity matrix TEST";
+    protected static final String csvMatrixFileSV = RESOURCES_PATH + "import/matrix-wellformed-sv.csv";
+    protected static final String csvMatrixFileEN = RESOURCES_PATH + "import/matrix-wellformed-en.csv";
+    protected static final String csvMatrixCompleteName   = "Complete sensitivity matrix TEST";
 
-    protected static String nationalAreaBoundary = RESOURCES_PATH + "import/national-area/test-national-boundary.json";
-    protected static String nationalAreaSelectable =  RESOURCES_PATH + "import/national-area/test-national-selectable.json";
+    protected static final String nationalAreaBoundary = RESOURCES_PATH + "import/national-area/test-national-boundary.json";
+    protected static final String nationalAreaSelectable =  RESOURCES_PATH + "import/national-area/test-national-selectable.json";
 
-    protected static String calculationAreaPackage = RESOURCES_PATH + "import/calcarea-package.gpkg";
+    protected static final String calculationAreaPackage = RESOURCES_PATH + "import/calcarea-package.gpkg";
 
     public static final String TEST_TIFF_E_PATH = absoluteResourcePath("/baseline/symphony-import-test-BaselineE.tiff");
     public static final String TEST_TIFF_P_PATH = absoluteResourcePath("/baseline/symphony-import-test-BaselineP.tiff");
+
+    protected static final String TEST_BASELINE_NAME = "test-import-tiff";
+    protected static final String TEST_BASELINE_DESC = "Baseline version description";
+    protected static final String TEST_VALIDTO_DATE  = "2030-01-01";
 
     protected String database = "symphony";
     protected final String dbSchema;
@@ -57,6 +64,20 @@ public abstract class TestBase {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected static String getResourceFileAndReplace(String resourcePath, Map<String, String> replacements) throws IOException {
+        String resource = Files.readString(Paths.get(resourcePath));
+
+        for (String replaceToken : replacements.keySet()) {
+            resource = resource.replace(replaceToken, replacements.get(replaceToken));
+        }
+
+        return resource;
+    }
+
+    protected static String getResourceFile(String resourcePath) throws IOException {
+        return getResourceFileAndReplace(resourcePath, Map.of());
     }
 
     protected Properties getProperties() {
@@ -134,8 +155,8 @@ public abstract class TestBase {
     public void tearDown() {
         if (bvId != null) {
             getDbInterface().cleanBaselineVersion(bvId);
+            getDbInterface().cleanCalculationAreas(bvId);
         }
-        getDbInterface().cleanCalculationAreas();
     }
 }
 

@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 public abstract class MatrixBase extends ImportProcedure<MatrixImportSettings>  {
 
     protected List<Sensitivity> sensitivities;
-    Baseline currentBaseline;
+    final Baseline currentBaseline;
 
     protected MatrixBase(MatrixImportSettings settings, Baseline _baseline) {
         super(settings);

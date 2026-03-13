@@ -35,7 +35,19 @@ public class Sensitivity {
         return String.format(Locale.US, "(%d, %d, %f, %d)", pBandId, eBandId, value, sensMxId);
     }
 
-    public static ResultSetHandler<List<Sensitivity>> handler;
+    public String pressureBandIdsQuery(String schema) {
+        return String.format(
+            "SELECT DISTINCT sens_pres_band_id FROM %s.sensitivity WHERE sens_sensm_id = ?", schema
+        );
+    }
+
+    public String ecoBandIdsQuery(String schema) {
+        return String.format(
+            "SELECT DISTINCT sens_eco_band_id FROM %s.sensitivity WHERE sens_sensm_id = ?", schema
+        );
+    }
+
+    public final static ResultSetHandler<List<Sensitivity>> handler;
     static {
         RowProcessor rp = new BasicRowProcessor(
             new BeanProcessor(Map.of(

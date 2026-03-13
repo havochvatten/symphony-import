@@ -16,6 +16,10 @@ public class SymphonyBand {
     private int bandNumber;
     private Boolean defaultSelected = null;
     private String defaultLanguage = "en";
+    private static final String singleCellBorder = "-------";
+    private static final String firstColumnBorder = "--------------------";
+    private static final String langTitle = "| Language         ";
+    private static final String entriesTitle = "| metadata entries ";
 
     private final Map<String, Map<String, String>> meta = new HashMap<>();
 
@@ -32,7 +36,7 @@ public class SymphonyBand {
                 "AND UPPER(metaband_category) = '%s'", schema, bvId, type.name());
     }
 
-    public static ResultSetHandler<List<SymphonyBand>> handler;
+    public static final ResultSetHandler<List<SymphonyBand>> handler;
     static {
         RowProcessor rp = new BasicRowProcessor(
             new BeanProcessor(Map.of(
@@ -123,5 +127,32 @@ public class SymphonyBand {
 
     public String getTitle(String language) {
         return meta.get(language).get("title");
+    }
+
+    private static String centerSize(Integer size) {
+        String sizeStr = size.toString();
+        int pad = 6 - sizeStr.length();
+        int lPad = pad / 2;
+        return " ".repeat(lPad) + sizeStr + " ".repeat(pad - lPad);
+    }
+
+    public void printMetaCountTable() {
+        String separator = String.format("%s%s", firstColumnBorder, singleCellBorder.repeat(meta.size()));
+        List<Integer> sizes = meta.values().stream().map(Map::size).toList();
+
+        System.out.printf("Band number %d: \"%s\"%n", getBandNumber() + 1, getTitle());
+        System.out.println(separator);
+
+        System.out.print(langTitle);
+        for (String lang : meta.keySet()) {
+            System.out.printf("|  %s  ", lang);
+        }
+        System.out.printf("|%n%s%n", separator);
+
+        System.out.print(entriesTitle);
+        for (Integer size : sizes) {
+            System.out.printf("|%s", centerSize(size));
+        }
+        System.out.printf("|%n%s%n", separator);
     }
 }

@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Map;
 
 public class NationalArea {
-    private int id;
-    private String type;
-    private String areasJson;
-    private String countryCode;
+    protected int id;
+    protected String type;
+    protected String areasJson;
+    protected String countryCode;
 
     public static final ResultSetHandler<List<NationalArea>> handler =
         new BeanListHandler<>(NationalArea.class,
@@ -24,7 +24,6 @@ public class NationalArea {
                         "narea_countryiso3", "countryCode"))
             )
         );
-
 
     public int getId() {
         return id;
@@ -56,5 +55,9 @@ public class NationalArea {
 
     public void setCountryCode(String countryCode) {
         this.countryCode = countryCode;
+    }
+
+    public static String areaTypesExclusiveQuery(String schema) {
+        return String.format("SELECT narea_type FROM %s.nationalarea WHERE narea_countryiso3 = ? AND NOT narea_type = ?", schema);
     }
 }

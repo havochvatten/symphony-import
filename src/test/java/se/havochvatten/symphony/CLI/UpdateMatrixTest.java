@@ -3,8 +3,6 @@ package se.havochvatten.symphony.CLI;
 import org.junit.jupiter.api.Test;
 import se.havochvatten.symphony_setup.setup.SymphonySetup;
 import se.havochvatten.symphony_setup.setup.model.Baseline;
-import se.havochvatten.symphony_setup.setup.model.SymphonyBand;
-import se.havochvatten.symphony_setup.setup.model.SymphonyCategory;
 
 import java.sql.SQLException;
 

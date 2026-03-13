@@ -7,7 +7,6 @@ import org.apache.commons.dbutils.handlers.BeanListHandler;
 import se.havochvatten.symphony_setup.setup.database.BaselineBeanProcessor;
 
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 

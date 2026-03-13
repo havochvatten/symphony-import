@@ -6,7 +6,8 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.ArrayHandler;
 import org.apache.commons.dbutils.handlers.ColumnListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.apache.commons.dbutils.handlers.columns.IntegerColumnHandler;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.geotools.geojson.geom.GeometryJSON;
 import se.havochvatten.symphony_setup.setup.model.*;
 import se.havochvatten.symphony_setup.setup.process.MatrixBase;
@@ -23,6 +24,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import static se.havochvatten.symphony_setup.setup.model.DbMatrix.combinationsQuery;
+import static se.havochvatten.symphony_setup.setup.model.DbMatrix.missingBandNumbersQuery;
+import static se.havochvatten.symphony_setup.setup.model.DbNationalArea.allAreasCheapQuery;
+import static se.havochvatten.symphony_setup.setup.model.NationalArea.areaTypesExclusiveQuery;
 import static se.havochvatten.symphony_setup.setup.process.NationalAreaRowInsert.TYPE_BOUNDARY;
 
 public class DbInterface {
@@ -39,9 +44,12 @@ public class DbInterface {
     protected final QueryRunner qr = new QueryRunner();
 
     private Connection activeConnection = null;
+    public static final ScalarHandler<Long> longHandler = new ScalarHandler<>();
     public static final ScalarHandler<Integer> idHandler = new ScalarHandler<>();
+    // assuming integer id is present in first column
+    public static final ColumnListHandler<Integer> idListHandler = new ColumnListHandler<>();
 
-    static GeometryJSON json = new GeometryJSON();
+    static final GeometryJSON json = new GeometryJSON();
 
     protected Connection getConnection() throws SQLException {
         if (activeConnection == null || activeConnection.isClosed()) {
@@ -102,16 +110,14 @@ public class DbInterface {
     public int[] getAvailableBaselineVersionIds() throws SQLException {
         Connection conn = getConnection();
 
-        ColumnListHandler<Integer> versionIdsHandler = new ColumnListHandler<>(1);
-        return qr.query(conn, BaselineVersion.selectAvailableVersions(this.schema), versionIdsHandler)
+        return qr.query(conn, BaselineVersion.selectAvailableVersions(this.schema), idListHandler)
                         .stream().mapToInt(Integer::valueOf).toArray();
     }
 
     public int[] getAvailableCalculationAreaIds() throws SQLException {
         Connection conn = getConnection();
 
-        ColumnListHandler<Integer> areaIdsHandler = new ColumnListHandler<>(1);
-        return qr.query(conn, String.format("SELECT carea_id FROM %s.calculationarea", this.schema), areaIdsHandler)
+        return qr.query(conn, String.format("SELECT carea_id FROM %s.calculationarea", this.schema), idListHandler)
                         .stream().mapToInt(Integer::valueOf).toArray();
     }
 
@@ -142,6 +148,41 @@ public class DbInterface {
             throw new Exception("Error retrieving baseline data. Aborting");
         }
     }
+
+    public Baseline getBaselineForReport(Integer baselineVersionId) throws Exception {
+        Baseline baseline = getBaseline(baselineVersionId);
+
+        try  {
+            List<Integer> matrixIds = getMatrixIdsForBaselineVersion(baselineVersionId);
+            baseline.setAllMatrixIds(matrixIds);
+            baseline.setDefaultCalcAreas(
+                getCalcAreasForMatrixIds(matrixIds.stream().mapToInt(Integer::valueOf).toArray())
+            );
+            baseline.setDefaultMatrices(
+                getMatricesById(baseline.getDefaultCalcAreas().stream().mapToInt(DbCalculationArea::getDefaultSensitivityMatrixId).toArray())
+            );
+
+            for (DbMatrix matrix : baseline.getDefaultMatrices()) {
+                matrix.setMissingEcoBands(
+                    query(missingBandNumbersQuery(schema, SymphonyCategory.ECOSYSTEM), idListHandler, baselineVersionId, matrix.getId())
+                );
+                matrix.setMissingPressureBands(
+                    query(missingBandNumbersQuery(schema, SymphonyCategory.PRESSURE), idListHandler, baselineVersionId, matrix.getId())
+                );
+
+                // sanity check
+                matrix.setExpectedScoresCount(
+                    (baseline.bandsCount.get(SymphonyCategory.ECOSYSTEM) - matrix.getMissingEcoBands().size()) *
+                    (baseline.bandsCount.get(SymphonyCategory.PRESSURE) - matrix.getMissingPressureBands().size()));
+                matrix.setActualScoresCount(query(combinationsQuery(schema), longHandler, matrix.getId()));
+            }
+
+            return baseline;
+        } catch (SQLException sqlException) {
+            throw new Exception("Error retrieving baseline data. Aborting");
+        }
+    }
+
 
     protected void clearBandData(int bvId) throws SQLException {
         Connection conn = getConnection();
@@ -186,7 +227,6 @@ public class DbInterface {
                 }
             }
 
-            // TODO: meddela status
             System.out.println("Metadata import finished.");
         } else {
             throw new ParseException("Metadata import aborted interactively.");
@@ -231,7 +271,7 @@ public class DbInterface {
 
             String types = jsonStringArray(
                 Arrays.stream(this.qr.query(conn,
-                    String.format("SELECT narea_type FROM %s.nationalarea WHERE narea_countryiso3 = ? AND NOT narea_type = ?", schema),
+                    areaTypesExclusiveQuery(schema),
                     new ArrayHandler(), iso, TYPE_BOUNDARY))
                         .map(Object::toString).toArray(String[]::new));
 
@@ -265,6 +305,49 @@ public class DbInterface {
                 "AND m.metaval_value = ?", schema, bverId);
     }
 
+    public static String delimitedIds(int[] intArray) {
+        return intArray.length > 0 ? StringUtils.join(ArrayUtils.toObject(intArray), ",") : "0";
+    }
+
+    public List<DbMatrix> getMatricesById(int[] matrixIds) throws SQLException {
+        return query(matricesQuery(schema, matrixIds), DbMatrix.handler);
+    }
+
+    public List<DbMatrix> getMatricesForBaselineVersion(int bverId) throws SQLException {
+        return query(baselineMatricesQuery(schema), DbMatrix.handler, bverId);
+    }
+
+    public List<DbCalculationArea> getCalcAreasForMatrixIds(int[] matrixIds) throws SQLException {
+        return query(defaultCalcAreasForMatrices(schema, matrixIds), DbCalculationArea.handler);
+    }
+
+    public List<Integer> getMatrixIdsForBaselineVersion(int bverId) throws SQLException {
+        return query(baselineMatricesQuery(this.schema), idListHandler, bverId);
+    }
+
+    public List<DbNationalArea> getAllNationalAreas() throws SQLException {
+        return query(allAreasCheapQuery(schema), DbNationalArea.handler);
+    }
+
+    public static String matricesQuery(String schema, int[] matrixIds) {
+        return String.format(
+            "SELECT sm.sensm_id, sm.sensm_name FROM %s.sensitivitymatrix sm WHERE sm.sensm_id IN (%2$s)",
+                schema, delimitedIds(matrixIds));
+    }
+
+    public static String baselineMatricesQuery(String schema) {
+        return String.format(
+            "SELECT sm.sensm_id, sm.sensm_name FROM %s.sensitivitymatrix sm WHERE sm.sensm_bver_id = ?", schema);
+    }
+
+    public static String defaultCalcAreasForMatrices(String schema, int[] matrixIds) {
+        return String.format(
+            "SELECT ca.carea_id, ca.carea_name, ca.carea_default, ca.carea_default_sensm_id FROM %1$s.calculationarea ca " +
+            "JOIN %1$s.sensitivitymatrix sm ON ca.carea_default_sensm_id = sm.sensm_id " +
+            "WHERE ca.carea_default = true AND sm.sensm_id IN (%2$s)",
+                schema, delimitedIds(matrixIds));
+    }
+
     public Integer getBandIdByCategoryTitleAndBaseline(int bverId, SymphonyCategory cat, String title) throws SQLException {
         return qr.query(getConnection(), titlesQuery(schema, bverId), idHandler, cat.getDbVal(), title);
     }
@@ -275,8 +358,8 @@ public class DbInterface {
             .collect(Collectors.joining(",", "[", "]"));
     }
 
-    public <T> T query(String query, ResultSetHandler<T> handler, String ...args) throws SQLException {
-        return qr.query(getConnection(), query, handler, (Object[]) args);
+    public <T> T query(String query, ResultSetHandler<T> handler, Object ...args) throws SQLException {
+        return qr.query(getConnection(), query, handler, args);
     }
 
     public void importCalculationAreas(CalculationArea[] calculationAreas) throws SQLException, ParseException {
