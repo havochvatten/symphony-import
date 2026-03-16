@@ -1,6 +1,7 @@
 package se.havochvatten.symphony_setup.setup;
 
 import org.apache.commons.cli.*;
+import org.apache.commons.cli.help.HelpFormatter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.geotools.gce.geotiff.GeoTiffFormat;
 import se.havochvatten.symphony_setup.setup.config.*;
@@ -12,13 +13,12 @@ import se.havochvatten.symphony_setup.setup.model.converter.BooleanYesNoConverte
 import se.havochvatten.symphony_setup.setup.model.converter.UpdateModeConverter;
 import se.havochvatten.symphony_setup.setup.model.option.CalcAreaOption;
 import se.havochvatten.symphony_setup.setup.process.*;
-import se.havochvatten.symphony_setup.setup.config.CalcAreaImportSettings.*;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -39,48 +39,98 @@ public class SymphonySetup {
     public static final Set<String> NationalAreaOptionAliases;
     public static final Set<String> RequiredNewBaselineOptionAliases;
 
+    public static final String USAGE_HEADER = "Command-line utility to manage baseline data for instances of the software package MSP-Symphony";
+    public static final String USAGE_FOOTER = "For additional usage details, refer to the online documentation https://github.com/havochvatten/symphony-import/blob/main/README.md";
+
     static {
-        Option newBaselineOption = new Option("n", "newBaseline", false, "description"),
-               updateOption      = new Option("u", "update", true, "description"),
-               configFileOption  = new Option("f", "file", true, "description"),
-               statusOption      = new Option("s", "status", false, "description"),
-               helpOption        = new Option("h", "help", false, "help"),
+        Option newBaselineOption = new Option("n", "newBaseline", false,
+                    "Install a new baseline version.\n" +
+                    "Requires additional options specifying accessible paths for the GeoTIFF data files ('-bvpE', '-bvpP')\n" +
+                    "and the '-bvN' option specifying a unique baseline version name.\n" +
+                    "Cannot be combined with either of the options 'u' or 'bv'"),
+               updateOption      = new Option("u", "update", true,
+                   "Update an existing baseline version. Must be combined with '-bv' option to specify the target baseline version id.\n" +
+                   "Takes an optional argument which may be specified as ('u'/'update' or 'r'/'replace'), differentiating \"update mode\".\n" +
+                   "When set to 'replace', all existing coupled data is cleared before the update procedure is run."),
+               configFileOption  = new Option("f", "file", true,
+                   "NOT IMPLEMENTED!\n" +
+                    "This option will allow passing a json/yaml configuration file instead of separate cli options. " +
+                    "Placeholder, not currently implemented. Planned for v1.1 of the tool."),
+               statusOption      = new Option("s", "status", false, "NOT IMPLEMENTED"),
+               helpOption        = new Option("h", "help", false,
+                   "Print this usage instruction."),
 
-               dbOption          = new Option("db",   "database", true, "description"),
-               dbuOption         = new Option("dbU",  "dbUser", true, "description"),
-               dbPwOption        = new Option("dbP",  "dbPassword", true, "description"),
-               dbPtOption         = new Option("dbPt", "dbPort", true, "description"),
-               dbSOption         = new Option("dbS",  "dbSchema", true, "description"),
-               dbHOption         = new Option("dbH",  "dbHost", true, "description"),
+               dbOption          = new Option("db",   "database", true,
+                   "Required option, specifying the target database name"),
+               dbuOption         = new Option("dbU",  "dbUser", true,
+                   "Required option, specifying the database user (needs write privileges)"),
+               dbPwOption        = new Option("dbP",  "dbPassword", true,
+                   "Required option, specifying the (clear-text) database password for the db user."),
+               dbPtOption         = new Option("dbPt", "dbPort", true,
+                   "Database port (defaults to 5432)"),
+               dbSOption         = new Option("dbS",  "dbSchema", true, "Database schema (defaults to 'symphony')"),
+               dbHOption         = new Option("dbH",  "dbHost", true,
+                   "Database host (defaults to 'localhost')"),
 
-               baselineVOption   = new Option("bv",   "baselineVersion", true, "description"),
-               metadataOption    = new Option("md",   "metadata", true, "description"),
-               mdLanguageOption  = new Option("mdL",  "metadataLang", true, "description"),
+               baselineVOption   = new Option("bv",   "baselineVersion", true,
+                   "Target baseline version to update. Used in conjunction with the -u option only."),
+               metadataOption    = new Option("md",   "metadata", true,
+                   "Path to metadata file to import (csv or xlsx format is supported).\n" +
+                   "Multi-valued option, may be specified repeatedly for multiple languages:" +
+                   "when used multivalued it must match with number and order of arguments to the '-mdL' option."),
+               mdLanguageOption  = new Option("mdL",  "metadataLang", true,
+                   "Metadata language as ISO 639-1 code.\n" +
+                   "Required when multiple metadata files are given ('-md'), order and number must match exactly.\n" +
+                   "For single-file metadata imports this defaults to 'en'"),
 
-               matrixOption             = new Option("mx", "matrix", true, "description"),
-               matrixNameOption         = new Option("mxN", "matrixName", true, "description"),
-               matrixCalcAreaOption     = new Option("mxA", "matrixArea", true, "description"),
-               matrixTitleLangOption    = new Option("mxL", "matrixLang", true, "description"),
-               matrixDefaultOption = new Option("mxD", "matrixDefault", false, "description"),
+               matrixOption             = new Option("mx", "matrix", true,
+                    "Path to sensitivity matrix file to import (presently only csv format is supported).\n" +
+                    "Potential multi-valued option for more than one matrix."),
+               matrixNameOption         = new Option("mxN", "matrixName", true,
+                    "Sensitivity matrix name. Required when importing sensitivity matrix/ces.\n" +
+                    "Potential multi-valued option to match with the number and order of '-mx' options."),
+               matrixCalcAreaOption     = new Option("mxA", "matrixArea", true,
+                    "(optional) id of calculation area for corresponding matrix option."),
+               matrixTitleLangOption    = new Option("mxL", "matrixLang", true,
+                    "Matrix titles language for row/column headers, to match with metadata 'title' for the corresponding band.\n" +
+                    "Defaults to 'en'"),
+               matrixDefaultOption = new Option("mxD", "matrixDefault", false,
+                    "Default matrix (boolean no-argument option)"),
 
-               nationalAreaTypeOption       = new Option("na", "nationalArea", true, "description"),
-               nationalAreaPolygonOption    = new Option("naP", "nationalAreaPolygon", true, "description"),
-               nationalAreaCountryISO       = new  Option("naC", "nationalAreaCountryISO", true, "description"),
+               nationalAreaTypeOption       = new Option("na", "nationalArea", true,
+                   "National area type, may be given with multiple arguments."),
+               nationalAreaPolygonOption    = new Option("naP", "nationalAreaPolygon", true,
+                   "National area polygon file. Multi-valued, should match number of arguments to the '-na' option."),
+               nationalAreaCountryISO       = new  Option("naC", "nationalAreaCountryISO", true,
+                   "National area country code."),
 
-               calcAreaNamePropertyOption   = new Option("caP", "calcAreaNameProperty", true, "description"),
-               calcAreaPackageOption        = new Option("caF", "calcAreaFile", true, "description"),
-               calcAreaDefaultOption        = new Option("caD", "calcAreaDefault", true, "description"),
-               calcAreaAllDefaultOption     = new Option("caDA", "calcAreaAllDefault", false, "description"),
+               calcAreaPackageOption        = new Option("caF", "calcAreaFile", true,
+                    "Path to GeoPackage file comprising calculation area polygons. See documentation for expected format and required internal attributes."),
+               calcAreaNamePropertyOption   = new Option("caP", "calcAreaNameProperty", true,
+                   "\"Name property\" to use for calculation area name ('carea_name' column) value in the GeoPackage file specified by '-caF'.\n" +
+                       "The default is 'name'."),
+               calcAreaDefaultOption        = new Option("caD", "calcAreaDefault", true,
+                   "Default calculation area. Multi-valued option to correspond with area names present in " +
+                           "'-caF' GeoPackage file, specifying default status of the corresponding area."),
+               calcAreaAllDefaultOption     = new Option("caDA", "calcAreaAllDefault", false,
+                   "Specify to set all calculation areas present in the GeoPackage file slated for import by the "+
+                           "'-caF' option as default for the target baseline."),
 
-               csvDelimOption    = new Option("csvS", "delimiter", true, "description"),
-               csvNewLineOption  = new Option("csvN", "newline", true, "description"),
+               csvDelimOption    = new Option("csvS", "delimiter", true, "Column delimiter character for CSV files (defaults to ',')."),
+               csvNewLineOption  = new Option("csvN", "newline", true, "Row delimiter character for CSV files (newline)."),
 
-               newBaselineLocale = new Option("bvL", "baselineVersionLocale", true, "description"),
-               newBaselineName  = new Option("bvN", "baselineVersionName", true, "description"),
-               newBaselineDesc  = new Option("bvD", "baselineVersionDesc", true, "description"),
-               newBaselineValidDate = new Option("bvV", "baselineVersionDate", true, "description"),
-               newBaselineEcoPath = new Option("bvpE", "baselineEcoPath", true, "description"),
-               newBaselinePressurePath = new Option("bvpP", "baselinePressurePath", true, "description");
+               newBaselineName  = new Option("bvN", "baselineVersionName", true,
+                   "Baseline version name, required for \"new baseline\" invocations ('-n'). Must be unique."),
+               newBaselineLocale = new Option("bvL", "baselineVersionLocale", true,
+                   "Baseline version locale as ISO 639-1 code, used in conjunction with ('-n'). Defaults to 'en'."),
+               newBaselineDesc  = new Option("bvD", "baselineVersionDesc", true,
+                   "Baseline version description, used in conjunction with ('-n'). Optional."),
+               newBaselineValidDate = new Option("bvV", "baselineVersionDate", true,
+                   "Baseline version \"valid from\"-date as ISO 8601 (YYYY-MM-DD). Defaults to present day, according to the host system date."),
+               newBaselineEcoPath = new Option("bvpE", "baselineEcoPath", true,
+                   "Baseline version ecosystems GeoTIFF path, required for \"new baseline\" invocations ('-n')."),
+               newBaselinePressurePath = new Option("bvpP", "baselinePressurePath", true,
+                   "Baseline version pressures GeoTIFF path, required for \"new baseline\" invocations ('-n').");
 
         Option[] multiValuedOptions = new Option[] {
             metadataOption, mdLanguageOption,
@@ -165,9 +215,15 @@ public class SymphonySetup {
 
     public SymphonySetup(String[] args) {
         try {
+            if (Arrays.stream(args).anyMatch(arg -> arg.equals("--help") || arg.equals("-h"))) {
+                HelpFormatter formatter = HelpFormatter.builder().get();
+                formatter.printHelp("symphony-setup-tool", USAGE_HEADER, options, USAGE_FOOTER, true);
+                System.exit(0);
+            }
+
             setupCmd = new DefaultParser().parse(options, args);
             execute();
-        } catch (ParseException e) {
+        } catch (ParseException | IOException e) {
             System.err.println(e.getMessage());
         }
     }
@@ -459,9 +515,7 @@ public class SymphonySetup {
             MetadataBase md;
 
             switch (mdSettings.format) {
-                case CSV -> {
-                    md = new MetadataCsv(mdSettings, getCSVSettings());
-                }
+                case CSV -> md = new MetadataCsv(mdSettings, getCSVSettings());
                 case ODS -> throw new ParseException("Metadata as ODS not implemented");
                 case XLSX -> md = new MetadataXlsx(mdSettings);
                 default -> throw new ParseException("Unknown metadata file format");
