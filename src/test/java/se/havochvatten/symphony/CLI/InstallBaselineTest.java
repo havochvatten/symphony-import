@@ -114,7 +114,7 @@ class InstallBaselineTest extends CliTestBase {
         );
 
         queueInteraction(() -> {
-            new SymphonySetup(args);
+            new SymphonySetup(installBilingualWithMatrixArgs());
 
             try {
                 assertTestBaselineVersion();
@@ -124,6 +124,6 @@ class InstallBaselineTest extends CliTestBase {
             } catch (SQLException ex) {
                 fail(ex.getMessage());
             }
-        }, "y", "y", "y", "y");
+        }, "y", "y", "y", "y", "y");
     }
 }

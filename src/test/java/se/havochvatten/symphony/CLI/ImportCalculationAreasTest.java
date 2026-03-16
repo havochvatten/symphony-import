@@ -7,7 +7,10 @@ import se.havochvatten.symphony_setup.setup.config.CalcAreaImportSettings;
 import se.havochvatten.symphony_setup.setup.model.CalculationArea;
 import se.havochvatten.symphony_setup.setup.process.CalcAreaProcedure;
 
+import java.sql.SQLException;
+
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static se.havochvatten.symphony_setup.setup.database.DbInterface.idHandler;
 
 class ImportCalculationAreasTest extends CliTestBase {
@@ -35,24 +38,30 @@ class ImportCalculationAreasTest extends CliTestBase {
             "-caF", calculationAreaPackage, "-caDA",
             "-bv", String.valueOf(bvId));
 
-        queueInteraction(() -> {
-            new SymphonySetup(args);
-            // utilize import procedure collect() method
-            CalcAreaProcedure caProcedure =
-                new CalcAreaProcedure(
-                    new CalcAreaImportSettings(null, calculationAreaPackage, "name", false, true, null)
-                );
-            caProcedure.collect();
+        try {
+            getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
 
-            for (CalculationArea area : caProcedure.areas) {
-                Integer carea = dbInterface.query(getCalculationAreaByNameQueryStr(dbSchema), idHandler, area.getAreaName());
-                assertNotNull(carea);
-            }
-        }, "y");
+            queueInteraction(() -> {
+                new SymphonySetup(args);
+                // utilize import procedure collect() method
+                CalcAreaProcedure caProcedure =
+                        new CalcAreaProcedure(
+                                new CalcAreaImportSettings(null, calculationAreaPackage, "name", false, true, null)
+                        );
+                caProcedure.collect();
+
+                for (CalculationArea area : caProcedure.areas) {
+                    Integer carea = dbInterface.query(getCalculationAreaByNameQueryStr(dbSchema), idHandler, area.getAreaName());
+                    assertNotNull(carea);
+                }
+            }, "y");
+        } catch (SQLException sqlx) {
+            fail(sqlx.getMessage());
+        }
     }
 
     @AfterEach
     void cleanCalculationAreas() {
-        getDbInterface().cleanCalculationAreas();
+        getDbInterface().cleanCalculationAreas(bvId);
     }
 }

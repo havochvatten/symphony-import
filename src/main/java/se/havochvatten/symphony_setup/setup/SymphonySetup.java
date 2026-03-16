@@ -23,9 +23,12 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.geotools.coverage.grid.io.GridFormatFinder.findFormat;
+import static se.havochvatten.symphony_setup.setup.model.DbNationalArea.printNationalAreasStatusReport;
 
 public class SymphonySetup {
 
@@ -55,8 +58,10 @@ public class SymphonySetup {
                configFileOption  = new Option("f", "file", true,
                    "NOT IMPLEMENTED!\n" +
                     "This option will allow passing a json/yaml configuration file instead of separate cli options. " +
-                    "Placeholder, not currently implemented. Planned for v1.1 of the tool."),
+                    "Provided as a placeholder, not currently implemented. Planned for v1.1 of the tool."),
                statusOption      = new Option("s", "status", false, "NOT IMPLEMENTED"),
+               verboseOption     = new Option("v", "fullReport", false, "Verbose report.\n" +
+                   "Combine with 'status' option for detailed status report."),
                helpOption        = new Option("h", "help", false,
                    "Print this usage instruction."),
 
@@ -139,7 +144,6 @@ public class SymphonySetup {
             calcAreaDefaultOption
         };
 
-        newBaselineOption.setOptionalArg(true);
         updateOption.setOptionalArg(true);
 
         dbOption.setRequired(true);
@@ -164,7 +168,7 @@ public class SymphonySetup {
 
         options.addOption(newBaselineOption);
         options.addOption(configFileOption);
-        options.addOption(statusOption);
+        options.addOption(statusOption); options.addOption(verboseOption);
         options.addOption(helpOption);
 
         options.addOption(dbOption); options.addOption(dbuOption); options.addOption(dbPwOption);
@@ -228,7 +232,7 @@ public class SymphonySetup {
         }
     }
 
-    private boolean checkNewBaselineInvocation() throws ParseException, SQLException {
+    private void checkNewBaselineInvocation() throws ParseException, SQLException {
         if (RequiredNewBaselineOptionAliases.stream().allMatch(setupCmd::hasOption)) {
             String baselineVersionName =  setupCmd.getOptionValue("bvN");
             Integer bvId = db.baselineVersionIdByName(baselineVersionName);
@@ -239,9 +243,7 @@ public class SymphonySetup {
                 );
             }
 
-            if (bvId == null) {
-                return true;
-            } else {
+            if (bvId != null) {
                 throw new ParseException(
                     String.format("Error: The provided baseline version name '%s' already exists.%nIts id in the database is: %d",
                         baselineVersionName, bvId));
@@ -285,12 +287,23 @@ public class SymphonySetup {
             .map(Option::getKey).toArray(String[]::new);
     }
 
-    private void importBaselineData() throws ParseException {
-        // 's' = Status option - print state of baseline
-        if (setupCmd.hasOption("s")) {
-            throw new ParseException("Status option is not yet implemented");
+    private void setBaselineVersion() throws ParseException, SQLException {
+        currentBaselineVersion = db.getBaselineVersion(null);
+
+        if (currentBaselineVersion == null) {
+            throw new ParseException("No baseline version is present in the target database.\n" +
+                    "Use the -n option to install compliant baseline data");
         }
 
+        selectedBaselineVersion = getBaselineVersion();
+
+        if (selectedBaselineVersion == null && setupCmd.hasOption("bv")) {
+            throw new ParseException("Baseline version with id " + setupCmd.getOptionValue("bv") +
+                    " was not found in the target database. Aborting.");
+        }
+    }
+
+    private void importBaselineData() throws ParseException {
         // 'n' = Import new baseline
         // 'u' = Update existing baseline
         if (setupCmd.hasOption("u") || setupCmd.hasOption("n")) {
@@ -303,23 +316,8 @@ public class SymphonySetup {
                 }
 
                 if (setupCmd.hasOption("u")) {
-
-                    updateMode = setupCmd.getParsedOptionValue("u");
-
-                    currentBaselineVersion = db.getBaselineVersion(null);
-
-                    if (currentBaselineVersion == null) {
-                        throw new ParseException("No baseline version is present in the target database.\n" +
-                            "Use the -n option to install compliant baseline data");
-                    }
-
-                    selectedBaselineVersion = getBaselineVersion();
-
-                    if (selectedBaselineVersion == null && setupCmd.hasOption("bv")) {
-                        System.out.println("Baseline version with id " + setupCmd.getOptionValue("bv") +
-                            " was not found in the target database. Aborting.");
-                        return;
-                    }
+                    setBaselineVersion();
+                    if (selectedBaselineVersion == null) return;
                 }
 
                 if (setupCmd.hasOption("n")) {
@@ -328,23 +326,20 @@ public class SymphonySetup {
                     Scanner prompt = new Scanner(System.in);
                     String pendingNewBaselineName = setupCmd.getOptionValue("bvN");
 
-                    if (checkNewBaselineInvocation()) {
-                        System.out.println(String.format("Pending baseline version installation: %s", pendingNewBaselineName));
-                        System.out.println(String.format("---------------------------------------%s", "-".repeat(
-                            pendingNewBaselineName.length())));
+                    checkNewBaselineInvocation();
+                    System.out.println(String.format("Pending baseline version installation: %s", pendingNewBaselineName));
+                    System.out.println(String.format("---------------------------------------%s", "-".repeat(
+                        pendingNewBaselineName.length())));
 
-                        System.out.println("\nProceed with the import? ('y' to confirm)");
-                        System.out.print("> ");
+                    System.out.println("\nProceed with the import? ('y' to confirm)");
+                    System.out.print("> ");
 
-                        if (!prompt.nextLine().trim().equalsIgnoreCase("y")) {
-                            System.out.println("Baseline version installation aborted interactively.");
-                            return;
-                        }
-
-                        selectedBaselineVersion = db.getBaselineVersion(importNewBaselineVersion());
-                    } else {
-                        throw new ParseException("...");
+                    if (!prompt.nextLine().trim().equalsIgnoreCase("y")) {
+                        System.out.println("Baseline version installation aborted interactively.");
+                        return;
                     }
+
+                    selectedBaselineVersion = db.getBaselineVersion(importNewBaselineVersion());
                 }
 
                 if (setupCmd.hasOption("md")) {
@@ -413,15 +408,37 @@ public class SymphonySetup {
     private void execute() throws ParseException {
         db = getDb();
 
+        if (setupCmd.hasOption("v") && !setupCmd.hasOption("s")) {
+            throw new ParseException("'Verbose report' option is only valid in combination with -s/--status.");
+        }
+
         // 'f' = Configuration file option passed (path)
         if (setupCmd.hasOption("f")) {
             int nonMandatory = Arrays.stream(setupCmd.getOptions())
                                     .filter(o -> !o.isRequired()).toList().size();
-            if(nonMandatory > 1) {
+            if (nonMandatory > 1) {
                 throw new ParseException("ERROR: When passing the 'file' input argument, other switches are disallowed");
             }
 
             throw new ParseException("File-based import is not yet implemented");
+
+        } else if (setupCmd.hasOption("s")) {
+            // 's' = Status option - print state of baseline
+            try {
+                setBaselineVersion();
+                if (selectedBaselineVersion == null) return;
+
+                Baseline baselineToReport = db.getBaselineForReport(this.currentBaselineVersion.getId());
+                baselineToReport.printStatusReport(setupCmd.hasOption("v"));
+
+                if (setupCmd.hasOption("v")) {
+                    // Full report, include 'national areas' status
+                    printNationalAreasStatusReport(db.getAllNationalAreas());
+                }
+
+            } catch (Exception e) {
+                throw new ParseException(e.getMessage());
+            }
 
         } else if (checkNationalAreaInvocation()) {
             importNationalAreas();
@@ -437,11 +454,11 @@ public class SymphonySetup {
             int[] blvList = db.getAvailableBaselineVersionIds();
             String blvList_s = Util.join(blvList, ", ");
             System.out.print(
-                String.format("Update procedure invoked without specifying baseline version id.\n\n" +
-                    "You may:\n" +
+                String.format("Tool invoked without specifying baseline version id.\n\n" +
+                    "Available options:\n" +
                     "- [ Numeric input ]\tEnter an existing baseline version id to target.\n" +
                     "                   \tAvailable baseline version ids = (%s)\n" +
-                    "- [   a / n / q   ]\tAbort update\n" +
+                    "- [   a / n / q   ]\tAbort\n" +
                     "- [       d       ]\tDefault to the latest baseline version (id: %d)\n\n" +
                     "> ", blvList_s, currentBaselineVersion.getId())
             );
@@ -461,7 +478,7 @@ public class SymphonySetup {
                 }
 
                 if (input.equals("a") || input.equals("n") || input.equals("q")) {
-                    System.out.println("Update aborted interactively.");
+                    System.out.println("Task aborted interactively.");
                     return null;
                 }
 
@@ -685,6 +702,42 @@ public class SymphonySetup {
             } catch (NumberFormatException e) {
                 return null;
             }
+        }
+
+        public static final String STATUS_SECTION_SEPARATOR  = "----------------------------------------";
+        public static final String STATUS_SECTION_DSEPARATOR = "========================================";
+        public static final String CHECKMARK = supportedCheckmark();
+
+        public static Set<String> jsArrayToSet(String json) {
+            Set set = new HashSet<>();
+
+            if (json == null || json.isEmpty()) { return set; }
+            String trim = json.trim();
+
+            if (!trim.startsWith("[") || !trim.endsWith("]")) { return set; }
+
+            Matcher matcher = JSON_STRING_ARRAY_RX.matcher(trim.substring(1, trim.length() - 1));
+            while (matcher.find()) {
+                set.add(matcher.group(1));
+            }
+
+            return set;
+        }
+
+        private static final Pattern JSON_STRING_ARRAY_RX = Pattern.compile("\"([a-zA-Z0-9_]+)\"");
+        private static String supportedCheckmark() {
+            try {
+                String encoding = System.getProperty("file.encoding");
+                if (encoding != null && encoding.toUpperCase().contains("UTF")) {
+                    return "\u2713";
+                }
+            } catch (Exception ignored) {
+            }
+            return "[OK]";
+        }
+
+        public static String getValidIndicator(boolean condition, String invalid) {
+            return condition ? CHECKMARK : invalid;
         }
 
         @Nullable

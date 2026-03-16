@@ -1,0 +1,96 @@
+Baseline version id: {BVER_ID}
+Baseline version name: test-import-tiff
+Baseline version description:
+Baseline version description
+
+----------------------------------------
+Metadata overall status
+----------------------------------------
+Ecosystem bands (essential metadata provided / total): 4 / 4    ✓
+Pressure bands  (essential metadata provided / total): 4 / 4    ✓
+----------------------------------------
+Metadata details for Ecosystem rasters
+========================================
+Band number 1: "Angiosperms (seagrass)"
+----------------------------------
+| Language         |  sv  |  en  |
+----------------------------------
+| metadata entries |  3   |  3   |
+----------------------------------
+Band number 2: "Artificial reef"
+----------------------------------
+| Language         |  sv  |  en  |
+----------------------------------
+| metadata entries |  3   |  3   |
+----------------------------------
+Band number 3: "Coastal bird"
+----------------------------------
+| Language         |  sv  |  en  |
+----------------------------------
+| metadata entries |  3   |  3   |
+----------------------------------
+Band number 4: "Cod"
+----------------------------------
+| Language         |  sv  |  en  |
+----------------------------------
+| metadata entries |  3   |  3   |
+----------------------------------
+
+----------------------------------------
+Metadata details for Pressure rasters
+========================================
+Band number 1: "Abrasion bottom trawl"
+----------------------------------
+| Language         |  sv  |  en  |
+----------------------------------
+| metadata entries |  3   |  3   |
+----------------------------------
+Band number 2: "Anoxia background"
+----------------------------------
+| Language         |  sv  |  en  |
+----------------------------------
+| metadata entries |  3   |  3   |
+----------------------------------
+Band number 3: "Bird hunt"
+----------------------------------
+| Language         |  sv  |  en  |
+----------------------------------
+| metadata entries |  3   |  3   |
+----------------------------------
+Band number 4: "Catch bottom trawl"
+----------------------------------
+| Language         |  sv  |  en  |
+----------------------------------
+| metadata entries |  3   |  3   |
+----------------------------------
+
+
+----------------------------------------
+Sensitivity matrix status
+----------------------------------------
+Sensitivity matrix id: {SENSMX_ID}
+Sensitivity matrix name: Complete sensitivity matrix TEST
+All baseline data bands present in matrix
+The matrix is complete with respect to the number of included components:
+(4 x 4) = 16 sensitivity scores present.
+
+Altogether, 1 sensitivity matrices (possibly including custom scores) have been defined for this baseline version.
+
+----------------------------------------
+Calculation area(s) status
+----------------------------------------
+Calculation area id: {CALCAREA1_ID}
+Calculation area name: test-calc-area-1
+Default sensitivity matrix: Complete sensitivity matrix TEST
+
+Calculation area id: {CALCAREA2_ID}
+Calculation area name: test-calc-area-2
+Default sensitivity matrix: Complete sensitivity matrix TEST
+
+----------------------------------------
+National areas status (global setting)
+----------------------------------------
+Country code: "SWE"
+National areas with type 'BOUNDARY' defined for isocode (SWE).
+National areas with type 'TEST' defined for isocode (SWE).
+
