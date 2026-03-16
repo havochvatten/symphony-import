@@ -1,7 +1,5 @@
 package se.havochvatten.symphony.CLI;
 
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import se.havochvatten.symphony_setup.setup.SymphonySetup;
@@ -9,12 +7,14 @@ import se.havochvatten.symphony_setup.setup.config.CalcAreaImportSettings;
 import se.havochvatten.symphony_setup.setup.model.CalculationArea;
 import se.havochvatten.symphony_setup.setup.process.CalcAreaProcedure;
 
-import java.sql.SQLException;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static se.havochvatten.symphony_setup.setup.database.DbInterface.idHandler;
 
 class ImportCalculationAreasTest extends CliTestBase {
+
+    public ImportCalculationAreasTest() {
+        super(true);
+    }
 
     public static String getCalculationAreaByNameQueryStr(String schema) {
         return String.format(

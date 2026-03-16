@@ -22,6 +22,10 @@ public abstract class ImportProcedure<T extends SettingsBase> extends ProcedureB
 
     protected void process() throws ParseException {
         try {
+            if (!settings.validate()) {
+                throw new ParseException(settings.errorMessage());
+            }
+
             if (!validate()) {
                 throw new ParseException(errorMessage());
             }

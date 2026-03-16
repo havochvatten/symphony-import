@@ -23,9 +23,9 @@ public abstract class BandsBasedSettingsBase extends TextualSettingsBase {
         GridCoverage2D coverage;
 
         try {
-            coverage = readTiff(baselineVersion.getEcoFilename());
+            coverage = readTiff(baselineVersion.getEcoFilePath());
             ecosystemBandsCount = coverage.getSampleDimensions().length;
-            coverage = readTiff(baselineVersion.getPressureFilename());
+            coverage = readTiff(baselineVersion.getPressureFilePath());
             pressureBandsCount = coverage.getSampleDimensions().length;
         } catch (IOException e) {
             throw new Exception("Fatal error: failed to load baseline GeoTIFF");

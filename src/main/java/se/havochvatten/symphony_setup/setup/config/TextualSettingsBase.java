@@ -36,23 +36,24 @@ public abstract class TextualSettingsBase extends SettingsBase {
         }
     }
 
+    @Override
     public boolean validate() {
         boolean valid =  super.validate();
 
-        valid &= validateLanguage(language);
+        valid &= validateLanguage();
         valid &= validateInputFile();
 
         return valid;
     }
 
-    protected boolean validateLanguage(String lang) {
+    protected boolean validateLanguage() {
         if (language != null) {
-            if (!ISO_LANG.contains(lang)) {
+            if (!ISO_LANG.contains(language)) {
                 validationErrors.add(
                     String.format("A provided language parameter: '%s', is not a valid ISO 639-1 language code.", language));
                 return false;
             }
-            if (!SYM_LANG.contains(lang)) {
+            if (!SYM_LANG.contains(language)) {
                 validationMessages.add(
                     String.format("A provided language parameter: '%s', is not supported by the default UI", language));
             }

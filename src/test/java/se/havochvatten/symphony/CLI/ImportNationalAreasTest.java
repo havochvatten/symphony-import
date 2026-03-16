@@ -24,7 +24,7 @@ class ImportNationalAreasTest extends CliTestBase {
     }
 
     ImportNationalAreasTest() {
-        super();
+        super(true);
 
         // cli arguments
         // -na  [national areas import] ( identifier(s) )            // repeatable argument

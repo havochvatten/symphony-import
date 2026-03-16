@@ -6,6 +6,7 @@ import se.havochvatten.symphony.setup.database.DbTestInterface;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Properties;
 
@@ -36,16 +37,27 @@ public abstract class TestBase {
 
     protected static String calculationAreaPackage = RESOURCES_PATH + "import/calcarea-package.gpkg";
 
+    public static final String TEST_TIFF_E_PATH = absoluteResourcePath("/baseline/symphony-import-test-BaselineE.tiff");
+    public static final String TEST_TIFF_P_PATH = absoluteResourcePath("/baseline/symphony-import-test-BaselineP.tiff");
+
     protected String database = "symphony";
     protected final String dbSchema;
     protected final String dbHost;
     protected final Integer dbPort;
     protected final String dbUser;
     protected final String dbPassword;
-    protected boolean providedBaseline = true;
+    protected final boolean provideBaseline;
 
     protected DbTestInterface dbInterface = null;
-    protected final Integer bvId;
+    protected Integer bvId;
+
+    static String absoluteResourcePath(String resourcePath) {
+        try {
+            return new File(TestBase.class.getResource(resourcePath).toURI()).getAbsolutePath();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     protected Properties getProperties() {
         File propertiesFile = new File(propertiesPath);
@@ -74,13 +86,16 @@ public abstract class TestBase {
         return dbInterface;
     }
 
-    public TestBase() {
+    public TestBase(boolean provideBaseline) {
+
         Properties properties = getProperties();
 
         List<String> propertiesList = properties.keySet().stream()
             .map(String::valueOf)
             .filter(p -> p.startsWith("db."))
             .toList();
+
+        this.provideBaseline = provideBaseline;
 
         boolean hasUser = propertiesList.contains("db.user"), hasPassword = propertiesList.contains("db.password");
 
@@ -108,7 +123,7 @@ public abstract class TestBase {
         dbSchema = propertiesList.contains("db.schema") ?
             properties.getProperty("db.schema") :                   null;
 
-        if (providedBaseline) {
+        if (this.provideBaseline) {
             bvId = getDbInterface().installTestBaselineVersion();
         } else {
             bvId = null;
@@ -117,7 +132,9 @@ public abstract class TestBase {
 
     @AfterEach
     public void tearDown() {
-        getDbInterface().cleanTestBaselineVersion();
+        if (bvId != null) {
+            getDbInterface().cleanBaselineVersion(bvId);
+        }
         getDbInterface().cleanCalculationAreas();
     }
 }
