@@ -340,8 +340,6 @@ public class SymphonySetup {
                     }
 
                     selectedBaselineVersion = db.getBaselineVersion(importNewBaselineVersion());
-                } else {
-                    throw new ParseException("...");
                 }
 
                 if (setupCmd.hasOption("md")) {
