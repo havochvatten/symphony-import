@@ -29,6 +29,19 @@
     <entryPoint>se.havochvatten.symphonyconfig.SymphonySetupEntry</entryPoint>
   </properties>
 
+  <repositories>
+    <repository>
+      <id>osgeo</id>
+      <name>OSGeo Maven Repository</name>
+      <url>https://repo.osgeo.org/repository/geotools-releases</url>
+    </repository>
+    <repository>
+      <id>geo-solutions.it</id>
+      <name>GeoSolutions Maven Repository</name>
+      <url>https://maven.geo-solutions.it</url>
+    </repository>
+  </repositories>
+
   <dependencies>
     <dependency>
       <groupId>commons-cli</groupId>
