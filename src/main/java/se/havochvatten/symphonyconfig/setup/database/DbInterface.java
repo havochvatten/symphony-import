@@ -247,6 +247,8 @@ public class DbInterface {
             qr.execute(conn, String.format("%s %s",
                 Sensitivity.insertRowColumns(schema),
                 String.join(",", valuesToInsert)));
+
+
         } else {
             throw new ParseException("Matrix import aborted interactively.");
         }
