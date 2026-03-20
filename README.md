@@ -277,6 +277,9 @@ Build the Windows (x64) executable:
 ```
 mvn package -Pnative-win -DskipTests
 ```
+> [!TIP]
+> If you're facing problems when building native images on Windows, possibly your terminal environment isn't providing all necessary utilities for the toolchain.  
+> You may try executing the build command on the "x64 Native Tools Command Prompt" in your Visual Studio distribution.
 
 ## Testing
 
