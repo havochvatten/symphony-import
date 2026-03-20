@@ -278,3 +278,25 @@ Build the Windows (x64) executable:
 ```
 mvn package -Pnative-win -DskipTests
 ```
+
+## Testing
+
+Presently the test suite requires a complete on-line instance of the _MSP-Symphony_ database model, and credentials for a user with write permissions to the target schema in said database.  
+The credentials and database url + schema is expected to be provided in a file named `test.properties`.  
+There is a template file named [`test.properties.example`](src/test/resources/test.properties.example) where the required property keys are pre-filled.  
+
+Most of the test cases installs a dummy baseline to the database that is removed after the test is run along with any inserted sample data.   
+
+>[!CAUTION]
+> It is recommended to run the test suite on a dedicated, otherwise empty data source.  
+> Specifically, be aware that the `ImportNationalAreasTest` will delete all entries of the `nationalarea` table, not only the entries created by the test. 
+
+To run the test suite, simply invoke
+```
+mvn test
+```
+
+The command syntax to exclude the national areas test is
+```
+mvn test -Dtest=!ImportNationalAreasTest
+```
