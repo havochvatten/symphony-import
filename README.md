@@ -161,7 +161,7 @@ The following columns are mandatory for the procedure and MUST be present in the
 You will probably also want to make sure that
 **symphonytheme**
 is included.  
-This is not mandatory in the strict sense, but if there's an intention to deploy and use Symphony together with its graphical user interface, its inclusion would appear to be mandated in practice. The reason is that a pressure / ecosystem component data band that doesn't specify this won't have corresponding "scenario" calculation settings (inclusion/exclusion/value modification) accessible in the GUI. 
+This is not mandatory in the strict sense, but if there's an intention to deploy and use Symphony together with its graphical user interface, its inclusion would appear to be mandated in practice. The reason is that a pressure / ecosystem component data band that doesn't specify this meta value won't have its corresponding "scenario" calculation settings (inclusion/exclusion/value modification) accessible in the GUI. 
 
 | Column header / Key  | Mandatory | Description                                                                                                                                                             |
 |:---------------------|:---------:|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -184,7 +184,7 @@ The same then applies to the table row headers but for pressure data bands.
 A valid sensitivity score must be present in each cell in the table body as a real decimal number between 0 and 1, inclusive.
 
 ### Calculation areas
-Calculation areas should be provided as a [GeoPackage](https://www.geopackage.org) file containing the area polygons that are to be coupled to the baseline. All polygons should define two attributes, a 'name' attribute (either indicated by the `-caP`/`--calcAreaNameProperty` or defaulting to "name") and the 'matrix name' which will be used.
+Calculation areas should be provided as a [GeoPackage](https://www.geopackage.org) file containing the area polygons that are to be coupled to the baseline. All polygons should define two attributes, a 'name' attribute (either indicated by the `-caP`/`--calcAreaNameProperty` or defaulting to "name") and the 'matrix name' which will be used to determine (by 'name' - ie value of `sensitivitymatrix.sensm_name` column) which sensitivity matrix that calculations for spatial extents inside the specified area polygon will apply, by default.
 
 > [!NOTE]
 > Please note that the calculation area / matrix combination update/import capability of the import tool is incomplete as of v1.0. 
@@ -197,7 +197,7 @@ The "Boundary" and "National area" concepts in MSP-Symphony are structured in a 
 It might usually not be necessary to update these properties more than once per MSP-Symphony instance.
 For this reason, national area import options can't be specified in the same invocation as 'baseline dependent' import options. 
 
-Import formats are custom JSON structures that differ between "types".
+Valid input formats for the "national areas" are application-specific JSON structures that differ between "types".
 Data corresponding to type 'BOUNDARY' should be structured as illustrated by the "pseudo JSON schematic" below:
 ```
 {
@@ -213,7 +213,6 @@ Data corresponding to type 'BOUNDARY' should be structured as illustrated by the
     ]
 }
 ```
-
 
 All other "national area types" (apart from "BOUNDARY") can be represented by arbitrary strings (eg. "COUNTY", "MSP") as long as they're unique to the instance. 
 The corresponding files (all other 'types' as described above) are expected as json data like this: 
