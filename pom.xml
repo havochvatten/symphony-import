@@ -4,7 +4,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>se.havochvatten.symphony_setup</groupId>
+  <groupId>se.havochvatten.symphonyconfig</groupId>
   <artifactId>symphony-import-tool</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
@@ -28,7 +28,7 @@
     <version.log4j>2.24.1</version.log4j>
     <version.postgresql-jdbc-driver>42.7.7</version.postgresql-jdbc-driver>
     <version.graalvm-buildtools>0.11.4</version.graalvm-buildtools>
-    <entryPoint>se.havochvatten.symphony_setup.SymphonySetupEntry</entryPoint>
+    <entryPoint>se.havochvatten.symphonyconfig.SymphonySetupEntry</entryPoint>
   </properties>
 
   <dependencies>
