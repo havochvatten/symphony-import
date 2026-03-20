@@ -199,7 +199,12 @@
             <artifactId>native-maven-plugin</artifactId>
             <configuration>
               <buildArgs combine.children="append">
-                <buildArg>--target=windows-x64</buildArg>
+                <buildArg>--target=windows-amd64</buildArg>
+                <buildArg>--no-fallback</buildArg>
+                <buildArg>--gc=serial</buildArg>
+                <buildArg>-O1</buildArg>
+                <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                <buildArg>-H:GenerateDebugInfo=0</buildArg>
                 <buildArg>-H:+StaticExecutableWithDynamicLibC</buildArg>
               </buildArgs>
             </configuration>
@@ -228,7 +233,11 @@
             <artifactId>native-maven-plugin</artifactId>
             <configuration>
               <buildArgs combine.children="append">
-                <buildArg>--target=linux-x64</buildArg>
+                <buildArg>--target=linux-amd64</buildArg>
+                <buildArg>--no-fallback</buildArg>
+                <buildArg>--gc=serial</buildArg>
+                <buildArg>-O1</buildArg>
+                <buildArg>-H:GenerateDebugInfo=0</buildArg>
                 <buildArg>-H:+StaticExecutableWithDynamicLibC</buildArg>
               </buildArgs>
             </configuration>
