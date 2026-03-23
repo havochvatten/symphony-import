@@ -23,11 +23,24 @@
     <version.geotools>31.7</version.geotools>
     <version.junit>5.11.0</version.junit>
     <version.system-lambda>1.2.1</version.system-lambda>
-    <version.log4j>2.24.1</version.log4j>
+    <version.log4j>2.25.3</version.log4j>
     <version.postgresql-jdbc-driver>42.7.7</version.postgresql-jdbc-driver>
     <version.graalvm-buildtools>0.11.4</version.graalvm-buildtools>
     <entryPoint>se.havochvatten.symphonyconfig.SymphonySetupEntry</entryPoint>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>osgeo</id>
+      <name>OSGeo Maven Repository</name>
+      <url>https://repo.osgeo.org/repository/geotools-releases</url>
+    </repository>
+    <repository>
+      <id>geo-solutions.it</id>
+      <name>GeoSolutions Maven Repository</name>
+      <url>https://maven.geo-solutions.it</url>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
@@ -143,13 +156,11 @@
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.1</version>
+        <version>3.5.3</version>
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <version>3.0.2</version>
-        <configuration>
-        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -188,7 +199,12 @@
             <artifactId>native-maven-plugin</artifactId>
             <configuration>
               <buildArgs combine.children="append">
-                <buildArg>--target=windows-x64</buildArg>
+                <buildArg>--target=windows-amd64</buildArg>
+                <buildArg>--no-fallback</buildArg>
+                <buildArg>--gc=serial</buildArg>
+                <buildArg>-O1</buildArg>
+                <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                <buildArg>-H:GenerateDebugInfo=0</buildArg>
                 <buildArg>-H:+StaticExecutableWithDynamicLibC</buildArg>
               </buildArgs>
             </configuration>
@@ -217,7 +233,11 @@
             <artifactId>native-maven-plugin</artifactId>
             <configuration>
               <buildArgs combine.children="append">
-                <buildArg>--target=linux-x64</buildArg>
+                <buildArg>--target=linux-amd64</buildArg>
+                <buildArg>--no-fallback</buildArg>
+                <buildArg>--gc=serial</buildArg>
+                <buildArg>-O1</buildArg>
+                <buildArg>-H:GenerateDebugInfo=0</buildArg>
                 <buildArg>-H:+StaticExecutableWithDynamicLibC</buildArg>
               </buildArgs>
             </configuration>
