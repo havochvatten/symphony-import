@@ -5,7 +5,6 @@ import se.havochvatten.symphonyconfig.setup.model.BaselineVersion;
 public class MatrixImportSettings extends BandsBasedSettingsBase {
 
     private String matrixName;
-    private Integer areaId;
 
     public MatrixImportSettings(BaselineVersion baselineVersion, String inputFilePath, String language, String defaultLanguage, boolean clear, int order) throws Exception {
         super(baselineVersion, inputFilePath, "mx", "matrix", language, defaultLanguage, clear, order);
@@ -22,11 +21,4 @@ public class MatrixImportSettings extends BandsBasedSettingsBase {
         this.matrixName = matrixName;
     }
 
-    public int getAreaId() {
-        return areaId;
-    }
-
-    public void setAreaId(Integer areaId) {
-        this.areaId = areaId;
-    }
 }
