@@ -131,6 +131,7 @@
             </manifest>
           </archive>
           <appendAssemblyId>false</appendAssemblyId>
+          <attach>false</attach>
         </configuration>
       </plugin>
       <plugin>
