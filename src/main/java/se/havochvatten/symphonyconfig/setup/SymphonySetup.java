@@ -8,10 +8,7 @@ import se.havochvatten.symphonyconfig.setup.config.*;
 import se.havochvatten.symphonyconfig.setup.database.DbInterface;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
 import se.havochvatten.symphonyconfig.setup.model.BaselineVersion;
-import se.havochvatten.symphonyconfig.setup.model.converter.MatrixCalcAreaConverter;
-import se.havochvatten.symphonyconfig.setup.model.converter.BooleanYesNoConverter;
 import se.havochvatten.symphonyconfig.setup.model.converter.UpdateModeConverter;
-import se.havochvatten.symphonyconfig.setup.model.option.CalcAreaOption;
 import se.havochvatten.symphonyconfig.setup.process.*;
 
 import javax.annotation.Nullable;
@@ -546,7 +543,6 @@ public class SymphonySetup {
         }
 
         String[] matrixNames, matrixFiles;
-        CalcAreaOption[] matrixAreas = setupCmd.getParsedOptionValues("mxA");
 
         matrixFiles = setupCmd.getOptionValues("mx");
         matrixNames = setupCmd.getOptionValues("mxN");
