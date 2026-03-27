@@ -191,7 +191,9 @@ A valid sensitivity score must be present in each cell in the table body as a re
 ### Calculation areas
 Calculation areas should be provided as a [GeoPackage](www.geopackage.org) file containing the area polygons that are to be coupled to the baseline. All polygons should define two attributes, a 'name' attribute (either indicated by the `-caP`/`--calcAreaNameProperty` or defaulting to "name") and the 'matrixName' which will be used to determine (by 'name' - ie value of `sensitivitymatrix.sensm_name` column) which sensitivity matrix that calculations for spatial extents inside the specified area polygon will apply, by default.
 
-Additionally, calculation area polygons may define two optional properties: 'areaType' and 'addMatrices'. If given, 'areaType' must be an integer value specifying a corresponding "area type" id (`areatype.atype_id` in the database) for the calculation area.
+Additionally, calculation area polygons may define two optional properties: 'areaType' and 'addMatrices'. If given, 'areaType' must be an integer value specifying a corresponding "area type" id (`areatype.atype_id` in the database) for the calculation area.  
+Please note that "area types" _can not_ presently be imported using this tool (see [Limitations](#limitations)).
+
 The attribute 'addMatrices' is expected to specify one or more comma separated sensitivity matrix names. These will be coupled and available for use with calculations contained in the corresponding polygon.
 
 
@@ -305,3 +307,17 @@ The command syntax to exclude the national areas test is
 ```
 mvn test -Dtest=!ImportNationalAreasTest
 ```
+
+## Limitations
+
+The import tool presently (as of v1.1) doesn't provide functionality to insert or update 'area types' (used to differentiate matrix couplings and indicate 'coastal areas').  
+For instances that require this feature, the db table `areatype` needs to be populated either using other database tools, alternately by utilizing the resource endpoint `/areatype` on a running instance. 
+
+```pgsql
+-- example SQL statement to insert an "area type"
+INSERT INTO symphony.areatype (atype_id, atype_name, atype_coastalarea) VALUES (1, 'n-område', false);
+```
+
+However, the tool does support specifying pre-existing "area type" ids for calculation areas (see the [instruction for Calculation area import](#calculation-areas)).
+
+The import tool (as of v1.1) does not provide functionality to import "reliability partition" polygons.
