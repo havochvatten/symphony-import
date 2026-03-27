@@ -159,16 +159,21 @@ The following columns are mandatory for the procedure and MUST be present in the
 **title**
 
 You will probably also want to make sure that
-**symphonytheme**
+**symphonytheme** &nbsp; and
+**default_selected**
 is included.  
-This is not mandatory in the strict sense, but if there's an intention to deploy and use Symphony together with its graphical user interface, its inclusion would appear to be mandated in practice. The reason is that a pressure / ecosystem component data band that doesn't specify this meta value won't have its corresponding "scenario" calculation settings (inclusion/exclusion/value modification) accessible in the GUI. 
+These aren't mandatory in the strict sense, but if there's an intention to deploy and use Symphony together with its graphical user interface, their inclusion would appear to be mandated in practice.
 
-| Column header / Key  | Mandatory | Description                                                                                                                                                             |
-|:---------------------|:---------:|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **bandnumber**       |     ✔     | The ordinal (1-based) index of the raster<br> data band that the metadata describes.<br>Unique per **symphonycategory**.                                                |
-| **symphonycategory** |     ✔     | Strictly one of 'Ecosystem' or 'Pressure'.                                                                                                                              |
-| **title**            |     ✔     | The user-readable title of the described<br>data band. Unique per combination of <br>**symphonycategory**+**bandnumber**.                                               |
-| **symphonytheme**    |     ⚠     | The 'group' of components to which the<br>described band belongs. Note that bands<br>that don't specify this value won't be<br>accessible in the default web based GUI. |
+For example, a pressure / ecosystem component data band that doesn't specify the meta value **symphonycategory** won't have its corresponding "scenario" calculation settings (inclusion/exclusion/value modification) accessible (visible) in the GUI.  
+If a value for **default_selected** is omitted, then all eco-components or pressures will be excluded from the calculations by default in the graphical interface. This is probably not the desired initial state. The boolean setting is useful when baseline data contains optional or extraordinary bands which are not intended for inclusion by default.
+
+| Column header / Key  | Mandatory | Description                                                                                                                                                                                                          |
+|:---------------------|:---------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **bandnumber**       |     ✔     | The ordinal (1-based) index of the raster<br> data band that the metadata describes.<br>Unique per **symphonycategory**.                                                                                             |
+| **symphonycategory** |     ✔     | Strictly one of 'Ecosystem' or 'Pressure'.                                                                                                                                                                           |
+| **title**            |     ✔     | The user-readable title of the described<br>data band. Unique per combination of <br>**symphonycategory**+**bandnumber**.                                                                                            |
+| **symphonytheme**    |     ⚠     | The 'group' of components to which the<br>described band belongs. Note that bands<br>that don't specify this value won't be<br>accessible in the default web based GUI.                                              |
+| **default_selected** |     ⚠     | Boolean value (only the exact values "true", "1", "false" or "0" are valid) determining whether the band will be initialized as 'selected' / 'active' in the default GUI. Omission is effectively parsed as 'false'. |
 
 #### Partial import 
 The setup tool allows importing/updating the data source with partial metadata files; where not all bands are represented.  
