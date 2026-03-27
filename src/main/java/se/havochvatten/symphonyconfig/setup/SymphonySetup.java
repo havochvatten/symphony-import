@@ -590,11 +590,13 @@ public class SymphonySetup {
                     caNameProperty,
                     clear(),
                     setupCmd.hasOption("caDA"),
-                    setupCmd.getOptionValues("caD"))
+                    setupCmd.getOptionValues("caD"),
+                    db.getAvailableAreaTypes(),
+                    db.getMatrixMap(selectedBaselineVersion.getId()))
             );
 
         if (calcAreaProcedure.confirmImport()) {
-            db.importCalculationAreas(calcAreaProcedure.areas);
+            db.importCalculationAreas(calcAreaProcedure.areaTuples);
         }
     }
 

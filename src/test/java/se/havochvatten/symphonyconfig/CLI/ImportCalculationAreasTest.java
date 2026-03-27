@@ -4,10 +4,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import se.havochvatten.symphonyconfig.setup.SymphonySetup;
 import se.havochvatten.symphonyconfig.setup.config.CalcAreaImportSettings;
-import se.havochvatten.symphonyconfig.setup.model.CalculationArea;
 import se.havochvatten.symphonyconfig.setup.process.CalcAreaProcedure;
 
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -45,13 +46,16 @@ class ImportCalculationAreasTest extends CliTestBase {
                 new SymphonySetup(args);
                 // utilize import procedure collect() method
                 CalcAreaProcedure caProcedure =
-                        new CalcAreaProcedure(
-                                new CalcAreaImportSettings(null, calculationAreaPackage, "name", false, true, null)
-                        );
+                    new CalcAreaProcedure(
+                        new CalcAreaImportSettings(null, calculationAreaPackage,"name",
+                            false, true, null, Set.of(), Map.of())
+                    );
                 caProcedure.collect();
 
-                for (CalculationArea area : caProcedure.areas) {
-                    Integer carea = dbInterface.query(getCalculationAreaByNameQueryStr(dbSchema), idHandler, area.getAreaName());
+                for (CalcAreaProcedure.AreaMatrixTuple areaTuple : caProcedure.areaTuples) {
+                    Integer carea =
+                        dbInterface.query(
+                            getCalculationAreaByNameQueryStr(dbSchema), idHandler, areaTuple.area().getAreaName());
                     assertNotNull(carea);
                 }
             }, "y");
