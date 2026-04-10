@@ -4,28 +4,43 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>se.havochvatten.symphony_setup</groupId>
+  <groupId>se.havochvatten.symphonyconfig</groupId>
   <artifactId>symphony-import-tool</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <packaging>jar</packaging>
 
   <name>Symphony setup tool</name>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <java.version>17</java.version>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <version.apache.poi>5.3.0</version.apache.poi>
-    <version.commons-cli>1.8.0</version.commons-cli>
+    <project.imageName>symphony-setup-tool</project.imageName>
+    <maven.compiler.release>21</maven.compiler.release>
+    <version.apache.poi>5.4.1</version.apache.poi>
+    <version.commons-cli>1.11.0</version.commons-cli>
     <version.commons-dbcp2>2.12.0</version.commons-dbcp2>
     <version.commons-dbutils>1.8.1</version.commons-dbutils>
     <version.commons-csv>1.11.0</version.commons-csv>
-    <version.geotools>31.3</version.geotools>
+    <version.geotools>31.7</version.geotools>
     <version.junit>5.11.0</version.junit>
-    <version.log4j>2.23.1</version.log4j>
-    <version.postgresql-jdbc-driver>42.7.3</version.postgresql-jdbc-driver>
+    <version.system-lambda>1.2.1</version.system-lambda>
+    <version.log4j>2.25.3</version.log4j>
+    <version.postgresql-jdbc-driver>42.7.7</version.postgresql-jdbc-driver>
+    <version.graalvm-buildtools>0.11.4</version.graalvm-buildtools>
+    <entryPoint>se.havochvatten.symphonyconfig.SymphonySetupEntry</entryPoint>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>osgeo</id>
+      <name>OSGeo Maven Repository</name>
+      <url>https://repo.osgeo.org/repository/geotools-releases</url>
+    </repository>
+    <repository>
+      <id>geo-solutions.it</id>
+      <name>GeoSolutions Maven Repository</name>
+      <url>https://maven.geo-solutions.it</url>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
@@ -79,9 +94,20 @@
       <version>${version.geotools}</version>
     </dependency>
     <dependency>
+      <groupId>org.geotools</groupId>
+      <artifactId>gt-geojson</artifactId>
+      <version>${version.geotools}</version>
+    </dependency>
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <version>${version.junit}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.stefanbirkner</groupId>
+      <artifactId>system-lambda</artifactId>
+      <version>${version.system-lambda}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -89,7 +115,6 @@
       <artifactId>log4j-core</artifactId>
       <version>${version.log4j}</version>
     </dependency>
-
   </dependencies>
   <build>
     <plugins>
@@ -101,21 +126,26 @@
           </descriptorRefs>
           <archive>
             <manifest>
-              <mainClass>se.havochvatten.symphony_setup.SymphonySetupEntry</mainClass>
+              <mainClass>${entryPoint}</mainClass>
               <addClasspath>true</addClasspath>
             </manifest>
           </archive>
           <appendAssemblyId>false</appendAssemblyId>
+          <attach>false</attach>
         </configuration>
-        <executions>
-          <execution>
-            <id>assemble</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.graalvm.buildtools</groupId>
+        <artifactId>native-maven-plugin</artifactId>
+        <version>${version.graalvm-buildtools}</version>
+        <extensions>true</extensions>
+        <configuration>
+          <imageName>${project.imageName}</imageName>
+          <buildArgs>
+            <buildArg>--no-fallback</buildArg>
+            <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+          </buildArgs>
+        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-clean-plugin</artifactId>
@@ -127,14 +157,103 @@
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.1</version>
+        <version>3.5.3</version>
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <version>3.0.2</version>
-        <configuration>
-        </configuration>
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>package-jar</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>assemble</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>native-win</id>
+      <properties>
+        <native.classifier>windows-x64</native.classifier>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <configuration>
+              <buildArgs combine.children="append">
+                <buildArg>--target=windows-amd64</buildArg>
+                <buildArg>--no-fallback</buildArg>
+                <buildArg>--gc=serial</buildArg>
+                <buildArg>-O1</buildArg>
+                <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+                <buildArg>-H:GenerateDebugInfo=0</buildArg>
+                <buildArg>-H:+StaticExecutableWithDynamicLibC</buildArg>
+              </buildArgs>
+            </configuration>
+            <executions>
+              <execution>
+                <id>build-native-win</id>
+                <goals>
+                  <goal>compile-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>native-linux</id>
+      <properties>
+        <native.classifier>linux-x64</native.classifier>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <configuration>
+              <buildArgs combine.children="append">
+                <buildArg>--target=linux-amd64</buildArg>
+                <buildArg>--no-fallback</buildArg>
+                <buildArg>--gc=serial</buildArg>
+                <buildArg>-O1</buildArg>
+                <buildArg>-H:GenerateDebugInfo=0</buildArg>
+                <buildArg>-H:+StaticExecutableWithDynamicLibC</buildArg>
+              </buildArgs>
+            </configuration>
+            <executions>
+              <execution>
+                <id>build-native-linux</id>
+                <goals>
+                  <goal>compile-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

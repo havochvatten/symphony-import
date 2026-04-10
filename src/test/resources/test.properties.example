@@ -1,0 +1,5 @@
+#change as appropriate and save as test.properties
+db.user = postgres
+db.password = password
+db.database = symphony
+db.schema = symphony
