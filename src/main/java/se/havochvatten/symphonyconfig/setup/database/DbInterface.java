@@ -101,10 +101,9 @@ public class DbInterface {
     }
 
     public Integer baselineVersionIdByName(String bvName) throws SQLException {
-        Integer bvId = qr.query(getConnection(),
-            String.format("SELECT bver_id from %s.baselineversion WHERE bver_name = '%s'", this.schema, bvName),
+        return qr.query(getConnection(),
+            String.format("SELECT bver_id from %s.baselineversion WHERE bver_name = ?", this.schema), bvName,
             idHandler);
-        return bvId;
     }
 
     public int[] getAvailableBaselineVersionIds() throws SQLException {
