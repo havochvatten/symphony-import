@@ -10,6 +10,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.geotools.geojson.geom.GeometryJSON;
 import se.havochvatten.symphonyconfig.setup.model.*;
+import se.havochvatten.symphonyconfig.setup.process.CalcAreaProcedure;
 import se.havochvatten.symphonyconfig.setup.process.MatrixBase;
 import se.havochvatten.symphonyconfig.setup.process.MetadataBase;
 import se.havochvatten.symphonyconfig.setup.process.NationalAreaRowInsert;
@@ -18,10 +19,7 @@ import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static se.havochvatten.symphonyconfig.setup.model.DbMatrix.combinationsQuery;
@@ -111,6 +109,14 @@ public class DbInterface {
 
         return qr.query(conn, BaselineVersion.selectAvailableVersions(this.schema), idListHandler)
                         .stream().mapToInt(Integer::valueOf).toArray();
+    }
+
+    public Set<Integer> getAvailableAreaTypes() throws SQLException {
+        Connection conn = getConnection();
+
+        return new HashSet<>(
+            qr.query(conn, AreaType.getAvailableAreaTypeIdsQuery(this.schema), idListHandler)
+        );
     }
 
     public int[] getAvailableCalculationAreaIds() throws SQLException {
@@ -318,6 +324,17 @@ public class DbInterface {
         return query(baselineMatricesQuery(schema), DbMatrix.handler, bverId);
     }
 
+    public Map<String, Integer> getMatrixMap(int bverId) throws SQLException {
+        List<DbMatrix> matrices = getMatricesForBaselineVersion(bverId);
+        Map<java.lang.String, java.lang.Integer> matrixMap = HashMap.newHashMap(matrices.size());
+
+        for (DbMatrix matrix : matrices) {
+            matrixMap.put(matrix.getName(), matrix.getId());
+        }
+
+        return matrixMap;
+    }
+
     public List<DbCalculationArea> getCalcAreasForMatrixIds(int[] matrixIds) throws SQLException {
         return query(defaultCalcAreasForMatrices(schema, matrixIds), DbCalculationArea.handler);
     }
@@ -363,17 +380,28 @@ public class DbInterface {
         return qr.query(getConnection(), query, handler, args);
     }
 
-    public void importCalculationAreas(CalculationArea[] calculationAreas) throws SQLException, ParseException {
-        for (CalculationArea ca : calculationAreas) {
+    public void importCalculationAreas(CalcAreaProcedure.AreaMatrixTuple[] calcAreaMatrixTuples) throws SQLException, ParseException {
+        for (CalcAreaProcedure.AreaMatrixTuple camx : calcAreaMatrixTuples) {
+            CalculationArea ca = camx.area();
             Integer matrixId = this.query(
                 String.format("SELECT sensm_id FROM %s.sensitivitymatrix WHERE sensm_name = ?", schema),
                 idHandler, ca.getMatrixName());
             if (matrixId == null) {
                 throw new ParseException(String.format("No sensitivity matrix with name %s found", ca.getMatrixName()));
             }
-            qr.insert(getConnection(),
+
+            Connection conn = getConnection();
+            Integer lastPolyId = qr.insert(conn,
                 CalculationArea.calcAreaInsert(schema, json.toString(ca.getPolygon())), idHandler,
-                ca.getAreaName(), matrixId, ca.isDefault());
+                    ca.getAreaName(), matrixId, ca.isDefault(), ca.getAreaType());
+
+            // 'extra' 'round trip' to get the area ID, seems unavoidable
+            Integer areaId = this.query(
+                String.format("SELECT cap_carea_id FROM %s.capolygon WHERE cap_id = ?", schema),
+                idHandler, lastPolyId);
+            if (!camx.matrixIds().isEmpty()) {
+                qr.insert(conn, CalculationArea.additionalMatrixCouplingInsert(schema, areaId, camx.matrixIds()), idHandler);
+            }
         }
     }
 }
