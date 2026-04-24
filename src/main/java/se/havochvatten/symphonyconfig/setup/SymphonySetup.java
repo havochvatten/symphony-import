@@ -41,8 +41,30 @@ public class SymphonySetup {
     public static final Set<String> NationalAreaOptionAliases;
     public static final Set<String> RequiredNewBaselineOptionAliases;
 
-    public static final String USAGE_HEADER = "Command-line utility to manage baseline data for instances of the software package MSP-Symphony";
-    public static final String USAGE_FOOTER = "For additional usage details, refer to the online documentation https://github.com/havochvatten/symphony-import/blob/main/README.md";
+    public static final String DEFAULT_DB_NAME_ENV = "SYMPHONY_DB_NAME";
+    public static final String DEFAULT_DB_HOST_ENV = "SYMPHONY_DB_HOST";
+    public static final String DEFAULT_DB_USER_ENV = "SYMPHONY_DB_USER";
+    public static final String DEFAULT_DB_PASSWORD_ENV = "SYMPHONY_DB_PWD";
+
+    static final String DB_NAME_OPTION = "db";
+    static final String DB_HOST_OPTION = "dbH";
+    static final String DB_USER_OPTION = "dbU";
+    static final String DB_PASSWORD_OPTION = "dbP";
+
+    static final String DB_NAME_ENV_OPTION = "envDb";
+    static final String DB_HOST_ENV_OPTION = "envDbH";
+    static final String DB_USER_ENV_OPTION = "envDbU";
+    static final String DB_PASSWORD_ENV_OPTION = "envDbP";
+
+    static final String USAGE_HEADER = "Command-line utility to manage baseline data for instances of the software package MSP-Symphony";
+    static final String USAGE_FOOTER = "For additional usage details, refer to the online documentation https://github.com/havochvatten/symphony-import/blob/main/README.md";
+
+    static final Map<String, String> readableDbSetting =
+        Map.of(
+            DB_NAME_OPTION, "name",
+            DB_USER_OPTION, "user",
+            DB_PASSWORD_OPTION, "password"
+        );
 
     static {
         Option newBaselineOption = newOption("n", "newBaseline", false,
@@ -65,17 +87,26 @@ public class SymphonySetup {
                helpOption        = newOption("h", "help", false,
                    "Print this usage instruction.", v1_0),
 
-               dbOption          = newOption("db",   "database", true,
-                   "Required option, specifying the target database name", v1_0),
-               dbuOption         = newOption("dbU",  "dbUser", true,
-                   "Required option, specifying the database user (needs write privileges)", v1_0),
-               dbPwOption        = newOption("dbP",  "dbPassword", true,
-                   "Required option, specifying the (clear-text) password for the database user.", v1_0),
+               dbOption          = newOption(DB_NAME_OPTION,   "database", true,
+                   "Target database name, required if corresponding environment variable is missing.", v1_0),
+               dbuOption         = newOption(DB_USER_OPTION,  "dbUser", true,
+                   "Database user (needs write privileges), required if corresponding environment variable is missing.", v1_0),
+               dbPwOption        = newOption(DB_PASSWORD_OPTION,  "dbPassword", true,
+                   "Clear-text password for the database user, required if corresponding environment variable is missing.", v1_0),
                dbPtOption         = newOption("dbPt", "dbPort", true,
                    "Database port (defaults to 5432)", v1_0),
                dbSOption         = newOption("dbS",  "dbSchema", true, "Database schema (defaults to 'symphony')", v1_0),
-               dbHOption         = newOption("dbH",  "dbHost", true,
-                   "Database host (defaults to 'localhost')", v1_0),
+               dbHOption         = newOption(DB_HOST_OPTION,  "dbHost", true,
+                   "Database host (defaults to 'localhost'), required if corresponding environment variable is missing.", v1_0),
+
+               envDbOption     = newOption(DB_NAME_ENV_OPTION, "envDatabase", true,
+                   String.format("Environment variable to specify database name, defaults to %s", DEFAULT_DB_NAME_ENV), v1_1),
+               envDbHostOption = newOption(DB_HOST_ENV_OPTION, "envDatabaseHost", true,
+                    String.format("Environment variable to specify database host, defaults to %s", DEFAULT_DB_HOST_ENV), v1_1),
+               envDbUserOption = newOption(DB_USER_ENV_OPTION, "envDatabaseUser", true,
+                    String.format("Environment variable to specify database username, defaults to %s", DEFAULT_DB_USER_ENV), v1_1),
+               envDbPasswordOption = newOption(DB_PASSWORD_ENV_OPTION, "envDatabasePassword", true,
+                    String.format("Environment variable to specify database password, defaults to %s", DEFAULT_DB_PASSWORD_ENV), v1_1),
 
                baselineVOption   = newOption("bv",   "baselineVersion", true,
                    "Target baseline version to update. Used in conjunction with the -u option only.", v1_0),
@@ -142,10 +173,6 @@ public class SymphonySetup {
 
         updateOption.setOptionalArg(true);
 
-        dbOption.setRequired(true);
-        dbPwOption.setRequired(true);
-        dbuOption.setRequired(true);
-
         for (Option option : multiValuedOptions) {
             option.setArgs(Option.UNLIMITED_VALUES);
             option.setValueSeparator(',');
@@ -166,6 +193,9 @@ public class SymphonySetup {
 
         options.addOption(dbOption); options.addOption(dbuOption); options.addOption(dbPwOption);
         options.addOption(dbPtOption); options.addOption(dbSOption); options.addOption(dbHOption);
+
+        options.addOption(envDbOption); options.addOption(envDbHostOption);
+        options.addOption(envDbUserOption); options.addOption(envDbPasswordOption);
 
         options.addOption(updateOption); options.addOption(baselineVOption);
         options.addOption(metadataOption); options.addOption(mdLanguageOption);
@@ -218,10 +248,37 @@ public class SymphonySetup {
             }
 
             setupCmd = new DefaultParser().parse(options, args);
+
+            resolveDbSettings();
+
             execute();
+
         } catch (ParseException | IOException e) {
             System.err.println(e.getMessage());
         }
+    }
+
+    private void resolveDbSettings() throws ParseException {
+        String dbName = resolveDbOption(DB_NAME_OPTION, DB_NAME_ENV_OPTION, DEFAULT_DB_NAME_ENV);
+        String dbHost = resolveDbOption(DB_HOST_OPTION, DB_HOST_ENV_OPTION, DEFAULT_DB_HOST_ENV);
+        String dbUser = resolveDbOption(DB_USER_OPTION, DB_USER_ENV_OPTION, DEFAULT_DB_USER_ENV);
+        String dbPassword = resolveDbOption(DB_PASSWORD_OPTION, DB_PASSWORD_ENV_OPTION, DEFAULT_DB_PASSWORD_ENV);
+
+        if (!(dbName == null || dbUser == null || dbPassword == null)) {
+            db = new DbInterface(
+                dbName, dbUser, dbPassword,
+                setupCmd.getOptionValue("dbS"), setupCmd.getOptionValue("dbPt"),
+                dbHost
+            );
+            return;
+        }
+        String errorMessage = "";
+
+        if (dbName == null)     errorMessage += missingRequiredDbSettingMessage(DB_NAME_OPTION);
+        if (dbUser == null)     errorMessage += missingRequiredDbSettingMessage(DB_USER_OPTION);
+        if (dbPassword == null) errorMessage += missingRequiredDbSettingMessage(DB_PASSWORD_OPTION);
+
+        throw new ParseException(errorMessage);
     }
 
     private void checkNewBaselineInvocation() throws ParseException, SQLException {
@@ -398,8 +455,6 @@ public class SymphonySetup {
     }
 
     private void execute() throws ParseException {
-        db = getDb();
-
         if (setupCmd.hasOption("v") && !setupCmd.hasOption("s")) {
             throw new ParseException("'Verbose report' option is only valid in combination with -s/--status.");
         }
@@ -535,7 +590,7 @@ public class SymphonySetup {
     }
 
     private void importSensitivityMatrix() throws Exception {
-        Baseline selectedBaseline = getDb().getBaseline(selectedBaselineVersion.getId());
+        Baseline selectedBaseline = db.getBaseline(selectedBaselineVersion.getId());
 
         if (selectedBaseline.isMetaIncomplete()) {
             throw new ParseException("Matrix import is not possible for baseline version " +
@@ -651,10 +706,15 @@ public class SymphonySetup {
         return db.insertBaselineVersion(baselineVersionToInstall);
     }
 
-    private DbInterface getDb() {
-        return db = new DbInterface(
-            setupCmd.getOptionValue("db"), setupCmd.getOptionValue("dbU"), setupCmd.getOptionValue("dbP"),
-            setupCmd.getOptionValue("dbS"), setupCmd.getOptionValue("dbPt"), setupCmd.getOptionValue("dbH"));
+    String resolveDbOption(String optionKey, String envOption, String env) {
+        if (setupCmd.hasOption(optionKey)) return setupCmd.getOptionValue(optionKey);
+        return System.getenv(setupCmd.hasOption(envOption) ? setupCmd.getOptionValue(envOption) : env);
+    }
+
+    private String missingRequiredDbSettingMessage(String optionKey) {
+        return String.format(
+            "Required setting for database %s was not provided.%n", readableDbSetting.get(optionKey)
+        );
     }
 
     public static class Util {
