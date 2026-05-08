@@ -15,6 +15,7 @@ import java.util.List;
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withTextFromSystemIn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class CliTestBase extends TestBase {
 
@@ -80,7 +81,7 @@ public abstract class CliTestBase extends TestBase {
         try {
             withTextFromSystemIn(input).execute(s);
         } catch (Exception e) {
-            // exotic IO error
+            fail("A system-level error occurred:\n" + e.getMessage());
         }
     }
 
