@@ -8,6 +8,7 @@ import se.havochvatten.symphonyconfig.setup.config.*;
 import se.havochvatten.symphonyconfig.setup.database.DbInterface;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
 import se.havochvatten.symphonyconfig.setup.model.BaselineVersion;
+import se.havochvatten.symphonyconfig.setup.model.DbNationalArea;
 import se.havochvatten.symphonyconfig.setup.model.converter.UpdateModeConverter;
 import se.havochvatten.symphonyconfig.setup.process.*;
 
@@ -65,6 +66,10 @@ public class SymphonySetup {
             DB_USER_OPTION, "user",
             DB_PASSWORD_OPTION, "password"
         );
+
+    static final Set<String> dbOptions = Set.of(
+        DB_HOST_OPTION, DB_NAME_OPTION, DB_USER_OPTION, DB_PASSWORD_OPTION
+    );
 
     static {
         Option newBaselineOption = newOption("n", "newBaseline", false,
@@ -332,8 +337,9 @@ public class SymphonySetup {
 
     private String[] optionsExceptRequired() {
         return Arrays.stream(setupCmd.getOptions())
-            .filter(o -> !o.isRequired())
-            .map(Option::getKey).toArray(String[]::new);
+            .map(Option::getKey)
+            .filter(key -> !dbOptions.contains(key))
+            .toArray(String[]::new);
     }
 
     private void setBaselineVersion() throws ParseException, SQLException {
