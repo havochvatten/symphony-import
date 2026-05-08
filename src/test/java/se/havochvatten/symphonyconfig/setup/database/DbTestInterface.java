@@ -15,6 +15,7 @@ import static se.havochvatten.symphonyconfig.TestBase.*;
 
 public class DbTestInterface extends DbInterface {
     private static final String BASELINE_EXTENT_POLY_PATH ="/baseline/test-baseline-extent.json";
+    public static final String DEFAULT_TEST_BASELINE_NAME = "TEST-Baseline";
 
     private static final String deleteBaselineVersionStatement =
         "DELETE FROM %s.baselineversion bv WHERE bv.bver_id = ?";
@@ -80,7 +81,7 @@ public class DbTestInterface extends DbInterface {
             String insertQuery = String.format("INSERT INTO %s.baselineversion " +
                 "(bver_name, bver_desc, bver_validfrom, " +
                 "bver_ecofilepath, bver_presfilepath, bver_locale) " +
-                "VALUES ('TEST-Baseline', '', ?, ?, ?, 'en')", schema);
+                "VALUES ('%s', '', ?, ?, ?, 'en')", schema, DEFAULT_TEST_BASELINE_NAME);
 
             String isoToday = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
 

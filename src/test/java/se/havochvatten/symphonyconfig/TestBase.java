@@ -47,7 +47,7 @@ public abstract class TestBase {
     protected static final String TEST_BASELINE_DESC = "Baseline version description";
     protected static final String TEST_VALIDTO_DATE  = "2030-01-01";
 
-    protected String database = "symphony";
+    protected final String database;
     protected final String dbSchema;
     protected final String dbHost;
     protected final Integer dbPort;
@@ -136,9 +136,9 @@ public abstract class TestBase {
         }
 
         database = propertiesList.contains("db.database") ?
-            properties.getProperty("db.database") :                 database;
+            properties.getProperty("db.database") :                 "symphony";
         dbHost = propertiesList.contains("db.host") ?
-            properties.getProperty("db.host") :                     null;
+            properties.getProperty("db.host") :                     "localhost";
         dbPort = propertiesList.contains("db.port") ?
             Integer.parseInt(properties.getProperty("db.port")) :   null;
         dbSchema = propertiesList.contains("db.schema") ?
