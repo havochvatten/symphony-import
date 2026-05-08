@@ -82,37 +82,6 @@ class InstallBaselineTest extends CliTestBase {
 
     @Test
     void invokeInstallNewBaselineWithBilingualMetaAndMatrix() {
-
-        // cli arguments
-        // -n    [install new baseline version]
-        // -bvN  [new baseline version name]             // mandatory, unique
-        // -bvD  [new baseline version description]      // non-mandatory
-        // -bvV  [new baseline version valid to ]        // non-mandatory ISO 8601 date
-        // -bvpE [new baseline version Ecosystems GeoTIFF] // mandatory valid local path
-        // -bvpE [new baseline version Pressures GeoTIFF] // mandatory valid local path
-
-        // -md  [metadata import] ( path )          // repeated argument
-        // -mdL [metadata language] ( language )    // repeated arg (two languages)
-
-        // -mx  [sensitivity matrix import] ( path )
-        // -mxN [sensitivity matrix name/title]     // mandatory when mx import given
-        // -mxL [sensitivity matrix language]
-        String[] args = testCaseArgs("-n",
-            "-bvN", TEST_BASELINE_NAME,
-            "-bvD", TEST_BASELINE_DESC,
-            "-bvV", TEST_VALID_FROM_DATE,
-            "-bvpE", TEST_TIFF_E_PATH,
-            "-bvpP", TEST_TIFF_P_PATH,
-            // complete bilingual metadata
-            "-md", csvMetaFileCompleteSV,
-            "-md", csvMetaFileCompleteEN,
-            "-mdL", "sv", "en",
-            // sensitivity matrix
-            "-mx", csvMatrixFileEN,
-            "-mxN", csvMatrixCompleteName,
-            "-mxL", "en"
-        );
-
         queueInteraction(() -> {
             new SymphonySetup(installBilingualWithMatrixArgs());
 
