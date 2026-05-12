@@ -28,9 +28,10 @@ Below is the console output of invoking the tool with `-h` option.
 ```
 usage:  symphony-setup-tool [-bv <arg>] [-bvD <arg>] [-bvL <arg>] [-bvN <arg>] [-bvpE <arg>]
 [-bvpP <arg>] [-bvV <arg>] [-caD <arg>] [-caDA] [-caF <arg>] [-caP <arg>] [-csvN <arg>]
-[-csvS <arg>] -db <arg> [-dbH <arg>] -dbP <arg> [-dbPt <arg>] [-dbS <arg>] -dbU <arg>
-[-f <arg>] [-h] [-md <arg>] [-mdL <arg>] [-mx <arg>] [-mxL <arg>] [-mxN <arg>] [-n] [-na <arg>]
-[-naC <arg>] [-naP <arg>] [-s] [-u <arg>] [-v]
+[-csvS <arg>] [-db <arg>] [-dbH <arg>] [-dbP <arg>] [-dbPt <arg>] [-dbS <arg>] [-dbU <arg>] 
+[-envDb <arg>] [-envDbH <arg>] [-envDbP <arg>] [-envDbU <arg>] [-f <arg>] [-h] [-md <arg>]
+[-mdL <arg>] [-mx <arg>] [-mxL <arg>] [-mxN <arg>] [-n] [-na <arg>] [-naC <arg>] [-naP <arg>] 
+[-s] [-u <arg>] [-v]
 
 Command-line utility to manage baseline data for instances of the software
 package MSP-Symphony
@@ -57,15 +58,27 @@ package MSP-Symphony
                                                     Combine with 'status' option for detailed
                                                     status report.                   
 -h, --help                               v1.0       Print this usage instruction.              
--db, --database <arg>                    v1.0       Required option, specifying the target 
-                                                    database name  
--dbU, --dbUser <arg>                     v1.0       Required option, specifying the database user 
-                                                    (needs write privileges)         
--dbP, --dbPassword <arg>                 v1.0       Required option, specifying the (clear-text)
-                                                    password for the database user.
+-db, --database <arg>                    v1.0       Target database name, required if corresponding
+                                                    environment variable is missing.                  
+-dbU, --dbUser <arg>                     v1.0       Database user (needs write privileges), 
+                                                    required if corresponding environment variable
+                                                    is missing.      
+-dbP, --dbPassword <arg>                 v1.0       Clear-text password for the database user,
+                                                    required if corresponding environment variable
+                                                    is missing.      
 -dbPt, --dbPort <arg>                    v1.0       Database port (defaults to 5432)                     
 -dbS, --dbSchema <arg>                   v1.0       Database schema (defaults to 'symphony')            
--dbH, --dbHost <arg>                     v1.0       Database host (defaults to 'localhost')              
+-dbH, --dbHost <arg>                     v1.0       Database host (defaults to 'localhost'),
+                                                    required if corresponding environment variable
+                                                    is missing.      
+-envDb, --envDatabase <arg>              v1.1       Environment variable to specify database name,    
+                                                    defaults to SYMPHONY_DB_NAME          
+-envDbH, --envDatabaseHost <arg>         v1.1       Environment variable to specify database host,    
+                                                    defaults to SYMPHONY_DB_HOST          
+-envDbU, --envDatabaseUser <arg>         v1.1       Environment variable to specify database 
+                                                    username, defaults to SYMPHONY_DB_USER          
+-envDbP, --envDatabasePassword <arg>     v1.1       Environment variable to specify database 
+                                                    password, defaults to SYMPHONY_DB_PWD                     
 -u, --update <arg>                       v1.0       Update an existing baseline version. Must be 
                                                     combined with '-bv' option to specify the 
                                                     target baseline version id.      
