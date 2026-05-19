@@ -481,7 +481,7 @@ public class SymphonySetup {
                 setBaselineVersion();
                 if (selectedBaselineVersion == null) return;
 
-                Baseline baselineToReport = db.getBaselineForReport(this.currentBaselineVersion.getId());
+                Baseline baselineToReport = db.getBaselineForReport(selectedBaselineVersion.getId());
                 baselineToReport.printStatusReport(setupCmd.hasOption("v"));
 
                 if (setupCmd.hasOption("v")) {
@@ -527,6 +527,8 @@ public class SymphonySetup {
                         System.out.print("Try again.\n\n> ");
                         bvId = null;
                         continue;
+                    } else {
+                        break;
                     }
                 }
 
