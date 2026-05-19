@@ -34,9 +34,8 @@ public class DbMatrix {
 
     public static String combinationsQuery(String schema) {
         return String.format(
-            "SELECT COUNT(DISTINCT (sens_pres_band_id, sens_eco_band_id)) " +
-                "FROM %s.sensitivity WHERE sens_sensm_id = ? GROUP BY sens_sensm_id",
-            schema);
+            "SELECT COALESCE((SELECT COUNT(DISTINCT (sens_pres_band_id, sens_eco_band_id)) " +
+                "FROM %s.sensitivity WHERE sens_sensm_id = ? GROUP BY sens_sensm_id), 0) AS count", schema);
     }
 
     public static String missingBandNumbersQuery(String schema, SymphonyCategory category) {
