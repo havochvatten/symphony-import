@@ -137,7 +137,7 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
 
         if (partial) {
             partialNotice = String.format(
-                "Note: the provided metadata table is _partial_: only a subset of all bands defined in the GeoTIFF" +
+                "Note: the provided metadata table is _partial_: only a subset of all bands defined in the GeoTIFF " +
                 "files are included.\n" +
                 "%s bands: %s | %s bands: %s",
                 Ecosystem, eProportion, Pressure, pProportion
