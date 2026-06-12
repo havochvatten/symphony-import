@@ -177,7 +177,7 @@ You will probably also want to make sure that
 is included.  
 These aren't mandatory in the strict sense, but if there's an intention to deploy and use Symphony together with its graphical user interface, their inclusion would appear to be mandated in practice.
 
-For example, a pressure / ecosystem component data band that doesn't specify the meta value **symphonycategory** won't have its corresponding "scenario" calculation settings (inclusion/exclusion/value modification) accessible (visible) in the GUI.  
+For example, a pressure / ecosystem component data band that doesn't specify the meta value **symphonytheme** won't have its corresponding "scenario" calculation settings (inclusion/exclusion/value modification) accessible (visible) in the GUI.  
 If a value for **default_selected** is omitted, then all eco-components or pressures will be excluded from the calculations by default in the graphical interface. This is probably not the desired initial state. The boolean setting is useful when baseline data contains optional or extraordinary bands which are not intended for inclusion by default.
 
 | Column header / Key  | Mandatory | Description                                                                                                                                                                                                          |
