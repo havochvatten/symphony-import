@@ -18,8 +18,8 @@ The tool will work for specific MSP-Symphony release versions as shown in the ta
 
 | **Setup tool version** | **MSP-Symphony version** |
 |------------------------|--------------------------|
-| 1.0<br>_1.1 (planned)_ | <center>1.24.0</center>  |
-
+| 1.0                    | <center>1.24.0</center>  |
+| 1.1                    | <center>1.25.0</center>  |
 
 ## Usage
 Below is the console output of invoking the tool with `-h` option. 

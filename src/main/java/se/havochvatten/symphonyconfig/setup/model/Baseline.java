@@ -147,6 +147,8 @@ public class Baseline {
 
         System.out.printf("Baseline version id: %d%n", version.getId());
         System.out.printf("Baseline version name: %s%n", version.getName());
+        System.out.printf("Baseline version title: %s%n",
+            version.getTitle() == null ? "<null>" : version.getTitle());
         System.out.printf("Baseline version description:%n%s%n%n", description);
         System.out.println(STATUS_SECTION_SEPARATOR);
         System.out.println("Metadata overall status");

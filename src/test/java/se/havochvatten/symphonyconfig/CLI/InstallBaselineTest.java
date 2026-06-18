@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class InstallBaselineTest extends CliTestBase {
     private static final String TEST_BASELINE_NAME = "test-import-tiff";
+    private static final String TEST_BASELINE_TITLE = "Baseline version title";
     private static final String TEST_BASELINE_DESC = "Baseline version description";
     private static final String TEST_VALID_FROM_DATE = "2030-01-01";
 
@@ -23,13 +24,15 @@ class InstallBaselineTest extends CliTestBase {
 
         // cli arguments
         // -n    [install new baseline version]
-        // -bvN  [new baseline version name]             // mandatory, unique
-        // -bvD  [new baseline version description]      // non-mandatory
-        // -bvV  [new baseline version valid to ]        // non-mandatory ISO 8601 date
-        // -bvpE [new baseline version Ecosystems GeoTIFF] // mandatory valid local path
-        // -bvpE [new baseline version Pressures GeoTIFF] // mandatory valid local path
+        // -bvN  [baseline version name]                // mandatory, unique
+        // -bvT  [baseline version title]               // non-mandatory
+        // -bvD  [baseline version description]         // non-mandatory
+        // -bvV  [baseline version valid to]            // non-mandatory ISO 8601 date
+        // -bvpE [baseline version Ecosystems GeoTIFF]  // mandatory valid local path
+        // -bvpE [baseline version Pressures GeoTIFF]   // mandatory valid local path
         String[] args = testCaseArgs("-n",
             "-bvN", TEST_BASELINE_NAME,
+            "-bvT", TEST_BASELINE_TITLE,
             "-bvD", TEST_BASELINE_DESC,
             "-bvV", TEST_VALID_FROM_DATE,
             "-bvpE", TEST_TIFF_E_PATH,
@@ -51,6 +54,7 @@ class InstallBaselineTest extends CliTestBase {
     void failOnAmbiguosNewBaselineInvocation() {
         String[] failingArgs = testCaseArgs("-n",
                 "-bvN", TEST_BASELINE_NAME,
+                "-bvT", TEST_BASELINE_TITLE,
                 "-bvD", TEST_BASELINE_DESC,
                 "-bvV", TEST_VALID_FROM_DATE,
                 "-bvpE", TEST_TIFF_E_PATH,

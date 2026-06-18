@@ -1,5 +1,6 @@
 Baseline version id: {BVER_ID}
 Baseline version name: test-import-tiff
+Baseline version title: <null>
 Baseline version description:
 Baseline version description
 

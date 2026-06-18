@@ -293,7 +293,7 @@ public class DbInterface {
     public int insertBaselineVersion(BaselineVersion baselineVersion) throws SQLException {
         Connection conn = getConnection();
         return qr.insert(conn, BaselineVersion.preBaselineVersionInsert(schema), idHandler,
-            baselineVersion.getName(),
+            baselineVersion.getName(), baselineVersion.getTitle(),
             baselineVersion.getDescription(), baselineVersion.getValidFrom(), baselineVersion.getEcoFilePath(), baselineVersion.getPressureFilePath(), baselineVersion.getLocale());
     }
 

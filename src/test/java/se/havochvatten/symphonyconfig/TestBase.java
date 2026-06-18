@@ -1,6 +1,7 @@
 package se.havochvatten.symphonyconfig;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import se.havochvatten.symphonyconfig.setup.database.DbTestInterface;
 
 import java.io.File;

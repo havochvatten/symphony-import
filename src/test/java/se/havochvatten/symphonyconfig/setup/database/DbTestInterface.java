@@ -2,6 +2,7 @@ package se.havochvatten.symphonyconfig.setup.database;
 
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -184,9 +185,9 @@ public class DbTestInterface extends DbInterface {
 
             // Delete calculation areas
             qr.update(conn,
-                    String.format(deleteCalculationAreaPolygonsStatement, schema), bvId);
+                String.format(deleteCalculationAreaPolygonsStatement, schema), bvId);
             qr.update(conn,
-                    String.format(deleteCalculationAreasStatement, schema), bvId);
+                String.format(deleteCalculationAreasStatement, schema), bvId);
 
             // Delete sensitivity matrix
             qr.update(conn,

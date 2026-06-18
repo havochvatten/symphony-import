@@ -14,6 +14,7 @@ public class BaselineVersion {
 
     private int id;
     private String name;
+    private String title;
     private String description;
     private LocalDate validFrom;
     private String ecoFilePath;
@@ -22,9 +23,10 @@ public class BaselineVersion {
 
     public BaselineVersion() {}
 
-    public BaselineVersion(String name, String description, LocalDate validFrom, String ecoFilename, String pressureFilename, String locale) {
+    public BaselineVersion(String name, String title, String description, LocalDate validFrom, String ecoFilename, String pressureFilename, String locale) {
         this.id = -1;
         this.name = name;
+        this.title = title;
         this.description = description;
         this.validFrom = validFrom;
         this.ecoFilePath = ecoFilename;
@@ -34,7 +36,7 @@ public class BaselineVersion {
 
     public static String selectLatestQuery(String schema) {
         return String.format(
-            "SELECT b.bver_id, b.bver_name, b.bver_desc, b.bver_validfrom, " +
+            "SELECT b.bver_id, b.bver_name, b.bver_title, b.bver_desc, b.bver_validfrom, " +
                    "b.bver_ecofilepath, b.bver_presfilepath, b.bver_locale " +
             "FROM %1$s.baselineversion b " +
             "JOIN (SELECT max(bver_validfrom) maxv FROM %1$s.baselineversion) bm " +
@@ -42,8 +44,8 @@ public class BaselineVersion {
     }
 
     public static String selectSpecificQuery(String schema, int version) {
-        return String.format("SELECT b.bver_id, b.bver_name, b.bver_desc, b.bver_validfrom, " +
-            "b.bver_ecofilepath, b.bver_presfilepath, b.bver_locale " +
+        return String.format("SELECT b.bver_id, b.bver_name, b.bver_title, b.bver_desc, " +
+            "b.bver_validfrom, b.bver_ecofilepath, b.bver_presfilepath, b.bver_locale " +
              "FROM %s.baselineversion b " +
                 "WHERE b.bver_id = %d", schema, version);
     }
@@ -54,6 +56,7 @@ public class BaselineVersion {
             new BaselineBeanProcessor(
                 Map.of("bver_id", "id",
                        "bver_name", "name",
+                       "bver_title", "title",
                        "bver_desc", "description",
                        "bver_validfrom", "validFrom",
                        "bver_ecofilepath", "ecoFilePath",
@@ -72,9 +75,9 @@ public class BaselineVersion {
 
     public static String preBaselineVersionInsert(String schema) {
         return String.format(
-            "INSERT INTO %s.baselineversion (bver_name, bver_desc, bver_validfrom, " +
+            "INSERT INTO %s.baselineversion (bver_name, bver_title, bver_desc, bver_validfrom, " +
                     "bver_ecofilepath, bver_presfilepath, bver_locale)" +
-                    "VALUES (?, ?, ?, ?, ?, ?)", schema);
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)", schema);
     }
 
     public int getId() {
@@ -91,6 +94,14 @@ public class BaselineVersion {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getDescription() {

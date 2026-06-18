@@ -158,6 +158,8 @@ public class SymphonySetup {
 
                newBaselineName  = newOption("bvN", "baselineVersionName", true,
                    "Baseline version name, required for \"new baseline\" invocations ('-n'). Must be unique.", v1_0),
+               newBaselineTitle  = newOption("bvT", "baselineVersionTitle", true,
+                    "Baseline version title, used in conjunction with ('-n'). Optional.", v1_1),
                newBaselineLocale = newOption("bvL", "baselineVersionLocale", true,
                    "Baseline version locale as ISO 639-1 code, used in conjunction with ('-n'). Defaults to 'en'.", v1_0),
                newBaselineDesc  = newOption("bvD", "baselineVersionDesc", true,
@@ -215,7 +217,8 @@ public class SymphonySetup {
 
         options.addOption(csvDelimOption); options.addOption(csvNewLineOption);
 
-        options.addOption(newBaselineName); options.addOption(newBaselineDesc); options.addOption(newBaselineValidDate);
+        options.addOption(newBaselineName); options.addOption(newBaselineTitle); options.addOption(newBaselineDesc);
+        options.addOption(newBaselineValidDate);
         options.addOption(newBaselineLocale); options.addOption(newBaselineEcoPath); options.addOption(newBaselinePressurePath);
 
         NationalAreaOptionAliases =
@@ -704,6 +707,7 @@ public class SymphonySetup {
 
         BaselineVersion baselineVersionToInstall = new BaselineVersion(
             setupCmd.getOptionValue("bvN"),
+            setupCmd.getOptionValue("bvT"),
             bvDescription,
             bvValidDate,
             setupCmd.getOptionValue("bvpE"),
