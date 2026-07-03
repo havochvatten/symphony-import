@@ -1,0 +1,20 @@
+{
+  "operation": "update",
+
+  "baseline": {
+    "id": 1,
+    "updateMode": "update"
+  },
+
+  "metadata": [
+    {
+      "file": "metadata-wellformed-complete-sv.csv",
+      "language": "sv"
+    },
+    {
+      "file": "metadata-wellformed-complete-en.csv",
+      "language": "en"
+    }
+  ]
+}
+
