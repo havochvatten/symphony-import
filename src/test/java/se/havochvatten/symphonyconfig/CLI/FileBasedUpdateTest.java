@@ -169,7 +169,7 @@ public class FileBasedUpdateTest extends CliTestBase {
      * @return Path to the temporary config file
      */
     private String createTempReplaceConfig() {
-        return createTempUpdateConfig("replace",
+        return createTempUpdateConfig(SymphonySetup.UpdateMode.REPLACE,
             new MetadataFileSpec("metadata-wellformed-partial-sv.csv", "sv"));
     }
 
@@ -180,7 +180,7 @@ public class FileBasedUpdateTest extends CliTestBase {
      * @return Path to the temporary config file
      */
     private String createTempConfigWithBaselineIdAndMetadata() {
-        return createTempUpdateConfig("update",
+        return createTempUpdateConfig(SymphonySetup.UpdateMode.UPDATE,
             new MetadataFileSpec("metadata-wellformed-complete-sv.csv", "sv"),
             new MetadataFileSpec("metadata-wellformed-complete-en.csv", "en"));
     }
@@ -189,11 +189,11 @@ public class FileBasedUpdateTest extends CliTestBase {
      * Utility to create a temporary update configuration file.
      * Copies specified metadata files to temp directory and generates a config pointing to them.
      *
-     * @param updateMode "update" or "replace"
+     * @param updateMode UpdateMode.UPDATE or UpdateMode.REPLACE
      * @param metadataFiles metadata file specifications (file name and language)
      * @return Path to the generated config file
      */
-    private String createTempUpdateConfig(String updateMode, MetadataFileSpec... metadataFiles) {
+    private String createTempUpdateConfig(SymphonySetup.UpdateMode updateMode, MetadataFileSpec... metadataFiles) {
         try {
             Path tempDirPath = Path.of(TEMP_DIR);
             Files.createDirectories(tempDirPath);
@@ -207,7 +207,7 @@ public class FileBasedUpdateTest extends CliTestBase {
 
             // Build config programmatically
             ImportConfigFile config = new ImportConfigFile();
-            config.setOperation("update");
+            config.setOperation(ImportConfigFile.Operation.UPDATE);
 
             ImportConfigFile.BaselineConfig baselineConfig = new ImportConfigFile.BaselineConfig();
             baselineConfig.setId(bvId);

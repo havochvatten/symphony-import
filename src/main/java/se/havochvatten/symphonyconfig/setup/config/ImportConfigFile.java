@@ -1,7 +1,10 @@
 package se.havochvatten.symphonyconfig.setup.config;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import se.havochvatten.symphonyconfig.setup.SymphonySetup;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +18,27 @@ import java.util.List;
  */
 public class ImportConfigFile {
 
-    private String operation;
+    /**
+     * Supported import operations.
+     */
+    public enum Operation {
+        NEW_BASELINE("newBaseline"),
+        UPDATE("update"),
+        NATIONAL_AREAS("nationalAreas");
+
+        @JsonValue
+        private final String value;
+        
+        Operation(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
+    private Operation operation;
     private BaselineConfig baseline;
     private List<MetadataConfig> metadata;
     private List<MatrixConfig> matrices;
@@ -35,7 +58,7 @@ public class ImportConfigFile {
         private String locale;
         private String ecoPath;
         private String pressurePath;
-        private String updateMode;
+        private SymphonySetup.UpdateMode updateMode;
 
         public Integer getId() { return id; }
         public void setId(Integer id) { this.id = id; }
@@ -61,8 +84,8 @@ public class ImportConfigFile {
         public String getPressurePath() { return pressurePath; }
         public void setPressurePath(String pressurePath) { this.pressurePath = pressurePath; }
 
-        public String getUpdateMode() { return updateMode; }
-        public void setUpdateMode(String updateMode) { this.updateMode = updateMode; }
+        public SymphonySetup.UpdateMode getUpdateMode() { return updateMode; }
+        public void setUpdateMode(SymphonySetup.UpdateMode updateMode) { this.updateMode = updateMode; }
     }
 
     public static class MetadataConfig {
@@ -137,8 +160,8 @@ public class ImportConfigFile {
     }
 
     // Main class getters and setters
-    public String getOperation() { return operation; }
-    public void setOperation(String operation) { this.operation = operation; }
+    public Operation getOperation() { return operation; }
+    public void setOperation(Operation operation) { this.operation = operation; }
 
     public BaselineConfig getBaseline() { return baseline; }
     public void setBaseline(BaselineConfig baseline) { this.baseline = baseline; }
@@ -189,6 +212,7 @@ public class ImportConfigFile {
 
         ImportConfigFile config = mapper.readValue(file, ImportConfigFile.class);
         config.setConfigFilePath(file.toPath().toAbsolutePath().getParent());
+        mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
 
         return config;
     }
@@ -221,4 +245,3 @@ public class ImportConfigFile {
         return path.toAbsolutePath().normalize().toString();
     }
 }
-

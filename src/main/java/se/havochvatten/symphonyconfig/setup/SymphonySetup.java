@@ -1,5 +1,6 @@
 package se.havochvatten.symphonyconfig.setup;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.commons.cli.*;
 import org.apache.commons.cli.help.HelpFormatter;
 import org.apache.commons.lang3.ArrayUtils;
@@ -469,14 +470,10 @@ public class SymphonySetup {
                 throw new ParseException("Configuration file must specify 'operation' field");
             }
 
-            switch (config.getOperation().toLowerCase()) {
-                case "newbaseline" -> executeNewBaselineFromConfig(config);
-                case "update" -> executeUpdateFromConfig(config);
-                case "nationalareas" -> executeNationalAreasFromConfig(config);
-                default -> throw new ParseException(
-                    String.format("Unknown operation type: '%s'. Must be one of: newBaseline, update, nationalAreas",
-                        config.getOperation())
-                );
+            switch (config.getOperation()) {
+                case NEW_BASELINE -> executeNewBaselineFromConfig(config);
+                case UPDATE -> executeUpdateFromConfig(config);
+                case NATIONAL_AREAS -> executeNationalAreasFromConfig(config);
             }
 
         } catch (IOException e) {
@@ -594,10 +591,9 @@ public class SymphonySetup {
                     " was not found in the target database. Aborting.");
             }
 
-            // Set update mode
-            String mode = bl.getUpdateMode();
-            updateMode = (mode != null && mode.equalsIgnoreCase("replace")) ?
-                UpdateMode.REPLACE : UpdateMode.UPDATE;
+            // Set update mode (default to UPDATE if not specified)
+            updateMode = bl.getUpdateMode() != null ? 
+                bl.getUpdateMode() : UpdateMode.UPDATE;
 
             commonConfigImportSequence(config);
 
@@ -1120,6 +1116,18 @@ public class SymphonySetup {
     }
 
     public enum UpdateMode {
-        UPDATE, REPLACE
+        UPDATE("update"),
+        REPLACE("replace");
+
+        @JsonValue
+        private final String value;
+
+        UpdateMode(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
     }
 }
