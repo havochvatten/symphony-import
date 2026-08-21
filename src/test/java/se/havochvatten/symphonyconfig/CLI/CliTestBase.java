@@ -4,18 +4,22 @@ import com.github.stefanbirkner.systemlambda.Statement;
 import org.junit.jupiter.api.AfterAll;
 import se.havochvatten.symphonyconfig.TestBase;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
+import se.havochvatten.symphonyconfig.setup.model.NationalArea;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyBand;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyCategory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withTextFromSystemIn;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static se.havochvatten.symphonyconfig.CLI.ImportNationalAreasTest.getAllNatAreasForCountryCodeQuery;
 
 public abstract class CliTestBase extends TestBase {
 
@@ -97,6 +101,27 @@ public abstract class CliTestBase extends TestBase {
                 );
             }
         }
+    }
+
+    protected void assertNationalAreasImportSuccess() throws IOException, SQLException {
+        String expectedBoundaryJson = Files.readString(Path.of(nationalAreaBoundary));
+        String expectedSelectableJson = Files.readString(Path.of(nationalAreaSelectable));
+
+        List<NationalArea> nationalAreas = getDbInterface().query(
+            getAllNatAreasForCountryCodeQuery(dbSchema), NationalArea.handler, "SWE");
+
+        // check that the boundary row exists and that the 'areas' property equals the file contents
+        NationalArea boundaryRow = nationalAreas.stream().filter(nationalArea -> nationalArea.getType().equals("BOUNDARY")).findFirst().orElse(null);
+        NationalArea selectableRow = nationalAreas.stream().filter(nationalArea -> nationalArea.getType().equals("TEST")).findFirst().orElse(null);
+
+        assertNotNull(boundaryRow);
+        assertNotNull(selectableRow);
+
+        assertNotNull(boundaryRow.getAreasJson());
+        assertNotNull(selectableRow.getAreasJson());
+
+        assertEquals(expectedBoundaryJson, boundaryRow.getAreasJson());
+        assertEquals(expectedSelectableJson, selectableRow.getAreasJson());
     }
 
     @AfterAll

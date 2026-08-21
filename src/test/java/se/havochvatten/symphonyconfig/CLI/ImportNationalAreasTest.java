@@ -45,24 +45,7 @@ class ImportNationalAreasTest extends CliTestBase {
             new SymphonySetup(args);
 
             try {
-                String expectedBoundaryJson = Files.readString(Path.of(nationalAreaBoundary));
-                String expectedSelectableJson = Files.readString(Path.of(nationalAreaSelectable));
-
-                List<NationalArea> nationalAreas = getDbInterface().query(
-                    getAllNatAreasForCountryCodeQuery(dbSchema), NationalArea.handler, "SWE");
-
-                // check that the boundary row exists and that the 'areas' property equals the file contents
-                NationalArea boundaryRow = nationalAreas.stream().filter(nationalArea -> nationalArea.getType().equals("BOUNDARY")).findFirst().orElse(null);
-                NationalArea selectableRow = nationalAreas.stream().filter(nationalArea -> nationalArea.getType().equals("TEST")).findFirst().orElse(null);
-
-                assertNotNull(boundaryRow);
-                assertNotNull(selectableRow);
-
-                assertNotNull(boundaryRow.getAreasJson());
-                assertNotNull(selectableRow.getAreasJson());
-
-                assertEquals(expectedBoundaryJson, boundaryRow.getAreasJson());
-                assertEquals(expectedSelectableJson, selectableRow.getAreasJson());
+                assertNationalAreasImportSuccess();
 
             } catch (SQLException sqlx) {
                 fail(sqlx.getMessage());

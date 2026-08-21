@@ -1,0 +1,31 @@
+# Complete baseline import example for MSP-Symphony Setup Tool
+# This configuration installs a new baseline version with bilingual metadata,
+# a sensitivity matrix, and calculation areas.
+
+operation: newBaseline
+
+baseline:
+  name: test-import-tiff
+  title: Test Baseline with Bilingual Metadata
+  description: Baseline version description
+  validFrom: "2027-01-01"
+  locale: en
+  ecoPath: ../baseline/symphony-import-test-BaselineE.tiff
+  pressurePath: ../baseline/symphony-import-test-BaselineP.tiff
+
+metadata:
+  - file: metadata-wellformed-complete-sv.csv
+    language: sv
+  - file: metadata-wellformed-complete-en.csv
+    language: en
+
+matrices:
+  - file: matrix-wellformed-en.csv
+    name: Complete sensitivity matrix TEST
+    language: en
+
+calculationAreas:
+  file: calcarea-package.gpkg
+  nameProperty: name
+  allDefault: true
+

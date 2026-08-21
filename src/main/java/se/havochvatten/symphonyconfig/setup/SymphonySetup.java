@@ -1,5 +1,6 @@
 package se.havochvatten.symphonyconfig.setup;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.commons.cli.*;
 import org.apache.commons.cli.help.HelpFormatter;
 import org.apache.commons.lang3.ArrayUtils;
@@ -8,13 +9,13 @@ import se.havochvatten.symphonyconfig.setup.config.*;
 import se.havochvatten.symphonyconfig.setup.database.DbInterface;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
 import se.havochvatten.symphonyconfig.setup.model.BaselineVersion;
-import se.havochvatten.symphonyconfig.setup.model.DbNationalArea;
 import se.havochvatten.symphonyconfig.setup.model.converter.UpdateModeConverter;
 import se.havochvatten.symphonyconfig.setup.process.*;
 
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
@@ -26,8 +27,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.geotools.coverage.grid.io.GridFormatFinder.findFormat;
+import static se.havochvatten.symphonyconfig.setup.ConfirmImport.confirmToProceed;
 import static se.havochvatten.symphonyconfig.setup.SymphonySetupOptionBuilder.newOption;
 import static se.havochvatten.symphonyconfig.setup.SymphonySetupVersion.*;
+import static se.havochvatten.symphonyconfig.setup.config.SupportedTabularFileFormat.CSV;
 import static se.havochvatten.symphonyconfig.setup.model.DbNationalArea.printNationalAreasStatusReport;
 
 public class SymphonySetup {
@@ -82,9 +85,8 @@ public class SymphonySetup {
                    "Takes an optional argument which may be specified as ('u'/'update' or 'r'/'replace'v1_0), differentiating \"update mode\".\n" +
                    "When set to 'replace', all existing coupled data is cleared before the update procedure is run.", v1_0),
                configFileOption  = newOption("f", "file", true,
-                   "NOT IMPLEMENTED!\n" +
-                    "This option will allow passing a json/yaml configuration file instead of separate cli options. " +
-                    "Provided as a placeholder, not currently implemented. Planned for v1.1 of the tool.", v1_1),
+                    "Pass a json/yaml configuration file with bundled input parameters instead of separate cli options.\n " +
+                    "The expected format is documented separately.\n", v1_1),
                statusOption      = newOption("s", "status", false, "Report status of baseline.\n" +
                     "Incompatible in conjunction with most other options.", v1_0),
                verboseOption     = newOption("v", "fullReport", false, "Verbose report.\n" +
@@ -289,22 +291,26 @@ public class SymphonySetup {
         throw new ParseException(errorMessage);
     }
 
+    private void checkExistingBaselineName(String baselineVersionName) throws ParseException, SQLException {
+        Integer bvId = db.baselineVersionIdByName(baselineVersionName);
+
+        if (bvId != null) {
+            throw new ParseException(
+                String.format("Error: The provided baseline version name '%s' already exists.%nIts id in the database is: %d",
+                        baselineVersionName, bvId));
+        }
+    }
+
     private void checkNewBaselineInvocation() throws ParseException, SQLException {
         if (RequiredNewBaselineOptionAliases.stream().allMatch(setupCmd::hasOption)) {
-            String baselineVersionName =  setupCmd.getOptionValue("bvN");
-            Integer bvId = db.baselineVersionIdByName(baselineVersionName);
             Integer optBvId = Util.tryParseInt(setupCmd.getOptionValue("bv"));
             if (optBvId != null) {
                 throw new ParseException(String.format(
                     "Error: ambiguos invocation.%n-n and -bv options cannot be issued at the same time.")
                 );
             }
-
-            if (bvId != null) {
-                throw new ParseException(
-                    String.format("Error: The provided baseline version name '%s' already exists.%nIts id in the database is: %d",
-                        baselineVersionName, bvId));
-            }
+            String baselineVersionName = setupCmd.getOptionValue("bvN");
+            checkExistingBaselineName(baselineVersionName);
 
         } else {
             throw new ParseException("");
@@ -385,15 +391,10 @@ public class SymphonySetup {
                     String pendingNewBaselineName = setupCmd.getOptionValue("bvN");
 
                     checkNewBaselineInvocation();
-                    System.out.println(String.format("Pending baseline version installation: %s", pendingNewBaselineName));
-                    System.out.println(String.format("---------------------------------------%s", "-".repeat(
-                        pendingNewBaselineName.length())));
 
-                    System.out.println("\nProceed with the import? ('y' to confirm)");
-                    System.out.print("> ");
-
-                    if (!prompt.nextLine().trim().equalsIgnoreCase("y")) {
-                        System.out.println("Baseline version installation aborted interactively.");
+                    if (!confirmToProceed(
+                        String.format("Pending baseline version installation: %s", pendingNewBaselineName),
+                        "Baseline version installation aborted interactively.")) {
                         return;
                     }
 
@@ -437,15 +438,9 @@ public class SymphonySetup {
             Scanner prompt = new Scanner(System.in);
             String areaIdentifiers = String.join(", ", areaTypes);
 
-            System.out.println(String.format("Pending national areas import: %s", areaIdentifiers));
-            System.out.println(String.format("-------------------------------%s", "-".repeat(
-                areaIdentifiers.length())));
-
-            System.out.println("\nProceed with the import? ('y' to confirm)");
-            System.out.print("> ");
-
-            if (!prompt.nextLine().trim().equalsIgnoreCase("y")) {
-                System.out.println("National areas import aborted interactively.");
+            if (!confirmToProceed(
+                    String.format("Pending national areas import: %s", areaIdentifiers),
+                    "National areas import aborted interactively.")) {
                 return;
             }
 
@@ -463,6 +458,341 @@ public class SymphonySetup {
         }
     }
 
+
+    private void executeFromConfigFile() throws ParseException {
+        String configFilePath = setupCmd.getOptionValue("f");
+
+        try {
+            ImportConfigFile config = ImportConfigFile.parse(configFilePath);
+
+            // Validate operation type
+            if (config.getOperation() == null) {
+                throw new ParseException("Configuration file must specify 'operation' field");
+            }
+
+            switch (config.getOperation()) {
+                case NEW_BASELINE -> executeNewBaselineFromConfig(config);
+                case UPDATE -> executeUpdateFromConfig(config);
+                case NATIONAL_AREAS -> executeNationalAreasFromConfig(config);
+            }
+
+        } catch (IOException e) {
+            throw new ParseException("Error reading configuration file: " + e.getMessage());
+        }
+    }
+
+    private void validateLocale(String locale) throws ParseException {
+        if (!ISO_LANG.contains(locale)) {
+            throw new ParseException(
+                String.format("The provided baseline locale ('%s'), is not a valid ISO 639-1 language code.", locale));
+        }
+    }
+
+    private void commonConfigImportSequence(ImportConfigFile config) throws Exception {
+        // Import metadata if specified
+        if (config.getMetadata() != null && !config.getMetadata().isEmpty()) {
+            importMetadataFromConfig(config);
+        }
+
+        // Import matrices if specified
+        if (config.getMatrices() != null && !config.getMatrices().isEmpty()) {
+            importMatricesFromConfig(config);
+        }
+
+        // Import calculation areas if specified
+        if (config.getCalculationAreas() != null) {
+            importCalculationAreasFromConfig(config);
+        }
+    }
+
+    private void executeNewBaselineFromConfig(ImportConfigFile config) throws ParseException {
+        if (config.getBaseline() == null) {
+            throw new ParseException("Configuration must include 'baseline' section for newBaseline operation");
+        }
+
+        ImportConfigFile.BaselineConfig bl = config.getBaseline();
+
+        // Required fields for new baseline
+        if (bl.getName() == null || bl.getName().isEmpty()) {
+            throw new ParseException("baseline.name is required for newBaseline operation");
+        }
+
+        // Apply CLI overrides for GeoTIFF paths if provided
+        String ecoPath = setupCmd.hasOption("bvpE") ?
+            setupCmd.getOptionValue("bvpE") : config.resolvePath(bl.getEcoPath());
+        String pressurePath = setupCmd.hasOption("bvpP") ?
+            setupCmd.getOptionValue("bvpP") : config.resolvePath(bl.getPressurePath());
+
+        if (ecoPath == null || pressurePath == null) {
+            throw new ParseException("Paths for the (Ecosystem and Pressure) GeoTIFF raster files must be supplied for newBaseline operation");
+        }
+
+        try {
+            // Check for duplicate baseline name
+            checkExistingBaselineName(bl.getName());
+
+            if (!confirmToProceed(
+                    String.format("Pending baseline version installation: %s", bl.getName()),
+                    "Baseline version installation aborted interactively.")) {
+                return;
+            }
+
+            // Validate GeoTIFF files
+            validateGeoTiffPath(ecoPath, "Ecosystem");
+            validateGeoTiffPath(pressurePath, "Pressure");
+
+            // Validate locale
+            String locale = bl.getLocale() != null ? bl.getLocale() : "en";
+            validateLocale(locale);
+
+            // Parse valid from date
+            LocalDate validFrom = bl.getValidFrom() != null ?
+                LocalDate.parse(bl.getValidFrom()) : LocalDate.now();
+
+            // Create and insert baseline version
+            BaselineVersion baselineVersionToInstall = new BaselineVersion(
+                bl.getName(),
+                bl.getTitle(),
+                bl.getDescription() != null ? bl.getDescription() : "",
+                validFrom,
+                ecoPath,
+                pressurePath,
+                locale
+            );
+
+            int bvId = db.insertBaselineVersion(baselineVersionToInstall);
+            selectedBaselineVersion = db.getBaselineVersion(bvId);
+            updateMode = UpdateMode.UPDATE;
+
+            commonConfigImportSequence(config);
+
+        } catch (SQLException e) {
+            throw new ParseException("Database error: " + e.getMessage());
+        } catch (Exception e) {
+            throw new ParseException(e.getMessage());
+        }
+    }
+
+    private void executeUpdateFromConfig(ImportConfigFile config) throws ParseException {
+        if (config.getBaseline() == null) {
+            throw new ParseException("Configuration must include 'baseline' section for update operation");
+        }
+
+        ImportConfigFile.BaselineConfig bl = config.getBaseline();
+
+        if (bl.getId() == null) {
+            throw new ParseException("baseline.id is required for update operation");
+        }
+
+        try {
+            selectedBaselineVersion = db.getBaselineVersion(bl.getId());
+            if (selectedBaselineVersion == null) {
+                throw new ParseException("Baseline version with id " + bl.getId() +
+                    " was not found in the target database. Aborting.");
+            }
+
+            // Set update mode (default to UPDATE if not specified)
+            updateMode = bl.getUpdateMode() != null ? 
+                bl.getUpdateMode() : UpdateMode.UPDATE;
+
+            commonConfigImportSequence(config);
+
+        } catch (SQLException e) {
+            throw new ParseException("Database error: " + e.getMessage());
+        } catch (Exception e) {
+            throw new ParseException(e.getMessage());
+        }
+    }
+
+    private void executeNationalAreasFromConfig(ImportConfigFile config) throws ParseException {
+        if (config.getNationalAreas() == null || config.getNationalAreas().isEmpty()) {
+            throw new ParseException("Configuration must include 'nationalAreas' section for nationalAreas operation");
+        }
+
+        // Check that BOUNDARY type is present
+        boolean hasBoundary = config.getNationalAreas().stream()
+            .anyMatch(na -> "BOUNDARY".equals(na.getType()));
+
+        if (!hasBoundary) {
+            throw new ParseException("National area import must include the BOUNDARY type");
+        }
+
+        // Convert to NationalAreaRowInsert array
+        NationalAreaRowInsert[] areaInserts = config.getNationalAreas().stream()
+            .map(na -> new NationalAreaRowInsert(
+                na.getType(),
+                na.getCountryISO(),
+                config.resolvePath(na.getFile())
+            ))
+            .toArray(NationalAreaRowInsert[]::new);
+
+        Scanner prompt = new Scanner(System.in);
+        String areaIdentifiers = config.getNationalAreas().stream()
+            .map(ImportConfigFile.NationalAreaConfig::getType)
+            .collect(Collectors.joining(", "));
+
+        if (!confirmToProceed(
+                String.format("Pending national areas import: %s", areaIdentifiers),
+                "National areas import aborted interactively.")) {
+            return;
+        }
+
+        try {
+            db.updateNationalAreas(areaInserts);
+        } catch (SQLException e) {
+            throw new ParseException("Database error: " + e.getMessage());
+        }
+    }
+
+    private void importMetadataFromConfig(ImportConfigFile config) throws Exception {
+        String defaultLang = selectedBaselineVersion.getLocale();
+
+        for (int i = 0; i < config.getMetadata().size(); ++i) {
+            ImportConfigFile.MetadataConfig mdConfig = config.getMetadata().get(i);
+            String resolvedPath = config.resolvePath(mdConfig.getFile());
+            String language = mdConfig.getLanguage() != null ? mdConfig.getLanguage() : defaultLang;
+
+            MetadataImportSettings mdSettings = new MetadataImportSettings(
+                selectedBaselineVersion,
+                resolvedPath,
+                language,
+                defaultLang,
+                clear(),
+                i
+            );
+
+            if (!mdSettings.validate()) {
+                throw new ParseException(mdSettings.errorMessage());
+            }
+
+            String parsingMessage = mdSettings.parsingMessage();
+            if (parsingMessage != null) {
+                System.out.println(parsingMessage);
+            }
+
+            MetadataBase md;
+            switch (mdSettings.format) {
+                case CSV -> md = new MetadataCsv(mdSettings, getCSVSettings(config));
+                case XLSX -> md = new MetadataXlsx(mdSettings);
+                default -> throw new ParseException("Unknown metadata file format");
+            }
+
+            db.updateMetadata(md);
+            defaultLang = language; // Carry forward for next iteration
+        }
+    }
+
+    private void importMatricesFromConfig(ImportConfigFile config) throws Exception {
+        Baseline selectedBaseline = db.getBaseline(selectedBaselineVersion.getId());
+
+        if (selectedBaseline.isMetaIncomplete()) {
+            throw new ParseException("Matrix import is not possible for baseline version " +
+                "with incomplete meta band coverage");
+        }
+
+        String defaultLang = selectedBaselineVersion.getLocale();
+
+        for (int i = 0; i < config.getMatrices().size(); ++i) {
+            ImportConfigFile.MatrixConfig mxConfig = config.getMatrices().get(i);
+
+            if (mxConfig.getName() == null || mxConfig.getName().isEmpty()) {
+                throw new ParseException("Matrix name is required for each matrix in the configuration");
+            }
+
+            String resolvedPath = config.resolvePath(mxConfig.getFile());
+            String language = mxConfig.getLanguage() != null ? mxConfig.getLanguage() : defaultLang;
+
+            MatrixImportSettings mxSettings = new MatrixImportSettings(
+                selectedBaselineVersion,
+                resolvedPath,
+                language,
+                defaultLang,
+                clear(),
+                i
+            );
+
+            mxSettings.setMatrixName(mxConfig.getName());
+
+            if (!mxSettings.validate()) {
+                throw new ParseException(mxSettings.errorMessage());
+            }
+
+            String parsingMessage = mxSettings.parsingMessage();
+            if (parsingMessage != null) {
+                System.out.println(parsingMessage);
+            }
+
+            MatrixBase mx;
+            if (Objects.requireNonNull(mxSettings.format) == CSV) {
+                mx = new MatrixCsv(mxSettings, selectedBaseline, getCSVSettings(config));
+            } else {
+                throw new ParseException("Unknown sensitivity matrix file format");
+            }
+
+            db.updateMatrix(mx);
+            defaultLang = language; // Carry forward for next iteration
+        }
+    }
+
+    private void importCalculationAreasFromConfig(ImportConfigFile config) throws ParseException, SQLException {
+        ImportConfigFile.CalculationAreasConfig caConfig = config.getCalculationAreas();
+
+        if (caConfig.getFile() == null || caConfig.getFile().isEmpty()) {
+            throw new ParseException("calculationAreas.file is required");
+        }
+
+        String resolvedPath = config.resolvePath(caConfig.getFile());
+        String nameProperty = caConfig.getNameProperty() != null ? caConfig.getNameProperty() : "name";
+        boolean allDefault = caConfig.getAllDefault() != null && caConfig.getAllDefault();
+        String[] defaultAreas = caConfig.getDefaultAreas() != null ?
+            caConfig.getDefaultAreas().toArray(new String[0]) : null;
+
+        CalcAreaProcedure calcAreaProcedure = new CalcAreaProcedure(
+            new CalcAreaImportSettings(
+                selectedBaselineVersion,
+                resolvedPath,
+                nameProperty,
+                clear(),
+                allDefault,
+                defaultAreas,
+                db.getAvailableAreaTypes(),
+                db.getMatrixMap(selectedBaselineVersion.getId())
+            )
+        );
+
+        if (calcAreaProcedure.confirmImport()) {
+            db.importCalculationAreas(calcAreaProcedure.areaTuples);
+        }
+    }
+
+    private void validateGeoTiffPath(String path, String type) throws ParseException {
+        Path filePath = Path.of(path).normalize();
+
+        if (!Files.exists(filePath)) {
+            throw new ParseException(String.format("%s raster file not found: %s", type, path));
+        }
+
+        if (!Files.isReadable(filePath)) {
+            throw new ParseException(String.format("%s raster file not readable: %s", type, path));
+        }
+
+        if (!(findFormat(new File(path)) instanceof GeoTiffFormat)) {
+            throw new ParseException(String.format("File is not a valid GeoTiff raster: %s", path));
+        }
+    }
+
+    private CSVSettings getCSVSettings(ImportConfigFile config) {
+        if (config.getCsvSettings() != null) {
+            ImportConfigFile.CsvSettingsConfig csvConfig = config.getCsvSettings();
+            Character delimiter = csvConfig.getDelimiter() != null ?
+                csvConfig.getDelimiter().charAt(0) : null;
+            String newLine = csvConfig.getNewline() != null &&
+                csvConfig.getNewline().equalsIgnoreCase("windows") ? "\r\n" : null;
+            return new CSVSettings(delimiter, newLine);
+        }
+        return new CSVSettings(null, null);
+    }
+
     private void execute() throws ParseException {
         if (setupCmd.hasOption("v") && !setupCmd.hasOption("s")) {
             throw new ParseException("'Verbose report' option is only valid in combination with -s/--status.");
@@ -470,14 +800,7 @@ public class SymphonySetup {
 
         // 'f' = Configuration file option passed (path)
         if (setupCmd.hasOption("f")) {
-            int nonMandatory = Arrays.stream(setupCmd.getOptions())
-                                    .filter(o -> !o.isRequired()).toList().size();
-            if (nonMandatory > 1) {
-                throw new ParseException("ERROR: When passing the 'file' input argument, other switches are disallowed");
-            }
-
-            throw new ParseException("File-based import is not yet implemented");
-
+            executeFromConfigFile();
         } else if (setupCmd.hasOption("s")) {
             // 's' = Status option - print state of baseline
             try {
@@ -669,7 +992,7 @@ public class SymphonySetup {
     private int importNewBaselineVersion() throws ParseException, SQLException {
         String bvDescription = setupCmd.hasOption("bvD") ? setupCmd.getOptionValue("bvD") : "",
             bvLocale = setupCmd.hasOption("bvL") ? setupCmd.getOptionValue("bvL") : "en";
-        LocalDate bvValidDate = null;
+        LocalDate bvValidDate;
 
         if (setupCmd.hasOption("bvV")) {
             String bvDateOption = setupCmd.getOptionValue("bvV");
@@ -685,19 +1008,7 @@ public class SymphonySetup {
 
         for (Option rasterOption: new Option[]{ options.getOption("bvpE"), options.getOption("bvpP") }) {
             String rasterFilePathValue = setupCmd.getOptionValue(rasterOption);
-            Path rasterFilePath = Path.of(rasterFilePathValue).normalize();
-
-            if (!Files.exists(rasterFilePath)) {
-                throw new ParseException(String.format("Raster file (%s) not found", rasterFilePathValue));
-            }
-
-            if (!Files.isReadable(rasterFilePath)) {
-                throw new ParseException(String.format("Raster file (%s) not readable", rasterFilePathValue));
-            }
-
-            if (!(findFormat(new File(rasterFilePathValue)) instanceof GeoTiffFormat)) {
-                throw new ParseException(String.format("File (%s) is not a valid GeoTiff raster", rasterFilePathValue));
-            }
+            validateGeoTiffPath(rasterFilePathValue, rasterOption.getKey().equals("bvpE") ? "Ecosystem" : "Pressure");
         }
 
         if (!ISO_LANG.contains(bvLocale)) {
@@ -761,7 +1072,7 @@ public class SymphonySetup {
         private static final Pattern JSON_STRING_ARRAY_RX = Pattern.compile("\"([a-zA-Z0-9_]+)\"");
         private static String supportedCheckmark() {
             try {
-                String encoding = System.getProperty("file.encoding");
+                String encoding = Charset.defaultCharset().displayName();
                 if (encoding != null && encoding.toUpperCase().contains("UTF")) {
                     return "\u2713";
                 }
@@ -805,6 +1116,18 @@ public class SymphonySetup {
     }
 
     public enum UpdateMode {
-        UPDATE, REPLACE
+        UPDATE("update"),
+        REPLACE("replace");
+
+        @JsonValue
+        private final String value;
+
+        UpdateMode(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
     }
 }

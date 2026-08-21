@@ -20,6 +20,7 @@
     <version.commons-dbcp2>2.12.0</version.commons-dbcp2>
     <version.commons-dbutils>1.8.1</version.commons-dbutils>
     <version.commons-csv>1.11.0</version.commons-csv>
+    <version.jackson>2.18.2</version.jackson>
     <version.geotools>31.7</version.geotools>
     <version.junit>5.11.0</version.junit>
     <version.system-lambda>1.2.1</version.system-lambda>
@@ -72,6 +73,16 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-csv</artifactId>
       <version>${version.commons-csv}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${version.jackson}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+      <version>${version.jackson}</version>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>

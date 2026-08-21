@@ -1,0 +1,13 @@
+# Minimal example: Installing a new baseline version without metadata, matrices, or calculation areas
+# This creates a baseline shell that can be populated later via update operations
+
+operation: newBaseline
+
+baseline:
+  name: minimal-baseline
+  description: A minimal baseline version for testing
+  validFrom: "2026-07-01"
+  locale: en
+  ecoPath: ../baseline/symphony-import-test-BaselineE.tiff
+  pressurePath: ../baseline/symphony-import-test-BaselineP.tiff
+
