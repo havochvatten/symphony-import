@@ -44,13 +44,10 @@ package MSP-Symphony
                                                     specifying a unique baseline version name.    
                                                     Cannot be combined with either of the 
                                                     options 'u' or 'bv'                   
--f, --file <arg>                         v1.1       NOT IMPLEMENTED!           
-                                                    This option will allow passing a json/yaml       
-                                                    configuration file instead of separate cli
-                                                    options.  
-                                                    Provided as a placeholder, not currently
-                                                    implemented.
-                                                    Planned for v1.1 of the tool.                     
+-f, --file <arg>                         v1.1       Pass a json/yaml configuration file with       
+                                                    bundled input parameters instead of separate
+                                                    cli options.
+                                                    The expected format is documented separately.     
 -s, --status                             v1.0       Report status of baseline.
                                                     Incompatible in conjunction with most other 
                                                     options.         
@@ -152,6 +149,16 @@ package MSP-Symphony
                                                     required for "new baseline" invocations ('-n').                   
 ```
 </details>
+
+## File-based import (`-f`)
+
+As an alternative to passing individual command-line options, all import parameters can be bundled into a single **YAML or JSON configuration file** and supplied via the `-f`/`--file` option:
+
+```
+symphony-setup-tool -db mydb -dbU user -dbP secret -f /path/to/import-config.yaml
+```
+
+See [IMPORT-CONFIG.md](IMPORT-CONFIG.md) for the full format specification with annotated examples.
 
 ## Input data format specification
 For practical examples of supported formats, refer to the [test resources directory](/src/test/resources/import).
