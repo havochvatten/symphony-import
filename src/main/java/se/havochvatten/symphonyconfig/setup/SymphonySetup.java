@@ -262,6 +262,12 @@ public class SymphonySetup {
     public UpdateMode updateMode = UpdateMode.UPDATE;
     public boolean clear() { return updateMode == UpdateMode.REPLACE; }
 
+    private boolean failed = false;
+
+    public boolean hasFailed() {
+        return failed;
+    }
+
     public SymphonySetup(String[] args) {
         try {
             if (Arrays.stream(args).anyMatch(arg -> arg.equals("--help") || arg.equals("-h"))) {
@@ -277,6 +283,7 @@ public class SymphonySetup {
             execute();
 
         } catch (ParseException | IOException e) {
+            failed = true;
             System.err.println(e.getMessage());
         }
     }
