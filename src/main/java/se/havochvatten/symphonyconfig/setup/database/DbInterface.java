@@ -349,11 +349,12 @@ public class DbInterface {
                 areaInsert.getCountryISO(), areaInsert.getPolygon(), areaInsert.getNationalAreaType());
         }
 
-        // sanitize table
-        for (String iso :areaCountryISOs) {
+        // sanitize table, once per distinct country
+        for (String iso : Arrays.stream(areaCountryISOs).distinct().toList()) {
             this.qr.update(conn,
-                String.format("DELETE FROM %s.nationalarea WHERE narea_type = ?", schema),
-                NationalAreaRowInsert.TYPE_TYPES);
+                String.format("DELETE FROM %s.nationalarea "
+                    + "WHERE narea_type = ? AND narea_countryiso3 = ?", schema),
+                NationalAreaRowInsert.TYPE_TYPES, iso);
 
             String types = jsonStringArray(
                 Arrays.stream(this.qr.query(conn,
