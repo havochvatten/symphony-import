@@ -1,5 +1,6 @@
 package se.havochvatten.symphonyconfig.CLI;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import se.havochvatten.symphonyconfig.setup.SymphonySetup;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
@@ -54,4 +55,9 @@ class StatusReportTest extends CliTestBase {
     }
 
     // TODO: tests for partial, corrupted and inconsistent imports
+
+    @AfterEach
+    void cleanNationalAreas() {
+        getDbInterface().cleanNationalAreas();
+    }
 }
