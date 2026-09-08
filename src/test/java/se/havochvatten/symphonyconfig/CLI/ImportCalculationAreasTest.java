@@ -90,8 +90,8 @@ class ImportCalculationAreasTest extends CliTestBase {
             queueInteraction(() -> new SymphonySetup(args), "y");
 
             Integer bound = getDbInterface().query(String.format(
-                "SELECT ca.carea_default_sensm_id FROM %s.calculationarea ca LIMIT 1", dbSchema),
-                DbInterface.idHandler);
+                "SELECT ca.carea_default_sensm_id FROM %s.calculationarea ca WHERE ca.carea_name = ?", dbSchema),
+                DbInterface.idHandler, "test-calc-area-1");
 
             assertEquals(ownMatrixId, bound,
                 "Areas imported for a baseline must bind to that baseline's matrix, "

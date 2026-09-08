@@ -6,14 +6,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FilenameUtils;
 import se.havochvatten.symphonyconfig.setup.SymphonySetup;
+import se.havochvatten.symphonyconfig.setup.process.NationalAreaRowInsert;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Model class representing the structure of a JSON/YAML import configuration file.
@@ -57,7 +61,13 @@ public class ImportConfigFile {
     // below, which assigns the field directly since it is a static method of this class).
     private transient Path configFilePath;
 
-    private static final String BOUNDARY_TYPE = "BOUNDARY";
+    // Reuse the process layer's own constant rather than duplicating the literal "BOUNDARY" here.
+    private static final String BOUNDARY_TYPE = NationalAreaRowInsert.TYPE_BOUNDARY;
+
+    // The same set of extensions TextualSettingsBase/ProcedureBase.SUPPORTED_EXT accepts, computed
+    // from the same enum so the two checks cannot disagree.
+    private static final Set<String> SUPPORTED_TABULAR_EXTENSIONS = Set.of(
+        Arrays.stream(SupportedTabularFileFormat.values()).map(Enum::name).toArray(String[]::new));
 
     public static class BaselineConfig {
         private Integer id;
@@ -317,11 +327,15 @@ public class ImportConfigFile {
         if (metadata != null) {
             for (int i = 0; i < metadata.size(); ++i) {
                 requireReadableFile(metadata.get(i).getFile(), "metadata[" + i + "].file");
+                requireSupportedExtension(metadata.get(i).getFile(), "metadata[" + i + "].file");
+                requireValidLanguageIfPresent(metadata.get(i).getLanguage(), "metadata[" + i + "].language");
             }
         }
         if (matrices != null) {
             for (int i = 0; i < matrices.size(); ++i) {
                 requireReadableFile(matrices.get(i).getFile(), "matrices[" + i + "].file");
+                requireSupportedExtension(matrices.get(i).getFile(), "matrices[" + i + "].file");
+                requireValidLanguageIfPresent(matrices.get(i).getLanguage(), "matrices[" + i + "].language");
                 if (isBlank(matrices.get(i).getName())) {
                     throw new ParseException("'matrices[" + i + "].name' is required.");
                 }
@@ -405,11 +419,39 @@ public class ImportConfigFile {
             throw new ParseException("'" + field + "' is required.");
         }
         String resolved = resolvePath(configuredPath);
-        if (!Files.isReadable(Paths.get(resolved))) {
+        Path path = Paths.get(resolved);
+        // Files.isReadable() alone returns true for a directory; require a regular file too.
+        if (!Files.isRegularFile(path) || !Files.isReadable(path)) {
             throw new ParseException(String.format(
                 "'%s' refers to a file that does not exist or cannot be read: %s%n"
                     + "Paths are resolved relative to the configuration file's own directory.",
                 field, resolved));
+        }
+    }
+
+    /**
+     * Validates a metadata/matrix file's extension against the same set TextualSettingsBase
+     * accepts, up front rather than only after iterations before it have already committed.
+     */
+    private void requireSupportedExtension(String configuredPath, String field) throws ParseException {
+        String ext = FilenameUtils.getExtension(configuredPath);
+        if (ext == null || !SUPPORTED_TABULAR_EXTENSIONS.contains(ext.toUpperCase())) {
+            throw new ParseException(String.format(
+                "'%s' (%s) has an unsupported file extension. Allowed types are (%s)",
+                field, configuredPath,
+                String.join(", ", SUPPORTED_TABULAR_EXTENSIONS).toLowerCase()));
+        }
+    }
+
+    /**
+     * Language is optional on a metadata/matrix entry (it defaults to the baseline locale for the
+     * first entry, and to the previous entry's language thereafter), so this only validates a
+     * language that was actually supplied.
+     */
+    private void requireValidLanguageIfPresent(String language, String field) throws ParseException {
+        if (language != null && !SymphonySetup.ISO_LANG.contains(language.toLowerCase())) {
+            throw new ParseException(String.format(
+                "'%s' ('%s') is not a valid ISO 639-1 language code.", field, language));
         }
     }
 
