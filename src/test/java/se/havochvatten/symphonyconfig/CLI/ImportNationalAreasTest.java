@@ -4,6 +4,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import se.havochvatten.symphonyconfig.setup.SymphonySetup;
+import se.havochvatten.symphonyconfig.setup.database.DbTestInterface;
 import se.havochvatten.symphonyconfig.setup.model.NationalArea;
 
 import java.io.IOException;
@@ -89,6 +90,56 @@ class ImportNationalAreasTest extends CliTestBase {
             assertEquals("National area polygon path arguments must match number of specified area types.",
                 displaceErr.toString().trim());
         });
+    }
+
+    @Test
+    void importingOneCountryLeavesAnotherCountrysTypesRowIntact() throws Exception {
+        // Import SWE through the normal path
+        queueInteraction(() -> new SymphonySetup(
+            testCaseArgs("-f", RESOURCES_PATH + "import/national-areas-import.yaml")), "y");
+
+        List<NationalArea> sweBefore = getDbInterface().query(
+            DbTestInterface.getAllNatAreasForCountryCodeQuery(dbSchema), NationalArea.handler, "SWE");
+        assertTrue(sweBefore.stream().anyMatch(na -> "TYPES".equals(na.getType())),
+            "Precondition: SWE has a TYPES row");
+
+        // Now import a different country
+        String kenConfig = writeKenyaConfig();
+        queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", kenConfig)), "y");
+
+        List<NationalArea> sweAfter = getDbInterface().query(
+            DbTestInterface.getAllNatAreasForCountryCodeQuery(dbSchema), NationalArea.handler, "SWE");
+
+        assertTrue(sweAfter.stream().anyMatch(na -> "TYPES".equals(na.getType())),
+            "Importing KEN must not delete SWE's TYPES row; AreasService uses getSingleResult() "
+                + "and would then throw NATIONAL_AREA_NOT_FOUND for Sweden");
+    }
+
+    /**
+     * Writes a 'nationalAreas' config for KEN, reusing the existing SWE boundary/selectable
+     * JSON fixtures (the countryISO comes from the config, not from the file contents). Must
+     * satisfy the stricter validation rules: exactly one BOUNDARY entry, a single shared
+     * countryISO across entries, every referenced file existing, and a 3-character countryISO.
+     */
+    private String writeKenyaConfig() {
+        try {
+            Path dir = Path.of("target/test-resources");
+            Files.createDirectories(dir);
+            Path p = dir.resolve("national-areas-ken.yaml");
+            Files.writeString(p, String.join(NEW_LINE,
+                "operation: nationalAreas",
+                "nationalAreas:",
+                "  - type: BOUNDARY",
+                "    file: " + absoluteResourcePath("/import/national-area/test-national-boundary.json"),
+                "    countryISO: KEN",
+                "  - type: TEST",
+                "    file: " + absoluteResourcePath("/import/national-area/test-national-selectable.json"),
+                "    countryISO: KEN"));
+            return p.toString();
+        } catch (IOException e) {
+            fail("Could not write config: " + e.getMessage());
+            return null;
+        }
     }
 
     @AfterEach
