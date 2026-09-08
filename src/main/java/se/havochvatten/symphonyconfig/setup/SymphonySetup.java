@@ -657,7 +657,7 @@ public class SymphonySetup {
                 resolvedPath,
                 language,
                 defaultLang,
-                clear(),
+                clear() && i == 0,   // clear once for the whole update, not once per file
                 i
             );
 
@@ -707,7 +707,7 @@ public class SymphonySetup {
                 resolvedPath,
                 language,
                 defaultLang,
-                clear(),
+                clear() && i == 0,   // clear once for the whole update, not once per file
                 i
             );
 

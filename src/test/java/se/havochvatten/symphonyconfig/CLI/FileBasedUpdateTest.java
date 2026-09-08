@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import se.havochvatten.symphonyconfig.setup.SymphonySetup;
 import se.havochvatten.symphonyconfig.setup.config.ImportConfigFile;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
+import se.havochvatten.symphonyconfig.setup.model.SymphonyBand;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyCategory;
 
 import java.io.IOException;
@@ -159,6 +160,93 @@ public class FileBasedUpdateTest extends CliTestBase {
         }
     }
 
+
+    @Test
+    void replaceWithTwoMetadataFilesKeepsBothLanguages() {
+        assertNotNull(bvId);
+
+        // Seed both languages through the CLI path
+        String[] seedArgs = testCaseArgs("-u",
+            "-md", csvMetaFileCompleteEN,
+            "-md", csvMetaFileCompleteSV,
+            "-mdL", "en", "sv",
+            "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(seedArgs), "y", "y");
+
+        // A replace config listing BOTH metadata files, exactly as IMPORT-CONFIG.md sanctions
+        String tempConfigPath = createTempReplaceConfigWithBothLanguages();
+
+        try {
+            String[] args = testCaseArgs("-f", tempConfigPath);
+
+            queueInteraction(() -> {
+                new SymphonySetup(args);
+
+                try {
+                    Baseline bl = getDbInterface().getBaseline(bvId);
+                    assertNotNull(bl);
+
+                    assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.size());
+                    assertEquals(4, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.size());
+
+                    // Both languages must survive. Before the fix, the first file's
+                    // language is wiped by the second file's clearBandData call.
+                    for (SymphonyBand band : bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.values()) {
+                        assertNotNull(band.getTitle("en"),
+                            "English metadata must survive a two-file replace");
+                        assertNotNull(band.getTitle("sv"),
+                            "Swedish metadata must survive a two-file replace; "
+                                + "clearBandData must run once per update, not once per file");
+                    }
+                } catch (SQLException ex) {
+                    fail("Database error: " + ex.getMessage());
+                }
+            }, "y", "y");
+        } finally {
+            deleteTempConfig(tempConfigPath);
+        }
+    }
+
+    private String createTempReplaceConfigWithBothLanguages() {
+        try {
+            Path tempDir = Path.of(TEMP_DIR);
+            Files.createDirectories(tempDir);
+
+            // The config references the metadata files by name, so copy them next to it
+            Files.copy(Path.of(csvMetaFileCompleteEN),
+                tempDir.resolve("metadata-wellformed-complete-en.csv"), REPLACE_EXISTING);
+            Files.copy(Path.of(csvMetaFileCompleteSV),
+                tempDir.resolve("metadata-wellformed-complete-sv.csv"), REPLACE_EXISTING);
+
+            String yaml = String.join(NEW_LINE,
+                "operation: update",
+                "baseline:",
+                "  id: " + bvId,
+                "  updateMode: replace",
+                "metadata:",
+                "  - file: metadata-wellformed-complete-en.csv",
+                "    language: en",
+                "  - file: metadata-wellformed-complete-sv.csv",
+                "    language: sv");
+
+            Path configPath = tempDir.resolve("replace-two-languages.yaml");
+            Files.writeString(configPath, yaml);
+            return configPath.toString();
+        } catch (IOException e) {
+            fail("Could not create temporary config: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private void deleteTempConfig(String path) {
+        if (path != null) {
+            try {
+                Files.deleteIfExists(Path.of(path));
+            } catch (IOException ignored) {
+                // temp cleanup only
+            }
+        }
+    }
 
     private record MetadataFileSpec(String fileName, String language) {}
     
