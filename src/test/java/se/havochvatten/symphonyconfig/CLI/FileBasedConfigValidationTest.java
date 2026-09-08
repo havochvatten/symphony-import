@@ -255,6 +255,48 @@ public class FileBasedConfigValidationTest extends CliTestBase {
         }
     }
 
+    @Test
+    void operationValueIsCaseInsensitive() {
+        String cfg = writeConfig("lowercase-op.yaml",
+            "operation: newbaseline",
+            "baseline:",
+            "  name: lowercase-op-test",
+            "  validFrom: \"2029-03-03\"",
+            "  ecoPath: " + TEST_TIFF_E_PATH,
+            "  pressurePath: " + TEST_TIFF_P_PATH);
+
+        try {
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "y");
+            assertNotNull(getDbInterface().getBaselineVersionByName("lowercase-op-test"),
+                "'newbaseline' should be accepted as 'newBaseline'");
+        } finally {
+            Integer id = getDbInterface().getBaselineVersionByName("lowercase-op-test");
+            if (id != null) {
+                getDbInterface().cleanBaselineVersion(id);
+            }
+        }
+    }
+
+    @Test
+    void unknownOperationGivesAReadableError() {
+        String cfg = writeConfig("bad-op.yaml", "operation: instalEverything");
+
+        assertRejected(cfg, "Must be one of");
+        assertTrue(!displaceErr.toString().contains("InvalidFormatException"),
+            "The operator should not see a raw Jackson exception name");
+    }
+
+    @Test
+    void configFilePathIsNotAUserFacingKey() {
+        String cfg = writeConfig("hijack.yaml",
+            "operation: newBaseline",
+            "configFilePath: /tmp",
+            "baseline:",
+            "  name: hijack-test");
+
+        assertRejected(cfg, "configFilePath");
+    }
+
     private String writeConfig(String name, String... lines) {
         try {
             Path dir = Path.of("target/test-resources");
