@@ -244,6 +244,36 @@ public class DbTestInterface extends DbInterface {
         }
     }
 
+    /** Insert a reliability partition polygon bound to the first band of the given baseline. */
+    public void installReliabilityPartition(int bvId) throws SQLException {
+        qr.update(getConnection(), String.format(
+            "INSERT INTO %1$s.reliabilitypartition (rp_metaband_id, rp_value, rp_polygon) "
+                + "SELECT metaband_id, 3, "
+                + "ST_Multi(ST_GeomFromText('POLYGON((0 0,1 0,1 1,0 1,0 0))',4326)) "
+                + "FROM %1$s.meta_bands WHERE metaband_bver_id = ? LIMIT 1", schema), bvId);
+    }
+
+    public void cleanReliabilityPartitions(int bvId) throws SQLException {
+        qr.update(getConnection(), String.format(
+            "DELETE FROM %1$s.reliabilitypartition rp USING %1$s.meta_bands mb "
+                + "WHERE mb.metaband_id = rp.rp_metaband_id AND mb.metaband_bver_id = ?", schema), bvId);
+    }
+
+    /** Mark an existing matrix as user-owned, simulating a matrix created through the GUI. */
+    public void setMatrixOwner(String matrixName, String owner) throws SQLException {
+        qr.update(getConnection(), String.format(
+            "UPDATE %s.sensitivitymatrix SET sensm_owner = ? WHERE sensm_name = ?", schema),
+            owner, matrixName);
+    }
+
+    public int countMetaValues(int bvId) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %1$s.meta_values mv JOIN %1$s.meta_bands mb "
+                + "ON mb.metaband_id = mv.metaval_band_id WHERE mb.metaband_bver_id = ?", schema),
+            longHandler, bvId);
+        return n == null ? 0 : n.intValue();
+    }
+
     public void cleanCalculationAreas(int bvId) {
         try (Connection conn = getConnection()) {
             // Delete calculation areas

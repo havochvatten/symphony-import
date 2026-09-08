@@ -94,6 +94,22 @@ metadata:
     language: en
 ```
 
+### `updateMode: replace` is destructive
+
+`replace` deletes every band metadata row on the target baseline version before re-importing.
+Two consequences are easy to miss, so the tool checks for both before it writes anything:
+
+* Sensitivity scores are deleted along with their bands. Any sensitivity matrix on the baseline
+  version, including matrices users created through the GUI, is left in place but emptied. When
+  such user owned matrices exist, the tool prints a warning naming their owners before the
+  import confirmation prompt. This cannot be undone by the tool.
+* Reliability partition polygons reference band metadata with no cascade, so the delete cannot
+  complete while any exist. The tool refuses the run outright and changes nothing. Remove the
+  reliability partitions first, or use `updateMode: update`.
+
+The clear and the re-import of a given metadata file run as a single transaction, so a failure
+part way through rolls back rather than leaving a half emptied baseline version.
+
 ---
 
 ## `nationalAreas` — Import national areas

@@ -189,6 +189,29 @@ public class DbInterface {
     }
 
 
+    /**
+     * Rows in reliabilitypartition reference meta_bands with no ON DELETE action, so
+     * clearing band data for a baseline that has them fails part-way through.
+     */
+    public int countReliabilityPartitionRows(int bvId) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %1$s.reliabilitypartition rp "
+                + "JOIN %1$s.meta_bands mb ON mb.metaband_id = rp.rp_metaband_id "
+                + "WHERE mb.metaband_bver_id = ?", schema), longHandler, bvId);
+        return n == null ? 0 : n.intValue();
+    }
+
+    /**
+     * Owners of user-created sensitivity matrices on this baseline. Clearing band data
+     * cascades through sensitivity.sens_*_band_fk and empties their matrices.
+     */
+    public List<String> ownedMatrixOwners(int bvId) throws SQLException {
+        return query(String.format(
+            "SELECT DISTINCT sensm_owner FROM %s.sensitivitymatrix "
+                + "WHERE sensm_bver_id = ? AND sensm_owner IS NOT NULL ORDER BY 1", schema),
+            new ColumnListHandler<String>(), bvId);
+    }
+
     protected void clearBandData(int bvId) throws SQLException {
         Connection conn = getConnection();
         for (SymphonyCategory cat : SymphonyCategory.values()) {
@@ -203,32 +226,77 @@ public class DbInterface {
         Integer bandId;
 
         if (metadata.confirmImport()) {
-            if(metadata.settings.clear) {
-                clearBandData(blvId);
-            }
+            // Clearing band data cascades into sensitivity scores and can fail part-way
+            // through, so the clear and the re-insert must succeed or fail as one unit.
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            boolean transactionEnded = false;
 
-            for (SymphonyCategory cat : SymphonyCategory.values()) {
+            try {
+                if(metadata.settings.clear) {
+                    clearBandData(blvId);
+                }
 
-                for (SymphonyBand band : metadata.bands.get(cat)) {
-                    bandId = qr.query(conn,
-                        SymphonyBand.preBandExists(schema), idHandler,
-                            blvId,
-                            cat.getDbVal(),
-                            band.getBandNumber());
+                for (SymphonyCategory cat : SymphonyCategory.values()) {
 
-                    if (bandId == null) {
-                        bandId = qr.insert(conn, SymphonyBand.preBandInsert(schema), idHandler,
-                            blvId, cat.getDbVal(), band.getBandNumber(), band.isDefaultSelected());
+                    for (SymphonyBand band : metadata.bands.get(cat)) {
+                        bandId = qr.query(conn,
+                            SymphonyBand.preBandExists(schema), idHandler,
+                                blvId,
+                                cat.getDbVal(),
+                                band.getBandNumber());
+
                         if (bandId == null) {
-                            throw new SQLException("");
+                            bandId = qr.insert(conn, SymphonyBand.preBandInsert(schema), idHandler,
+                                blvId, cat.getDbVal(), band.getBandNumber(), band.isDefaultSelected());
+                            if (bandId == null) {
+                                throw new SQLException("");
+                            }
+                        }
+
+                        Map<String, String> metaMap = band.getMeta().get(metadata.settings.language);
+                        for (Map.Entry<String, String> mv : metaMap.entrySet()) {
+                            qr.insert(conn, SymphonyBand.preMetaInsert(schema), idHandler,
+                                bandId, metadata.settings.language, mv.getKey(), mv.getValue());
                         }
                     }
+                }
 
-                    Map<String, String> metaMap = band.getMeta().get(metadata.settings.language);
-                    for (Map.Entry<String, String> mv : metaMap.entrySet()) {
-                        qr.insert(conn, SymphonyBand.preMetaInsert(schema), idHandler,
-                            bandId, metadata.settings.language, mv.getKey(), mv.getValue());
+                conn.commit();
+                transactionEnded = true;
+            } catch (SQLException | RuntimeException e) {
+                // Rolled back here rather than only in the finally, so that a failure to
+                // roll back is attached to the original exception instead of replacing it
+                transactionEnded = true;
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackFailure) {
+                    e.addSuppressed(rollbackFailure);
+                }
+                throw e;
+            } finally {
+                // Anything that escaped the catch above (an Error, or a checked exception a
+                // later edit introduces) leaves the transaction open, and setAutoCommit(true)
+                // commits an open transaction per the JDBC contract. That would commit the
+                // half-cleared baseline this whole transaction exists to prevent, so end the
+                // transaction explicitly before restoring the connection.
+                if (!transactionEnded) {
+                    try {
+                        conn.rollback();
+                    } catch (SQLException rollbackFailure) {
+                        System.err.println(
+                            "Warning: could not roll back the aborted metadata import: "
+                                + rollbackFailure.getMessage());
                     }
+                }
+
+                // Never let a failure to restore the connection mask the real outcome
+                try {
+                    conn.setAutoCommit(previousAutoCommit);
+                } catch (SQLException restoreFailure) {
+                    System.err.println(
+                        "Warning: could not restore the connection's auto-commit setting: "
+                            + restoreFailure.getMessage());
                 }
             }
 

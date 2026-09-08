@@ -207,6 +207,70 @@ public class FileBasedUpdateTest extends CliTestBase {
         }
     }
 
+    @Test
+    void replaceIsRefusedWhenReliabilityPolygonsWouldBlockIt() throws Exception {
+        assertNotNull(bvId);
+
+        // Seed metadata, then attach a reliability polygon as other tooling would
+        String[] seedArgs = testCaseArgs("-u",
+            "-md", csvMetaFileCompleteEN, "-mdL", "en", "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(seedArgs), "y");
+
+        String tempConfigPath = null;
+        try {
+            // Installed inside the try: everything from here on must be reachable by the
+            // finally, or a stray failure leaves the reliability row in place and the
+            // @AfterEach cleanBaselineVersion then trips the same RESTRICT foreign key
+            getDbInterface().installReliabilityPartition(bvId);
+            int valuesBefore = getDbInterface().countMetaValues(bvId);
+            assertTrue(valuesBefore > 0, "Precondition: metadata present");
+
+            tempConfigPath = createTempReplaceConfig();
+            String cfg = tempConfigPath;
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "y");
+
+            String err = displaceErr.toString();
+            assertTrue(err.contains("reliability"),
+                "Replace must be refused with an explanatory message. stderr was: " + err);
+            assertTrue(err.contains("Cannot run updateMode 'replace'"),
+                "The refusal must be the tool's own pre-flight message, not a raw foreign key "
+                    + "error raised half-way through the delete. stderr was: " + err);
+
+            assertEquals(valuesBefore, getDbInterface().countMetaValues(bvId),
+                "A refused replace must not delete any metadata");
+        } finally {
+            getDbInterface().cleanReliabilityPartitions(bvId);
+            deleteTempConfig(tempConfigPath);
+        }
+    }
+
+    @Test
+    void replaceNamesUserOwnedMatricesItWillEmpty() throws Exception {
+        assertNotNull(bvId);
+
+        String[] seedArgs = testCaseArgs("-u",
+            "-md", csvMetaFileCompleteEN, "-mdL", "en",
+            "-mx", csvMatrixFileEN, "-mxN", csvMatrixCompleteName, "-mxL", "en",
+            "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(seedArgs), "y", "y");
+
+        getDbInterface().setMatrixOwner(csvMatrixCompleteName, "alice@example.org");
+
+        String tempConfigPath = null;
+        try {
+            tempConfigPath = createTempReplaceConfig();
+            String cfg = tempConfigPath;
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "n");
+
+            String out = displaceOut.toString();
+            assertTrue(out.contains("alice@example.org"),
+                "The confirmation prompt must name the owners whose matrix data will be emptied. "
+                    + "stdout was: " + out);
+        } finally {
+            deleteTempConfig(tempConfigPath);
+        }
+    }
+
     private String createTempReplaceConfigWithBothLanguages() {
         try {
             Path tempDir = Path.of(TEMP_DIR);
