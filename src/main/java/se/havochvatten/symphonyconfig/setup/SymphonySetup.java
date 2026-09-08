@@ -395,6 +395,14 @@ public class SymphonySetup {
                 if (setupCmd.hasOption("u")) {
                     setBaselineVersion();
                     if (selectedBaselineVersion == null) return;
+
+                    // Currently unreachable: the value of '-u' is never parsed
+                    // (UpdateModeConverter is registered on the option, but
+                    // getParsedOptionValue is never called), so updateMode stays UPDATE
+                    // and clear() is always false on the switch path. Deliberate
+                    // insurance, so that fixing that wiring inherits the guard rather
+                    // than reintroducing the destructive behaviour through the CLI.
+                    guardReplaceMode();
                 }
 
                 if (setupCmd.hasOption("n")) {
@@ -611,6 +619,8 @@ public class SymphonySetup {
             updateMode = bl.getUpdateMode() != null ? 
                 bl.getUpdateMode() : UpdateMode.UPDATE;
 
+            guardReplaceMode();
+
             commonConfigImportSequence(config);
 
         } catch (SQLException e) {
@@ -648,6 +658,48 @@ public class SymphonySetup {
             db.updateNationalAreas(areaInserts);
         } catch (SQLException e) {
             throw new ParseException("Database error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Pre-flight checks for updateMode 'replace', which clears all band metadata for the
+     * selected baseline version before re-importing.
+     * <p>
+     * Two separate risks, handled differently:
+     * <ul>
+     *   <li>reliabilitypartition rows reference meta_bands with no ON DELETE action, so the
+     *       clear is guaranteed to fail part-way through. There is no way to complete it, so
+     *       the run is refused outright.</li>
+     *   <li>sensitivity scores cascade away with their bands, emptying every user-created
+     *       sensitivity matrix on the baseline. The operator may well intend this, so it is a
+     *       warning, but it names the owners so nobody discovers it afterwards.</li>
+     * </ul>
+     */
+    private void guardReplaceMode() throws ParseException, SQLException {
+        if (!clear() || selectedBaselineVersion == null) {
+            return;
+        }
+
+        int reliabilityRows = db.countReliabilityPartitionRows(selectedBaselineVersion.getId());
+        if (reliabilityRows > 0) {
+            throw new ParseException(String.format(
+                "Cannot run updateMode 'replace' on this baseline version: %d reliability "
+                    + "partition polygon(s) reference its band metadata.%n"
+                    + "Clearing band data would fail part-way through and leave the baseline "
+                    + "in a broken state. Remove the reliability partitions first, or use "
+                    + "updateMode 'update'.",
+                reliabilityRows));
+        }
+
+        List<String> owners = db.ownedMatrixOwners(selectedBaselineVersion.getId());
+        if (!owners.isEmpty()) {
+            System.out.printf(
+                "WARNING: updateMode 'replace' deletes all band metadata for this baseline "
+                    + "version.%nThis cascades to every sensitivity score on it, including "
+                    + "the user-created matrices owned by: %s%n"
+                    + "Those matrices will remain listed but will be empty. "
+                    + "This cannot be undone by this tool.%n",
+                String.join(", ", owners));
         }
     }
 
