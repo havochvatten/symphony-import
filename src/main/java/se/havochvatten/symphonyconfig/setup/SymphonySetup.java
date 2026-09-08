@@ -70,8 +70,31 @@ public class SymphonySetup {
             DB_PASSWORD_OPTION, "password"
         );
 
+    /**
+     * Every option that identifies a database connection: the four settings themselves
+     * ('-db', '-dbH', '-dbU', '-dbP'), their port/schema companions ('-dbPt', '-dbS'), and
+     * the four '-envDb*' options that redirect a setting to a different environment variable.
+     * Used to tell connection options apart from import options - e.g. by
+     * {@link #optionsExceptRequired()}, which must not mistake any of these for a leftover
+     * baseline-import switch on the national-area invocation path.
+     */
     static final Set<String> dbOptions = Set.of(
-        DB_HOST_OPTION, DB_NAME_OPTION, DB_USER_OPTION, DB_PASSWORD_OPTION
+        DB_HOST_OPTION, DB_NAME_OPTION, DB_USER_OPTION, DB_PASSWORD_OPTION,
+        "dbPt", "dbS",
+        DB_NAME_ENV_OPTION, DB_HOST_ENV_OPTION, DB_USER_ENV_OPTION, DB_PASSWORD_ENV_OPTION
+    );
+
+    /**
+     * Options that may accompany '-f'. Database connection options are required in
+     * file mode; '-bvpE' and '-bvpP' are the documented GeoTIFF path overrides.
+     * Everything else must be expressed in the configuration file itself.
+     */
+    static final Set<String> FILE_MODE_ALLOWED_OPTIONS = Set.of(
+        "f",
+        "bvpE", "bvpP",
+        DB_NAME_OPTION, DB_HOST_OPTION, DB_USER_OPTION, DB_PASSWORD_OPTION,
+        "dbS", "dbPt",
+        DB_NAME_ENV_OPTION, DB_HOST_ENV_OPTION, DB_USER_ENV_OPTION, DB_PASSWORD_ENV_OPTION
     );
 
     static {
@@ -82,8 +105,11 @@ public class SymphonySetup {
                     "Cannot be combined with either of the options 'u' or 'bv'", v1_0),
                updateOption      = newOption("u", "update", true,
                    "Update an existing baseline version. Must be combined with '-bv' option to specify the target baseline version id.\n" +
-                   "Takes an optional argument which may be specified as ('u'/'update' or 'r'/'replace'v1_0), differentiating \"update mode\".\n" +
-                   "When set to 'replace', all existing coupled data is cleared before the update procedure is run.", v1_0),
+                   "Takes an optional argument which may be specified as ('u'/'update' or 'r'/'replace'), differentiating \"update mode\".\n" +
+                   "This argument is not currently honoured on the command line: 'replace' mode is only available via the '-f' configuration file option.\n" +
+                   "When set to 'replace' (via '-f'), ALL band metadata for the target baseline version is deleted before the update runs.\n" +
+                   "This cascades to every sensitivity score on the baseline, including user-created matrices.\n" +
+                   "Sensitivity matrices and calculation areas are not themselves cleared: re-importing them appends duplicates.", v1_0),
                configFileOption  = newOption("f", "file", true,
                     "Pass a json/yaml configuration file with bundled input parameters instead of separate cli options.\n " +
                     "The expected format is documented separately.\n", v1_1),
@@ -155,8 +181,8 @@ public class SymphonySetup {
                    "Specify to set all calculation areas present in the GeoPackage file slated for import by the "+
                            "'-caF' option as default for the target baseline.", v1_0),
 
-               csvDelimOption    = newOption("csvS", "delimiter", true, "Column delimiter character for CSV files (defaults to ',').", v1_0),
-               csvNewLineOption  = newOption("csvN", "newline", true, "Row delimiter character for CSV files (newline).", v1_0),
+               csvDelimOption    = newOption("csvS", "delimiter", true, "Column delimiter character for CSV files. Defaults to ';', the Symphony convention.", v1_0),
+               csvNewLineOption  = newOption("csvN", "newline", true, "Row delimiter for CSV files. Set to 'windows' for CRLF input; omitted or any other value means LF.", v1_0),
 
                newBaselineName  = newOption("bvN", "baselineVersionName", true,
                    "Baseline version name, required for \"new baseline\" invocations ('-n'). Must be unique.", v1_0),
@@ -249,6 +275,12 @@ public class SymphonySetup {
     public UpdateMode updateMode = UpdateMode.UPDATE;
     public boolean clear() { return updateMode == UpdateMode.REPLACE; }
 
+    private boolean failed = false;
+
+    public boolean hasFailed() {
+        return failed;
+    }
+
     public SymphonySetup(String[] args) {
         try {
             if (Arrays.stream(args).anyMatch(arg -> arg.equals("--help") || arg.equals("-h"))) {
@@ -264,6 +296,7 @@ public class SymphonySetup {
             execute();
 
         } catch (ParseException | IOException e) {
+            failed = true;
             System.err.println(e.getMessage());
         }
     }
@@ -301,6 +334,17 @@ public class SymphonySetup {
         }
     }
 
+    private void checkExistingBaselineValidFrom(LocalDate validFrom) throws ParseException, SQLException {
+        if (db.baselineVersionExistsForDate(java.sql.Date.valueOf(validFrom))) {
+            throw new ParseException(String.format(
+                "A baseline version with validFrom '%s' already exists.%n"
+                    + "MSP-Symphony resolves the current baseline by validFrom and fails with "
+                    + "BASELINE_VERSION_MULT_MATCHES when two share a date. "
+                    + "Set an explicit, unique 'baseline.validFrom' in the configuration file.",
+                validFrom));
+        }
+    }
+
     private void checkNewBaselineInvocation() throws ParseException, SQLException {
         if (RequiredNewBaselineOptionAliases.stream().allMatch(setupCmd::hasOption)) {
             Integer optBvId = Util.tryParseInt(setupCmd.getOptionValue("bv"));
@@ -333,8 +377,14 @@ public class SymphonySetup {
                 return true;
             }
             if (!correctOptions) {
-                    throw new ParseException("Invalid invocation:\n" +
-                        "both baseline and national area import options were provided.");
+                String disallowed = Arrays.stream(optionsExceptRequired())
+                    .filter(key -> !NationalAreaOptionAliases.contains(key))
+                    .sorted()
+                    .collect(Collectors.joining(", "));
+
+                throw new ParseException(String.format(
+                    "Invalid invocation:%noption(s) not valid for a national area import: %s.",
+                    disallowed));
             }
             // implying allRequired is false
             throw new ParseException("Invalid invocation:\n" +
@@ -382,6 +432,14 @@ public class SymphonySetup {
                 if (setupCmd.hasOption("u")) {
                     setBaselineVersion();
                     if (selectedBaselineVersion == null) return;
+
+                    // Currently unreachable: the value of '-u' is never parsed
+                    // (UpdateModeConverter is registered on the option, but
+                    // getParsedOptionValue is never called), so updateMode stays UPDATE
+                    // and clear() is always false on the switch path. Deliberate
+                    // insurance, so that fixing that wiring inherits the guard rather
+                    // than reintroducing the destructive behaviour through the CLI.
+                    guardReplaceMode();
                 }
 
                 if (setupCmd.hasOption("n")) {
@@ -465,10 +523,8 @@ public class SymphonySetup {
         try {
             ImportConfigFile config = ImportConfigFile.parse(configFilePath);
 
-            // Validate operation type
-            if (config.getOperation() == null) {
-                throw new ParseException("Configuration file must specify 'operation' field");
-            }
+            // Validate the configuration in full before any database write occurs
+            config.validate();
 
             switch (config.getOperation()) {
                 case NEW_BASELINE -> executeNewBaselineFromConfig(config);
@@ -506,6 +562,7 @@ public class SymphonySetup {
     }
 
     private void executeNewBaselineFromConfig(ImportConfigFile config) throws ParseException {
+        // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
         if (config.getBaseline() == null) {
             throw new ParseException("Configuration must include 'baseline' section for newBaseline operation");
         }
@@ -513,6 +570,7 @@ public class SymphonySetup {
         ImportConfigFile.BaselineConfig bl = config.getBaseline();
 
         // Required fields for new baseline
+        // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
         if (bl.getName() == null || bl.getName().isEmpty()) {
             throw new ParseException("baseline.name is required for newBaseline operation");
         }
@@ -531,12 +589,6 @@ public class SymphonySetup {
             // Check for duplicate baseline name
             checkExistingBaselineName(bl.getName());
 
-            if (!confirmToProceed(
-                    String.format("Pending baseline version installation: %s", bl.getName()),
-                    "Baseline version installation aborted interactively.")) {
-                return;
-            }
-
             // Validate GeoTIFF files
             validateGeoTiffPath(ecoPath, "Ecosystem");
             validateGeoTiffPath(pressurePath, "Pressure");
@@ -548,6 +600,15 @@ public class SymphonySetup {
             // Parse valid from date
             LocalDate validFrom = bl.getValidFrom() != null ?
                 LocalDate.parse(bl.getValidFrom()) : LocalDate.now();
+
+            checkExistingBaselineValidFrom(validFrom);
+
+            // Only ask the operator to confirm an import that is known to be valid
+            if (!confirmToProceed(
+                    String.format("Pending baseline version installation: %s", bl.getName()),
+                    "Baseline version installation aborted interactively.")) {
+                return;
+            }
 
             // Create and insert baseline version
             BaselineVersion baselineVersionToInstall = new BaselineVersion(
@@ -574,12 +635,14 @@ public class SymphonySetup {
     }
 
     private void executeUpdateFromConfig(ImportConfigFile config) throws ParseException {
+        // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
         if (config.getBaseline() == null) {
             throw new ParseException("Configuration must include 'baseline' section for update operation");
         }
 
         ImportConfigFile.BaselineConfig bl = config.getBaseline();
 
+        // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
         if (bl.getId() == null) {
             throw new ParseException("baseline.id is required for update operation");
         }
@@ -592,8 +655,19 @@ public class SymphonySetup {
             }
 
             // Set update mode (default to UPDATE if not specified)
-            updateMode = bl.getUpdateMode() != null ? 
+            updateMode = bl.getUpdateMode() != null ?
                 bl.getUpdateMode() : UpdateMode.UPDATE;
+
+            // clear() only ever triggers a destructive delete inside importMetadataFromConfig
+            // (via db.updateMetadata's clearBandData call); matrices and calculation areas never
+            // consult it. So a 'replace' with no 'metadata' section changes nothing, and the guard
+            // must not fire for it: without this gate, a matrices-only replace on a baseline with
+            // reliability partitions was refused outright, and one with user-owned matrices warned
+            // about a deletion that would never happen. See IMPORT-CONFIG.md's "replace has no
+            // effect at all unless the configuration also carries a metadata section".
+            if (config.getMetadata() != null && !config.getMetadata().isEmpty()) {
+                guardReplaceMode();
+            }
 
             commonConfigImportSequence(config);
 
@@ -605,17 +679,8 @@ public class SymphonySetup {
     }
 
     private void executeNationalAreasFromConfig(ImportConfigFile config) throws ParseException {
-        if (config.getNationalAreas() == null || config.getNationalAreas().isEmpty()) {
-            throw new ParseException("Configuration must include 'nationalAreas' section for nationalAreas operation");
-        }
-
-        // Check that BOUNDARY type is present
-        boolean hasBoundary = config.getNationalAreas().stream()
-            .anyMatch(na -> "BOUNDARY".equals(na.getType()));
-
-        if (!hasBoundary) {
-            throw new ParseException("National area import must include the BOUNDARY type");
-        }
+        // The 'nationalAreas' section, its BOUNDARY entry and every referenced file are
+        // verified by ImportConfigFile.validate() before this method is reached.
 
         // Convert to NationalAreaRowInsert array
         NationalAreaRowInsert[] areaInserts = config.getNationalAreas().stream()
@@ -644,6 +709,48 @@ public class SymphonySetup {
         }
     }
 
+    /**
+     * Pre-flight checks for updateMode 'replace', which clears all band metadata for the
+     * selected baseline version before re-importing.
+     * <p>
+     * Two separate risks, handled differently:
+     * <ul>
+     *   <li>reliabilitypartition rows reference meta_bands with no ON DELETE action, so the
+     *       clear is guaranteed to fail part-way through. There is no way to complete it, so
+     *       the run is refused outright.</li>
+     *   <li>sensitivity scores cascade away with their bands, emptying every user-created
+     *       sensitivity matrix on the baseline. The operator may well intend this, so it is a
+     *       warning, but it names the owners so nobody discovers it afterwards.</li>
+     * </ul>
+     */
+    private void guardReplaceMode() throws ParseException, SQLException {
+        if (!clear() || selectedBaselineVersion == null) {
+            return;
+        }
+
+        int reliabilityRows = db.countReliabilityPartitionRows(selectedBaselineVersion.getId());
+        if (reliabilityRows > 0) {
+            throw new ParseException(String.format(
+                "Cannot run updateMode 'replace' on this baseline version: %d reliability "
+                    + "partition polygon(s) reference its band metadata.%n"
+                    + "Clearing band data would fail part-way through and leave the baseline "
+                    + "in a broken state. Remove the reliability partitions first, or use "
+                    + "updateMode 'update'.",
+                reliabilityRows));
+        }
+
+        List<String> owners = db.ownedMatrixOwners(selectedBaselineVersion.getId());
+        if (!owners.isEmpty()) {
+            System.out.printf(
+                "WARNING: updateMode 'replace' deletes all band metadata for this baseline "
+                    + "version.%nThis cascades to every sensitivity score on it, including "
+                    + "the user-created matrices owned by: %s%n"
+                    + "Those matrices will remain listed but will be empty. "
+                    + "This cannot be undone by this tool.%n",
+                String.join(", ", owners));
+        }
+    }
+
     private void importMetadataFromConfig(ImportConfigFile config) throws Exception {
         String defaultLang = selectedBaselineVersion.getLocale();
 
@@ -657,7 +764,7 @@ public class SymphonySetup {
                 resolvedPath,
                 language,
                 defaultLang,
-                clear(),
+                clear() && i == 0,   // clear once for the whole update, not once per file
                 i
             );
 
@@ -695,6 +802,7 @@ public class SymphonySetup {
         for (int i = 0; i < config.getMatrices().size(); ++i) {
             ImportConfigFile.MatrixConfig mxConfig = config.getMatrices().get(i);
 
+            // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
             if (mxConfig.getName() == null || mxConfig.getName().isEmpty()) {
                 throw new ParseException("Matrix name is required for each matrix in the configuration");
             }
@@ -707,7 +815,7 @@ public class SymphonySetup {
                 resolvedPath,
                 language,
                 defaultLang,
-                clear(),
+                clear() && i == 0,   // clear once for the whole update, not once per file
                 i
             );
 
@@ -737,10 +845,7 @@ public class SymphonySetup {
     private void importCalculationAreasFromConfig(ImportConfigFile config) throws ParseException, SQLException {
         ImportConfigFile.CalculationAreasConfig caConfig = config.getCalculationAreas();
 
-        if (caConfig.getFile() == null || caConfig.getFile().isEmpty()) {
-            throw new ParseException("calculationAreas.file is required");
-        }
-
+        // 'calculationAreas.file' is verified by ImportConfigFile.validate() before this point.
         String resolvedPath = config.resolvePath(caConfig.getFile());
         String nameProperty = caConfig.getNameProperty() != null ? caConfig.getNameProperty() : "name";
         boolean allDefault = caConfig.getAllDefault() != null && caConfig.getAllDefault();
@@ -761,7 +866,7 @@ public class SymphonySetup {
         );
 
         if (calcAreaProcedure.confirmImport()) {
-            db.importCalculationAreas(calcAreaProcedure.areaTuples);
+            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId());
         }
     }
 
@@ -800,6 +905,22 @@ public class SymphonySetup {
 
         // 'f' = Configuration file option passed (path)
         if (setupCmd.hasOption("f")) {
+            String disallowed = Arrays.stream(setupCmd.getOptions())
+                .map(Option::getOpt)
+                .filter(Objects::nonNull) // a long-only option has no short opt; Set.of(...).contains(null) throws
+                .filter(opt -> !FILE_MODE_ALLOWED_OPTIONS.contains(opt))
+                .sorted()
+                .collect(Collectors.joining(", "));
+
+            if (!disallowed.isEmpty()) {
+                throw new ParseException(String.format(
+                    "ERROR: When passing the 'file' input argument, these switches are disallowed: %s.%n"
+                        + "Express these settings in the configuration file instead. "
+                        + "Only the GeoTIFF path overrides '-bvpE' and '-bvpP' and the database "
+                        + "connection options may accompany '-f'.",
+                    disallowed));
+            }
+
             executeFromConfigFile();
         } else if (setupCmd.hasOption("s")) {
             // 's' = Status option - print state of baseline
@@ -886,7 +1007,9 @@ public class SymphonySetup {
             boolean hasLang = languageParams != null && languageParams.length > i;
 
             T settingObj = TextualSettingsBase.create(settingsType, selectedBaselineVersion, files[i],
-                                hasLang ? languageParams[i] : null, currentDefaultLang, clear(), i);
+                                hasLang ? languageParams[i] : null, currentDefaultLang,
+                                clear() && i == 0,   // clear once for the whole update, not once per file
+                                i);
 
             if (!settingObj.validate()) {
                 throw new ParseException(settingObj.errorMessage());
@@ -985,7 +1108,7 @@ public class SymphonySetup {
             );
 
         if (calcAreaProcedure.confirmImport()) {
-            db.importCalculationAreas(calcAreaProcedure.areaTuples);
+            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId());
         }
     }
 
@@ -1005,6 +1128,8 @@ public class SymphonySetup {
         } else {
             bvValidDate = LocalDate.now();
         }
+
+        checkExistingBaselineValidFrom(bvValidDate);
 
         for (Option rasterOption: new Option[]{ options.getOption("bvpE"), options.getOption("bvpP") }) {
             String rasterFilePathValue = setupCmd.getOptionValue(rasterOption);
