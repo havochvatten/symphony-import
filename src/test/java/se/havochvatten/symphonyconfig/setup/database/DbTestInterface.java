@@ -315,6 +315,29 @@ public class DbTestInterface extends DbInterface {
         return n == null ? 0 : n.intValue();
     }
 
+    /** Count calculation areas flagged 'default' for the sensitivity matrices of the given baseline. */
+    public int countDefaultCalculationAreas(int bvId) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %1$s.calculationarea ca "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE m.sensm_bver_id = ? AND ca.carea_default", schema), longHandler, bvId);
+        return n == null ? 0 : n.intValue();
+    }
+
+    /**
+     * Whether the named calculation area, on the given baseline's sensitivity matrices, is flagged
+     * as the default area. Scoped by name (not just counted) so a test can assert identity: which
+     * area is default, not merely how many are.
+     */
+    public boolean isCalculationAreaDefault(int bvId, String careaName) throws SQLException {
+        Boolean isDefault = query(String.format(
+            "SELECT ca.carea_default FROM %1$s.calculationarea ca "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE m.sensm_bver_id = ? AND ca.carea_name = ?", schema),
+            new ScalarHandler<Boolean>(), bvId, careaName);
+        return Boolean.TRUE.equals(isDefault);
+    }
+
     public void cleanCalculationAreas(int bvId) {
         try (Connection conn = getConnection()) {
             // Delete calculation areas

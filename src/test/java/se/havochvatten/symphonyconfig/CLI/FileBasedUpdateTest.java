@@ -323,6 +323,105 @@ public class FileBasedUpdateTest extends CliTestBase {
         }
     }
 
+    @Test
+    void namedDefaultAreasAreApplied() throws Exception {
+        assertNotNull(bvId);
+
+        // 'defaultAreas' is the documented alternative to 'allDefault' and was untested.
+        // This belongs here rather than in FileBasedConfigValidationTest: that class is
+        // super(false) and has no bvId to attach a calculation-area update to.
+        //
+        // The calcarea-package.gpkg fixture's two areas ('test-calc-area-1',
+        // 'test-calc-area-2') both reference the matrix named csvMatrixCompleteName, so a
+        // matrix of that name must exist on this baseline before the import runs, exactly as
+        // ImportCalculationAreasTest#testImportDefaultCalculationAreas seeds it.
+        getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+
+        String cfg = writeConfig("named-defaults.yaml",
+            "operation: update",
+            "baseline:",
+            "  id: " + bvId,
+            "calculationAreas:",
+            "  file: " + absoluteResourcePath("/import/calcarea-package.gpkg"),
+            "  defaultAreas:",
+            "    - test-calc-area-1");
+
+        queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "y");
+
+        // exactly one area flagged default...
+        assertEquals(1, getDbInterface().countDefaultCalculationAreas(bvId),
+            "Only one area should be marked default");
+
+        // ...and it must be the NAMED one, not merely some one area. A count-only assertion
+        // would still pass if CalcAreaProcedure flagged the wrong area (e.g. a wrong-name or
+        // off-by-one bug that defaulted 'test-calc-area-2' instead), so identity is asserted
+        // in both directions.
+        assertTrue(getDbInterface().isCalculationAreaDefault(bvId, "test-calc-area-1"),
+            "The named area 'test-calc-area-1' must be marked default");
+        assertFalse(getDbInterface().isCalculationAreaDefault(bvId, "test-calc-area-2"),
+            "The un-named area 'test-calc-area-2' must not be marked default");
+    }
+
+    @Test
+    void csvSettingsOverrideTheDelimiter() throws Exception {
+        assertNotNull(bvId);
+
+        // This belongs here rather than in FileBasedConfigValidationTest for the same bvId
+        // reason as above.
+        //
+        // A naive ';' -> ',' replace over metadata-wellformed-complete-en.csv would produce a
+        // broken CSV: that file's 'summary' column contains commas inside field values (e.g.
+        // "...bridges, lighthouses at sea, wind power turbines..."), so converting ';' to ','
+        // would turn those into extra columns. Pipe ('|') does not occur anywhere in the
+        // source fixture, so it cannot collide with the content; verified below, and
+        // independently confirmed with a standalone parse before this test was written.
+        Path pipeFile = Path.of(TEMP_DIR, "metadata-pipe-en.csv");
+        Files.createDirectories(pipeFile.getParent());
+        String pipeContent = Files.readString(Path.of(csvMetaFileCompleteEN)).replace(';', '|');
+        Files.writeString(pipeFile, pipeContent);
+
+        // Verify the generated fixture actually parses as 6 well-formed columns before using
+        // it to drive the CLI, so a parsing failure here is not mistaken for the behaviour
+        // under test. (The BOM prefix on line 1 does not affect the '|' count.)
+        List<String> lines = Files.readAllLines(pipeFile);
+        long expectedColumns = lines.get(0).chars().filter(c -> c == '|').count() + 1;
+        assertEquals(6, expectedColumns, "Precondition: the source fixture has 6 columns");
+        for (String line : lines) {
+            if (line.isBlank()) continue;
+            long columns = line.chars().filter(c -> c == '|').count() + 1;
+            assertEquals(expectedColumns, columns,
+                "Generated pipe-delimited fixture must be well-formed: " + line);
+        }
+
+        String cfg = writeConfig("csv-settings.yaml",
+            "operation: update",
+            "baseline:",
+            "  id: " + bvId,
+            "metadata:",
+            "  - file: " + pipeFile.toAbsolutePath(),
+            "    language: en",
+            "csvSettings:",
+            "  delimiter: \"|\"");
+
+        queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "y");
+
+        assertTrue(getDbInterface().countMetaValues(bvId) > 0,
+            "A pipe-delimited file must import when csvSettings.delimiter is '|'");
+    }
+
+    private String writeConfig(String name, String... lines) {
+        try {
+            Path dir = Path.of(TEMP_DIR);
+            Files.createDirectories(dir);
+            Path p = dir.resolve(name);
+            Files.writeString(p, String.join(NEW_LINE, lines));
+            return p.toString();
+        } catch (IOException e) {
+            fail("Could not write config: " + e.getMessage());
+            return null;
+        }
+    }
+
     private String createTempReplaceConfigWithBothLanguages() {
         try {
             Path tempDir = Path.of(TEMP_DIR);
