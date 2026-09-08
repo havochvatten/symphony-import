@@ -478,10 +478,8 @@ public class SymphonySetup {
         try {
             ImportConfigFile config = ImportConfigFile.parse(configFilePath);
 
-            // Validate operation type
-            if (config.getOperation() == null) {
-                throw new ParseException("Configuration file must specify 'operation' field");
-            }
+            // Validate the configuration in full before any database write occurs
+            config.validate();
 
             switch (config.getOperation()) {
                 case NEW_BASELINE -> executeNewBaselineFromConfig(config);
@@ -519,6 +517,7 @@ public class SymphonySetup {
     }
 
     private void executeNewBaselineFromConfig(ImportConfigFile config) throws ParseException {
+        // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
         if (config.getBaseline() == null) {
             throw new ParseException("Configuration must include 'baseline' section for newBaseline operation");
         }
@@ -526,6 +525,7 @@ public class SymphonySetup {
         ImportConfigFile.BaselineConfig bl = config.getBaseline();
 
         // Required fields for new baseline
+        // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
         if (bl.getName() == null || bl.getName().isEmpty()) {
             throw new ParseException("baseline.name is required for newBaseline operation");
         }
@@ -544,12 +544,6 @@ public class SymphonySetup {
             // Check for duplicate baseline name
             checkExistingBaselineName(bl.getName());
 
-            if (!confirmToProceed(
-                    String.format("Pending baseline version installation: %s", bl.getName()),
-                    "Baseline version installation aborted interactively.")) {
-                return;
-            }
-
             // Validate GeoTIFF files
             validateGeoTiffPath(ecoPath, "Ecosystem");
             validateGeoTiffPath(pressurePath, "Pressure");
@@ -561,6 +555,13 @@ public class SymphonySetup {
             // Parse valid from date
             LocalDate validFrom = bl.getValidFrom() != null ?
                 LocalDate.parse(bl.getValidFrom()) : LocalDate.now();
+
+            // Only ask the operator to confirm an import that is known to be valid
+            if (!confirmToProceed(
+                    String.format("Pending baseline version installation: %s", bl.getName()),
+                    "Baseline version installation aborted interactively.")) {
+                return;
+            }
 
             // Create and insert baseline version
             BaselineVersion baselineVersionToInstall = new BaselineVersion(
@@ -587,12 +588,14 @@ public class SymphonySetup {
     }
 
     private void executeUpdateFromConfig(ImportConfigFile config) throws ParseException {
+        // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
         if (config.getBaseline() == null) {
             throw new ParseException("Configuration must include 'baseline' section for update operation");
         }
 
         ImportConfigFile.BaselineConfig bl = config.getBaseline();
 
+        // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
         if (bl.getId() == null) {
             throw new ParseException("baseline.id is required for update operation");
         }
@@ -618,17 +621,8 @@ public class SymphonySetup {
     }
 
     private void executeNationalAreasFromConfig(ImportConfigFile config) throws ParseException {
-        if (config.getNationalAreas() == null || config.getNationalAreas().isEmpty()) {
-            throw new ParseException("Configuration must include 'nationalAreas' section for nationalAreas operation");
-        }
-
-        // Check that BOUNDARY type is present
-        boolean hasBoundary = config.getNationalAreas().stream()
-            .anyMatch(na -> "BOUNDARY".equals(na.getType()));
-
-        if (!hasBoundary) {
-            throw new ParseException("National area import must include the BOUNDARY type");
-        }
+        // The 'nationalAreas' section, its BOUNDARY entry and every referenced file are
+        // verified by ImportConfigFile.validate() before this method is reached.
 
         // Convert to NationalAreaRowInsert array
         NationalAreaRowInsert[] areaInserts = config.getNationalAreas().stream()
@@ -708,6 +702,7 @@ public class SymphonySetup {
         for (int i = 0; i < config.getMatrices().size(); ++i) {
             ImportConfigFile.MatrixConfig mxConfig = config.getMatrices().get(i);
 
+            // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
             if (mxConfig.getName() == null || mxConfig.getName().isEmpty()) {
                 throw new ParseException("Matrix name is required for each matrix in the configuration");
             }
@@ -750,10 +745,7 @@ public class SymphonySetup {
     private void importCalculationAreasFromConfig(ImportConfigFile config) throws ParseException, SQLException {
         ImportConfigFile.CalculationAreasConfig caConfig = config.getCalculationAreas();
 
-        if (caConfig.getFile() == null || caConfig.getFile().isEmpty()) {
-            throw new ParseException("calculationAreas.file is required");
-        }
-
+        // 'calculationAreas.file' is verified by ImportConfigFile.validate() before this point.
         String resolvedPath = config.resolvePath(caConfig.getFile());
         String nameProperty = caConfig.getNameProperty() != null ? caConfig.getNameProperty() : "name";
         boolean allDefault = caConfig.getAllDefault() != null && caConfig.getAllDefault();
