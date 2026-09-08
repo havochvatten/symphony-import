@@ -314,6 +314,17 @@ public class SymphonySetup {
         }
     }
 
+    private void checkExistingBaselineValidFrom(LocalDate validFrom) throws ParseException, SQLException {
+        if (db.baselineVersionExistsForDate(java.sql.Date.valueOf(validFrom))) {
+            throw new ParseException(String.format(
+                "A baseline version with validFrom '%s' already exists.%n"
+                    + "MSP-Symphony resolves the current baseline by validFrom and fails with "
+                    + "BASELINE_VERSION_MULT_MATCHES when two share a date. "
+                    + "Set an explicit, unique 'baseline.validFrom' in the configuration file.",
+                validFrom));
+        }
+    }
+
     private void checkNewBaselineInvocation() throws ParseException, SQLException {
         if (RequiredNewBaselineOptionAliases.stream().allMatch(setupCmd::hasOption)) {
             Integer optBvId = Util.tryParseInt(setupCmd.getOptionValue("bv"));
@@ -563,6 +574,8 @@ public class SymphonySetup {
             // Parse valid from date
             LocalDate validFrom = bl.getValidFrom() != null ?
                 LocalDate.parse(bl.getValidFrom()) : LocalDate.now();
+
+            checkExistingBaselineValidFrom(validFrom);
 
             // Only ask the operator to confirm an import that is known to be valid
             if (!confirmToProceed(
@@ -1077,6 +1090,8 @@ public class SymphonySetup {
         } else {
             bvValidDate = LocalDate.now();
         }
+
+        checkExistingBaselineValidFrom(bvValidDate);
 
         for (Option rasterOption: new Option[]{ options.getOption("bvpE"), options.getOption("bvpP") }) {
             String rasterFilePathValue = setupCmd.getOptionValue(rasterOption);
