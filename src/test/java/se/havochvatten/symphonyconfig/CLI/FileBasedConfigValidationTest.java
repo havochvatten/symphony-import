@@ -297,6 +297,43 @@ public class FileBasedConfigValidationTest extends CliTestBase {
         assertRejected(cfg, "configFilePath");
     }
 
+    @Test
+    void misspelledFieldIsRejected() {
+        String cfg = writeConfig("typo-field.yaml",
+            "operation: newBaseline",
+            "baseline:",
+            "  name: typo-field-test",
+            "metdata:",
+            "  - file: whatever.csv");
+
+        assertRejected(cfg, "Unrecognized field \"metdata\"");
+    }
+
+    @Test
+    void absolutePathsAreHonoured() {
+        // Every other fixture exercises relative resolution; this one pins absolute paths
+        String cfg = writeConfig("absolute-paths.yaml",
+            "operation: newBaseline",
+            "baseline:",
+            "  name: absolute-path-test",
+            "  validFrom: \"2029-05-05\"",
+            "  ecoPath: " + TEST_TIFF_E_PATH,
+            "  pressurePath: " + TEST_TIFF_P_PATH,
+            "metadata:",
+            "  - file: " + absoluteResourcePath("/import/metadata-wellformed-complete-en.csv"),
+            "    language: en");
+
+        try {
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "y", "y");
+            assertNotNull(getDbInterface().getBaselineVersionByName("absolute-path-test"));
+        } finally {
+            Integer id = getDbInterface().getBaselineVersionByName("absolute-path-test");
+            if (id != null) {
+                getDbInterface().cleanBaselineVersion(id);
+            }
+        }
+    }
+
     private String writeConfig(String name, String... lines) {
         try {
             Path dir = Path.of("target/test-resources");
