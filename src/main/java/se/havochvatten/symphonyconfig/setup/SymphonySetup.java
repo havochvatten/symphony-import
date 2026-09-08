@@ -74,6 +74,19 @@ public class SymphonySetup {
         DB_HOST_OPTION, DB_NAME_OPTION, DB_USER_OPTION, DB_PASSWORD_OPTION
     );
 
+    /**
+     * Options that may accompany '-f'. Database connection options are required in
+     * file mode; '-bvpE' and '-bvpP' are the documented GeoTIFF path overrides.
+     * Everything else must be expressed in the configuration file itself.
+     */
+    static final Set<String> FILE_MODE_ALLOWED_OPTIONS = Set.of(
+        "f",
+        "bvpE", "bvpP",
+        DB_NAME_OPTION, DB_HOST_OPTION, DB_USER_OPTION, DB_PASSWORD_OPTION,
+        "dbS", "dbPt",
+        DB_NAME_ENV_OPTION, DB_HOST_ENV_OPTION, DB_USER_ENV_OPTION, DB_PASSWORD_ENV_OPTION
+    );
+
     static {
         Option newBaselineOption = newOption("n", "newBaseline", false,
                     "Install a new baseline version.\n" +
@@ -800,6 +813,21 @@ public class SymphonySetup {
 
         // 'f' = Configuration file option passed (path)
         if (setupCmd.hasOption("f")) {
+            String disallowed = Arrays.stream(setupCmd.getOptions())
+                .map(Option::getOpt)
+                .filter(opt -> !FILE_MODE_ALLOWED_OPTIONS.contains(opt))
+                .sorted()
+                .collect(Collectors.joining(", "));
+
+            if (!disallowed.isEmpty()) {
+                throw new ParseException(String.format(
+                    "ERROR: When passing the 'file' input argument, these switches are disallowed: %s.%n"
+                        + "Express these settings in the configuration file instead. "
+                        + "Only the GeoTIFF path overrides '-bvpE' and '-bvpP' and the database "
+                        + "connection options may accompany '-f'.",
+                    disallowed));
+            }
+
             executeFromConfigFile();
         } else if (setupCmd.hasOption("s")) {
             // 's' = Status option - print state of baseline
