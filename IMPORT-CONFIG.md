@@ -19,6 +19,17 @@ The required `operation` field selects the import procedure:
 | `update`        | Update data coupled to an existing baseline version |
 | `nationalAreas` | Import national areas / boundary polygons           |
 
+The whole configuration is validated before any data is written, and a section that does not apply
+to the declared `operation` is **rejected with an error** rather than silently ignored:
+
+| Operation       | Inapplicable sections                                                     |
+|-----------------|--------------------------------------------------------------------------|
+| `newBaseline`   | `baseline.id`, `nationalAreas`                                            |
+| `update`        | `baseline.name`, `baseline.ecoPath`, `baseline.pressurePath`, `nationalAreas` |
+| `nationalAreas` | `baseline`, `metadata`, `matrices`, `calculationAreas`, `csvSettings`     |
+
+Remove the offending section from the configuration file to proceed.
+
 ---
 
 ## `newBaseline` — Install a new baseline version
@@ -76,7 +87,8 @@ baseline:
   updateMode: update              # Optional: 'update' (default) or 'replace'.
                                   # 'replace' clears all coupled data before updating.
 
-# Any combination of metadata / matrices / calculationAreas / csvSettings (same as newBaseline)
+# At least one of metadata / matrices / calculationAreas is required (same shape as newBaseline).
+# csvSettings is optional and may accompany any of them, but cannot stand alone.
 metadata:
   - file: metadata-en.csv
     language: en

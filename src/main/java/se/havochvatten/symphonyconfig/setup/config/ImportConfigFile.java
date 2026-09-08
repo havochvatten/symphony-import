@@ -4,10 +4,12 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.cli.ParseException;
 import se.havochvatten.symphonyconfig.setup.SymphonySetup;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -48,6 +50,8 @@ public class ImportConfigFile {
 
     // Path to the config file itself (for relative path resolution)
     private transient Path configFilePath;
+
+    private static final String BOUNDARY_TYPE = "BOUNDARY";
 
     public static class BaselineConfig {
         private Integer id;
@@ -243,5 +247,168 @@ public class ImportConfigFile {
 
         // Fall back to current directory (edge case)
         return path.toAbsolutePath().normalize().toString();
+    }
+
+    /**
+     * Validate the entire configuration before any database write occurs.
+     * Throws on the first problem found, naming the offending configuration path.
+     */
+    public void validate() throws ParseException {
+        if (operation == null) {
+            throw new ParseException(
+                "Configuration must declare an 'operation'. "
+                    + "One of: newBaseline, update, nationalAreas");
+        }
+
+        switch (operation) {
+            case NEW_BASELINE   -> validateNewBaseline();
+            case UPDATE         -> validateUpdate();
+            case NATIONAL_AREAS -> validateNationalAreas();
+        }
+
+        validateCsvSettings();
+    }
+
+    private void validateNewBaseline() throws ParseException {
+        rejectInapplicable("nationalAreas", nationalAreas != null);
+
+        if (baseline == null || isBlank(baseline.getName())) {
+            throw new ParseException("'baseline.name' is required for operation 'newBaseline'.");
+        }
+        if (baseline.getId() != null) {
+            rejectInapplicable("baseline.id", true);
+        }
+        validateCommonSections();
+    }
+
+    private void validateUpdate() throws ParseException {
+        rejectInapplicable("nationalAreas", nationalAreas != null);
+
+        if (baseline == null || baseline.getId() == null) {
+            throw new ParseException("'baseline.id' is required for operation 'update'.");
+        }
+        rejectInapplicable("baseline.name",         !isBlank(baseline.getName()));
+        rejectInapplicable("baseline.ecoPath",      !isBlank(baseline.getEcoPath()));
+        rejectInapplicable("baseline.pressurePath", !isBlank(baseline.getPressurePath()));
+
+        if (metadata == null && matrices == null && calculationAreas == null) {
+            throw new ParseException(
+                "Operation 'update' requires at least one of 'metadata', 'matrices' "
+                    + "or 'calculationAreas'.");
+        }
+        validateCommonSections();
+    }
+
+    private void validateCommonSections() throws ParseException {
+        if (metadata != null) {
+            for (int i = 0; i < metadata.size(); ++i) {
+                requireReadableFile(metadata.get(i).getFile(), "metadata[" + i + "].file");
+            }
+        }
+        if (matrices != null) {
+            for (int i = 0; i < matrices.size(); ++i) {
+                requireReadableFile(matrices.get(i).getFile(), "matrices[" + i + "].file");
+                if (isBlank(matrices.get(i).getName())) {
+                    throw new ParseException("'matrices[" + i + "].name' is required.");
+                }
+            }
+        }
+        if (calculationAreas != null) {
+            requireReadableFile(calculationAreas.getFile(), "calculationAreas.file");
+
+            boolean allDefault = Boolean.TRUE.equals(calculationAreas.getAllDefault());
+            boolean namedDefaults = calculationAreas.getDefaultAreas() != null
+                && !calculationAreas.getDefaultAreas().isEmpty();
+
+            if (allDefault && namedDefaults) {
+                throw new ParseException(
+                    "'calculationAreas.allDefault' and 'calculationAreas.defaultAreas' are "
+                        + "mutually exclusive. Provide one or the other.");
+            }
+        }
+    }
+
+    private void validateNationalAreas() throws ParseException {
+        rejectInapplicable("baseline",         baseline != null);
+        rejectInapplicable("metadata",         metadata != null);
+        rejectInapplicable("matrices",         matrices != null);
+        rejectInapplicable("calculationAreas", calculationAreas != null);
+        rejectInapplicable("csvSettings",      csvSettings != null);
+
+        if (nationalAreas == null || nationalAreas.isEmpty()) {
+            throw new ParseException(
+                "Configuration must include a 'nationalAreas' section for operation 'nationalAreas'.");
+        }
+
+        String firstIso = null;
+        for (int i = 0; i < nationalAreas.size(); ++i) {
+            NationalAreaConfig na = nationalAreas.get(i);
+
+            if (isBlank(na.getType())) {
+                throw new ParseException("'nationalAreas[" + i + "].type' is required.");
+            }
+            if (isBlank(na.getCountryISO())) {
+                throw new ParseException("'nationalAreas[" + i + "].countryISO' is required.");
+            }
+            if (na.getCountryISO().trim().length() != 3) {
+                throw new ParseException(String.format(
+                    "'nationalAreas[%d].countryISO' must be an ISO 3166-1 alpha-3 code, e.g. 'SWE'. Got '%s'.",
+                    i, na.getCountryISO()));
+            }
+            if (firstIso == null) {
+                firstIso = na.getCountryISO();
+            } else if (!firstIso.equals(na.getCountryISO())) {
+                throw new ParseException(String.format(
+                    "All entries in one national areas import must share the same 'countryISO'. "
+                        + "Found both '%s' and '%s'. Import one country per configuration file.",
+                    firstIso, na.getCountryISO()));
+            }
+            requireReadableFile(na.getFile(), "nationalAreas[" + i + "].file");
+        }
+
+        // Counted after the per-entry loop, so a missing 'type' is reported as such
+        // rather than as a BOUNDARY entry that could not be found.
+        long boundaries = nationalAreas.stream()
+            .filter(na -> BOUNDARY_TYPE.equals(na.getType()))
+            .count();
+
+        if (boundaries != 1) {
+            throw new ParseException(String.format(
+                "A national areas import must contain exactly one BOUNDARY entry, found %d.",
+                boundaries));
+        }
+    }
+
+    private void validateCsvSettings() throws ParseException {
+        if (csvSettings != null && csvSettings.getDelimiter() != null
+                && csvSettings.getDelimiter().length() != 1) {
+            throw new ParseException("'csvSettings.delimiter' must be a single character.");
+        }
+    }
+
+    private void requireReadableFile(String configuredPath, String field) throws ParseException {
+        if (isBlank(configuredPath)) {
+            throw new ParseException("'" + field + "' is required.");
+        }
+        String resolved = resolvePath(configuredPath);
+        if (!Files.isReadable(Paths.get(resolved))) {
+            throw new ParseException(String.format(
+                "'%s' refers to a file that does not exist or cannot be read: %s%n"
+                    + "Paths are resolved relative to the configuration file's own directory.",
+                field, resolved));
+        }
+    }
+
+    private void rejectInapplicable(String section, boolean present) throws ParseException {
+        if (present) {
+            throw new ParseException(String.format(
+                "Section '%s' is not applicable to operation '%s' and would be silently ignored. "
+                    + "Remove it from the configuration file.",
+                section, operation.getValue()));
+        }
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

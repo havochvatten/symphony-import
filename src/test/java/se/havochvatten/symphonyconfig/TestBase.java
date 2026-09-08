@@ -59,7 +59,7 @@ public abstract class TestBase {
     protected DbTestInterface dbInterface = null;
     protected Integer bvId;
 
-    static String absoluteResourcePath(String resourcePath) {
+    protected static String absoluteResourcePath(String resourcePath) {
         try {
             return new File(TestBase.class.getResource(resourcePath).toURI()).getAbsolutePath();
         } catch (URISyntaxException e) {
