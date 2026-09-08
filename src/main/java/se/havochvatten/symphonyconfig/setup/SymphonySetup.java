@@ -70,8 +70,18 @@ public class SymphonySetup {
             DB_PASSWORD_OPTION, "password"
         );
 
+    /**
+     * Every option that identifies a database connection: the four settings themselves
+     * ('-db', '-dbH', '-dbU', '-dbP'), their port/schema companions ('-dbPt', '-dbS'), and
+     * the four '-envDb*' options that redirect a setting to a different environment variable.
+     * Used to tell connection options apart from import options - e.g. by
+     * {@link #optionsExceptRequired()}, which must not mistake any of these for a leftover
+     * baseline-import switch on the national-area invocation path.
+     */
     static final Set<String> dbOptions = Set.of(
-        DB_HOST_OPTION, DB_NAME_OPTION, DB_USER_OPTION, DB_PASSWORD_OPTION
+        DB_HOST_OPTION, DB_NAME_OPTION, DB_USER_OPTION, DB_PASSWORD_OPTION,
+        "dbPt", "dbS",
+        DB_NAME_ENV_OPTION, DB_HOST_ENV_OPTION, DB_USER_ENV_OPTION, DB_PASSWORD_ENV_OPTION
     );
 
     /**
@@ -367,8 +377,14 @@ public class SymphonySetup {
                 return true;
             }
             if (!correctOptions) {
-                    throw new ParseException("Invalid invocation:\n" +
-                        "both baseline and national area import options were provided.");
+                String disallowed = Arrays.stream(optionsExceptRequired())
+                    .filter(key -> !NationalAreaOptionAliases.contains(key))
+                    .sorted()
+                    .collect(Collectors.joining(", "));
+
+                throw new ParseException(String.format(
+                    "Invalid invocation:%noption(s) not valid for a national area import: %s.",
+                    disallowed));
             }
             // implying allRequired is false
             throw new ParseException("Invalid invocation:\n" +

@@ -53,6 +53,27 @@ class ImportNationalAreasTest extends CliTestBase {
     }
 
     @Test
+    void invocationAcceptedWithNonDefaultDbPortAndSchema() {
+        // Regression test for SYM-712: 'checkNationalAreaInvocation' rejected every '-na'
+        // invocation whenever '-dbPt'/'-dbS' were present, because the option set that
+        // 'optionsExceptRequired()' filters against omitted them, so any leftover option
+        // (including these two database connection options) was treated as an illegal
+        // baseline-import option. CliTestBase's 'requiredArgs' already includes both options
+        // whenever the test database is configured on a non-default port/schema (as it is
+        // here), so this reproduces the defect with no extra setup.
+        //
+        // Declining the confirmation prompt keeps this test free of database fixtures:
+        // if the invocation is (still) wrongly rejected, that happens before the prompt is
+        // ever printed, and the rejection message lands on stderr instead.
+        queueInteraction(() -> {
+            new SymphonySetup(args);
+
+            assertEquals("", displaceErr.toString().trim(),
+                "A national areas import with '-dbPt'/'-dbS' present must not be rejected as an invalid invocation");
+        }, "n");
+    }
+
+    @Test
     void reportDisallowedInvocation() { // baseline import and national areas
         String[] failingArgs = ArrayUtils.addAll(args, "-u", "-md", csvMetaFilePartialSV);
 
@@ -60,7 +81,7 @@ class ImportNationalAreasTest extends CliTestBase {
             new SymphonySetup(failingArgs);
 
             assertEquals("Invalid invocation:\n" +
-                "both baseline and national area import options were provided.",
+                "option(s) not valid for a national area import: md, u.",
                 displaceErr.toString().trim());
         });
     }
