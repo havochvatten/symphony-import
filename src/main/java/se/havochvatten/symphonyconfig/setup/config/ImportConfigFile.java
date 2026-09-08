@@ -3,6 +3,7 @@ package se.havochvatten.symphonyconfig.setup.config;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.cli.ParseException;
 import se.havochvatten.symphonyconfig.setup.SymphonySetup;
@@ -48,7 +49,12 @@ public class ImportConfigFile {
     private List<NationalAreaConfig> nationalAreas;
     private CsvSettingsConfig csvSettings;
 
-    // Path to the config file itself (for relative path resolution)
+    // Path to the config file itself (for relative path resolution). Deliberately has no
+    // Jackson-visible getter/setter: it is derived at parse time, never user-supplied, and
+    // a plain @JsonIgnore on the accessors would make Jackson treat "configFilePath" as a
+    // known-but-ignorable key instead of rejecting it as unrecognized. Omitting any bean
+    // accessor is what makes FAIL_ON_UNKNOWN_PROPERTIES actually reject it (see parse()
+    // below, which assigns the field directly since it is a static method of this class).
     private transient Path configFilePath;
 
     private static final String BOUNDARY_TYPE = "BOUNDARY";
@@ -189,9 +195,6 @@ public class ImportConfigFile {
     public CsvSettingsConfig getCsvSettings() { return csvSettings; }
     public void setCsvSettings(CsvSettingsConfig csvSettings) { this.csvSettings = csvSettings; }
 
-    public Path getConfigFilePath() { return configFilePath; }
-    public void setConfigFilePath(Path path) { this.configFilePath = path; }
-
     /**
      * Parse a configuration file (JSON or YAML format).
      *
@@ -214,10 +217,21 @@ public class ImportConfigFile {
             throw new IOException("Unsupported configuration file format. Use .json, .yaml, or .yml");
         }
 
-        ImportConfigFile config = mapper.readValue(file, ImportConfigFile.class);
-        config.setConfigFilePath(file.toPath().toAbsolutePath().getParent());
         mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
 
+        ImportConfigFile config;
+        try {
+            config = mapper.readValue(file, ImportConfigFile.class);
+        } catch (InvalidFormatException e) {
+            if (e.getTargetType() == Operation.class) {
+                throw new IOException(String.format(
+                    "Unknown operation type: '%s'. Must be one of: newBaseline, update, nationalAreas",
+                    e.getValue()));
+            }
+            throw e;
+        }
+
+        config.configFilePath = file.toPath().toAbsolutePath().getParent();
         return config;
     }
 
