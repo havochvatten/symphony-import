@@ -118,6 +118,47 @@ public class DbTestInterface extends DbInterface {
         return testBvId;
     }
 
+    /**
+     * Installs a second, independently-named baseline version, distinct from the cached
+     * {@link #installTestBaselineVersion()} fixture. Unlike that method, this one is never cached:
+     * every call inserts a new row and returns its own generated id. Callers must clean it up
+     * themselves via {@link #cleanBaselineVersion(int)}.
+     */
+    public int installSecondaryBaselineVersion(String name) {
+        String insertQuery = String.format("INSERT INTO %s.baselineversion " +
+            "(bver_name, bver_desc, bver_validfrom, " +
+            "bver_ecofilepath, bver_presfilepath, bver_locale) " +
+            "VALUES ('%s', '', ?, ?, ?, 'en')", schema, name);
+
+        // A day before the primary fixture's 'today', so the two never collide.
+        String isoValidFrom = new SimpleDateFormat("yyyy-MM-dd")
+            .format(new Date(System.currentTimeMillis() - 24L * 60 * 60 * 1000));
+
+        try (Connection conn = getConnection()) {
+            PreparedStatement insertStmt =
+                conn.prepareStatement(insertQuery, RETURN_GENERATED_KEYS);
+
+            insertStmt.setObject(1, isoValidFrom, Types.DATE);
+            insertStmt.setString(2, TEST_TIFF_E_PATH);
+            insertStmt.setString(3, TEST_TIFF_P_PATH);
+
+            insertStmt.executeUpdate();
+            ResultSet rs = insertStmt.getGeneratedKeys();
+
+            if (rs.next()) {
+                int newBvId = rs.getInt(1);
+                insertStmt.close();
+                return newBvId;
+            } else {
+                insertStmt.close();
+                throw new SQLException("Failure inserting secondary baseline version for test");
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Database transaction error");
+        }
+    }
+
     public int provideDummySensitivityMatrixForCalcArea(int bvId, String matrixName) throws SQLException {
         return qr.insert(getConnection(), provideDummySensitivityMatrixForCalcAreaStatement(schema), idHandler, matrixName, bvId);
     }

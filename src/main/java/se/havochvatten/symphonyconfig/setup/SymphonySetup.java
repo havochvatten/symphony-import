@@ -818,7 +818,7 @@ public class SymphonySetup {
         );
 
         if (calcAreaProcedure.confirmImport()) {
-            db.importCalculationAreas(calcAreaProcedure.areaTuples);
+            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId());
         }
     }
 
@@ -1057,7 +1057,7 @@ public class SymphonySetup {
             );
 
         if (calcAreaProcedure.confirmImport()) {
-            db.importCalculationAreas(calcAreaProcedure.areaTuples);
+            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId());
         }
     }
 

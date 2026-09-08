@@ -448,14 +448,18 @@ public class DbInterface {
         return qr.query(getConnection(), query, handler, args);
     }
 
-    public void importCalculationAreas(CalcAreaProcedure.AreaMatrixTuple[] calcAreaMatrixTuples) throws SQLException, ParseException {
+    public void importCalculationAreas(CalcAreaProcedure.AreaMatrixTuple[] calcAreaMatrixTuples, int bvId) throws SQLException, ParseException {
         for (CalcAreaProcedure.AreaMatrixTuple camx : calcAreaMatrixTuples) {
             CalculationArea ca = camx.area();
             Integer matrixId = this.query(
-                String.format("SELECT sensm_id FROM %s.sensitivitymatrix WHERE sensm_name = ?", schema),
-                idHandler, ca.getMatrixName());
+                String.format("SELECT sensm_id FROM %s.sensitivitymatrix "
+                    + "WHERE sensm_name = ? AND sensm_bver_id = ?", schema),
+                idHandler, ca.getMatrixName(), bvId);
             if (matrixId == null) {
-                throw new ParseException(String.format("No sensitivity matrix with name %s found", ca.getMatrixName()));
+                throw new ParseException(String.format(
+                    "No sensitivity matrix named '%s' exists on baseline version %d. "
+                        + "Import the matrix before the calculation areas that reference it.",
+                    ca.getMatrixName(), bvId));
             }
 
             Connection conn = getConnection();
