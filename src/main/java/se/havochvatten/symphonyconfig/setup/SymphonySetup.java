@@ -95,8 +95,10 @@ public class SymphonySetup {
                     "Cannot be combined with either of the options 'u' or 'bv'", v1_0),
                updateOption      = newOption("u", "update", true,
                    "Update an existing baseline version. Must be combined with '-bv' option to specify the target baseline version id.\n" +
-                   "Takes an optional argument which may be specified as ('u'/'update' or 'r'/'replace'v1_0), differentiating \"update mode\".\n" +
-                   "When set to 'replace', all existing coupled data is cleared before the update procedure is run.", v1_0),
+                   "Takes an optional argument which may be specified as ('u'/'update' or 'r'/'replace'), differentiating \"update mode\".\n" +
+                   "When set to 'replace', ALL band metadata for the target baseline version is deleted before the update runs.\n" +
+                   "This cascades to every sensitivity score on the baseline, including user-created matrices.\n" +
+                   "Sensitivity matrices and calculation areas are not themselves cleared: re-importing them appends duplicates.", v1_0),
                configFileOption  = newOption("f", "file", true,
                     "Pass a json/yaml configuration file with bundled input parameters instead of separate cli options.\n " +
                     "The expected format is documented separately.\n", v1_1),
@@ -168,8 +170,8 @@ public class SymphonySetup {
                    "Specify to set all calculation areas present in the GeoPackage file slated for import by the "+
                            "'-caF' option as default for the target baseline.", v1_0),
 
-               csvDelimOption    = newOption("csvS", "delimiter", true, "Column delimiter character for CSV files (defaults to ',').", v1_0),
-               csvNewLineOption  = newOption("csvN", "newline", true, "Row delimiter character for CSV files (newline).", v1_0),
+               csvDelimOption    = newOption("csvS", "delimiter", true, "Column delimiter character for CSV files. Defaults to ';', the Symphony convention.", v1_0),
+               csvNewLineOption  = newOption("csvN", "newline", true, "Row delimiter for CSV files. Set to 'windows' for CRLF input; omitted or any other value means LF.", v1_0),
 
                newBaselineName  = newOption("bvN", "baselineVersionName", true,
                    "Baseline version name, required for \"new baseline\" invocations ('-n'). Must be unique.", v1_0),

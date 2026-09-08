@@ -17,6 +17,7 @@ import java.util.List;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -266,6 +267,57 @@ public class FileBasedUpdateTest extends CliTestBase {
             assertTrue(out.contains("alice@example.org"),
                 "The confirmation prompt must name the owners whose matrix data will be emptied. "
                     + "stdout was: " + out);
+        } finally {
+            deleteTempConfig(tempConfigPath);
+        }
+    }
+
+    @Test
+    void replacePromptSaysItWillDeleteExistingData() {
+        assertNotNull(bvId);
+
+        // Seed the baseline so the replace has something to delete
+        String[] seedArgs = testCaseArgs("-u",
+            "-md", csvMetaFileCompleteEN, "-mdL", "en", "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(seedArgs), "y");
+
+        String tempConfigPath = null;
+        try {
+            tempConfigPath = createTempReplaceConfig();
+            String cfg = tempConfigPath;
+
+            // Answer 'n': we only want to read the prompt, not carry out the replace
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "n");
+
+            String out = displaceOut.toString();
+            assertTrue(out.contains("REPLACE MODE"),
+                "A replace-mode prompt must say that existing data will be deleted, so it cannot "
+                    + "be mistaken for an ordinary update. The prompt's own wording is asserted "
+                    + "rather than any mention of deletion: the pre-flight warning already says "
+                    + "'deletes' whenever a user-owned matrix exists, which would let this pass "
+                    + "with the prompt unchanged. stdout was: " + out);
+        } finally {
+            deleteTempConfig(tempConfigPath);
+        }
+    }
+
+    @Test
+    void ordinaryUpdatePromptCarriesNoReplaceNotice() {
+        assertNotNull(bvId);
+
+        String tempConfigPath = null;
+        try {
+            // Same config shape, updateMode 'update' instead of 'replace'
+            tempConfigPath = createTempConfigWithBaselineIdAndMetadata();
+            String cfg = tempConfigPath;
+
+            // Answer 'n': nothing is written, we only want to read the prompt
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "n");
+
+            String out = displaceOut.toString();
+            assertFalse(out.contains("REPLACE MODE"),
+                "A non-destructive 'update' must not carry the replace notice, or the notice "
+                    + "would tell the operator nothing. stdout was: " + out);
         } finally {
             deleteTempConfig(tempConfigPath);
         }

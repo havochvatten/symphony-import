@@ -5,6 +5,8 @@ import se.havochvatten.symphonyconfig.setup.model.SymphonyBand;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyCategory;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static se.havochvatten.symphonyconfig.setup.SymphonySetup.Util.parseNullableBoolean;
 
@@ -144,7 +146,19 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
             );
         }
 
-        Scanner prompt = pendingImportMessage(partialNotice);
+        // The prompt must not read identically whether or not the confirmation destroys data
+        String clearNotice = settings.clear
+            ? "REPLACE MODE: all existing band metadata for this baseline version will be "
+                + "deleted before this file is imported.\n"
+                + "This cascades to every sensitivity score on the baseline, including "
+                + "user-created matrices."
+            : null;
+
+        String notice = Stream.of(clearNotice, partialNotice)
+            .filter(Objects::nonNull)
+            .collect(Collectors.joining("\n"));
+
+        Scanner prompt = pendingImportMessage(notice.isEmpty() ? null : notice);
 
         return prompt.nextLine().trim().equalsIgnoreCase("y");
     }
