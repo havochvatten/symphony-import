@@ -50,6 +50,11 @@ public class DbTestInterface extends DbInterface {
     private Integer testBvId = null;
     private Integer testCalcAreaId = null;
 
+    public static String getAllNatAreasForCountryCodeQuery(String schema) {
+        return String.format("SELECT narea_id, narea_type, narea_areas, narea_countryiso3 " +
+            "FROM %s.nationalarea WHERE narea_countryiso3 = ?", schema);
+    }
+
     public String sensitivityControlQuery(String isoLang, String ecoTitle, String prTitle, String mxName) {
         return MessageFormat.format("SELECT sens_value FROM {0}.sensitivity s " +
             "JOIN {0}.sensitivitymatrix sm ON sm.sensm_id = s.sens_sensm_id " +

@@ -18,11 +18,6 @@ class ImportNationalAreasTest extends CliTestBase {
 
     public final String[] args;
 
-    public static String getAllNatAreasForCountryCodeQuery(String schema) {
-        return String.format("SELECT narea_id, narea_type, narea_areas, narea_countryiso3 " +
-            "FROM %s.nationalarea WHERE narea_countryiso3 = ?", schema);
-    }
-
     ImportNationalAreasTest() {
         super(true);
 

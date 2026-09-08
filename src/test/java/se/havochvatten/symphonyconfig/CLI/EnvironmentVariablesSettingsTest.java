@@ -37,7 +37,7 @@ class EnvironmentVariablesSettingsTest extends CliTestBase {
         environmentVariables.set(DEFAULT_DB_PASSWORD_ENV, dbPassword);
 
         queueInteraction(() -> {
-            new SymphonySetup(new String[]{ "-dbH", dbHost, "-s", "-bv", String.valueOf(bvId) });
+            new SymphonySetup(routingCaseArgs("-s", "-bv", String.valueOf(bvId)));
 
             assertTrue(displaceOut.toString().startsWith(expectedReportString));
         });
@@ -52,11 +52,10 @@ class EnvironmentVariablesSettingsTest extends CliTestBase {
         environmentVariables.set(DEFAULT_DB_PASSWORD_ENV, dbPassword);
 
         queueInteraction(() -> {
-            new SymphonySetup(new String[]{
-                "-dbH", dbHost,
+            new SymphonySetup(routingCaseArgs(
                 "-envDb", myCustomEnvVariable,
                 "-s", "-bv", String.valueOf(bvId)
-            });
+            ));
 
             assertTrue(displaceOut.toString().startsWith(expectedReportString));
         });
