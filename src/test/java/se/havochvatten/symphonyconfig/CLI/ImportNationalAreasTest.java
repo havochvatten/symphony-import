@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import se.havochvatten.symphonyconfig.setup.SymphonySetup;
 import se.havochvatten.symphonyconfig.setup.database.DbTestInterface;
 import se.havochvatten.symphonyconfig.setup.model.NationalArea;
+import se.havochvatten.symphonyconfig.setup.process.NationalAreaRowInsert;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -113,6 +114,47 @@ class ImportNationalAreasTest extends CliTestBase {
         assertTrue(sweAfter.stream().anyMatch(na -> "TYPES".equals(na.getType())),
             "Importing KEN must not delete SWE's TYPES row; AreasService uses getSingleResult() "
                 + "and would then throw NATIONAL_AREA_NOT_FOUND for Sweden");
+    }
+
+    @Test
+    void failedImportPartwayLeavesPreExistingRowsIntact() throws Exception {
+        // Establish existing rows through the ordinary, successful path first, so there is
+        // something for a subsequent failed import to (wrongly) destroy.
+        queueInteraction(() -> new SymphonySetup(
+            testCaseArgs("-f", RESOURCES_PATH + "import/national-areas-import.yaml")), "y");
+
+        List<NationalArea> before = getDbInterface().query(
+            DbTestInterface.getAllNatAreasForCountryCodeQuery(dbSchema), NationalArea.handler, "SWE");
+        assertEquals(3, before.size(), "Precondition: BOUNDARY, TEST and TYPES rows present");
+
+        // Exercises DbInterface.updateNationalAreas() directly, rather than through the CLI: the
+        // '-na'/'-naP'/'-naC' switch invocation performs no file-existence check at all (that gap
+        // is documented as out of scope), so driving this through the CLI would only prove the
+        // pre-existing gap, not the fix under test. BOUNDARY's delete+insert succeeds; TEST's file
+        // does not exist, so NationalAreaRowInsert.getPolygon() throws only after TEST's own row
+        // has already been deleted within the same call. Before the transaction fix, that delete
+        // would have been permanent under auto-commit.
+        NationalAreaRowInsert[] partlyBadInserts = {
+            new NationalAreaRowInsert("BOUNDARY", "SWE", nationalAreaBoundary),
+            new NationalAreaRowInsert("TEST", "SWE", "/nonexistent/typo.json")
+        };
+
+        assertThrows(RuntimeException.class, () -> getDbInterface().updateNationalAreas(partlyBadInserts),
+            "A missing polygon file must surface as a failure rather than silently succeeding");
+
+        List<NationalArea> after = getDbInterface().query(
+            DbTestInterface.getAllNatAreasForCountryCodeQuery(dbSchema), NationalArea.handler, "SWE");
+
+        assertEquals(before.size(), after.size(),
+            "A national areas import that fails part-way must not delete any pre-existing row");
+        for (NationalArea row : before) {
+            // The TYPES row has no 'areas' payload (narea_areas is null for it, unlike BOUNDARY/
+            // TEST), so the comparison must tolerate null rather than calling equals() on it.
+            assertTrue(after.stream().anyMatch(na ->
+                    na.getType().equals(row.getType())
+                        && java.util.Objects.equals(na.getAreasJson(), row.getAreasJson())),
+                "Row of type " + row.getType() + " must survive unchanged after a failed partial import");
+        }
     }
 
     /**

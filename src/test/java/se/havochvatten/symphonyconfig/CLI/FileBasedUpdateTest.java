@@ -209,6 +209,40 @@ public class FileBasedUpdateTest extends CliTestBase {
     }
 
     @Test
+    void badLanguageOnSecondMetadataEntryIsRejectedBeforeAnythingIsWritten() throws Exception {
+        assertNotNull(bvId);
+
+        assertEquals(0, getDbInterface().countMetaValues(bvId), "Precondition: no metadata yet");
+
+        // First entry is well-formed; only the SECOND entry's language is bad. Before the fix,
+        // validation of mdSettings.validate() (which checks language) ran inside the import loop,
+        // so the first file's clear-and-import would already have committed by the time the
+        // second entry's bad language was discovered.
+        String cfg = writeConfig("metadata-bad-second-language.yaml",
+            "operation: update",
+            "baseline:",
+            "  id: " + bvId,
+            "metadata:",
+            "  - file: " + absoluteResourcePath("/import/metadata-wellformed-complete-en.csv"),
+            "    language: en",
+            "  - file: " + absoluteResourcePath("/import/metadata-wellformed-complete-sv.csv"),
+            "    language: english");
+
+        try {
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "y", "y");
+
+            assertTrue(displaceErr.toString().contains("metadata[1].language"),
+                "Expected rejection mentioning 'metadata[1].language'. stderr was: " + displaceErr);
+
+            assertEquals(0, getDbInterface().countMetaValues(bvId),
+                "A config-wide validation failure must leave zero metadata rows written, not the "
+                    + "first entry's data committed before the second entry's bad language is caught");
+        } finally {
+            deleteTempConfig(cfg);
+        }
+    }
+
+    @Test
     void replaceIsRefusedWhenReliabilityPolygonsWouldBlockIt() throws Exception {
         assertNotNull(bvId);
 

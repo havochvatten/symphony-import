@@ -343,28 +343,78 @@ public class DbInterface {
 
         String[] areaCountryISOs = Arrays.stream(areaInserts).map(NationalAreaRowInsert::getCountryISO).toArray(String[]::new);
 
-        for  (NationalAreaRowInsert areaInsert : areaInserts) {
-            this.qr.update(this.activeConnection, NationalAreaRowInsert.cleanQuery(schema), areaInsert.getCountryISO(), areaInsert.getNationalAreaType());
-            this.qr.update(this.activeConnection, NationalAreaRowInsert.insertQuery(schema),
-                areaInsert.getCountryISO(), areaInsert.getPolygon(), areaInsert.getNationalAreaType());
-        }
+        // Each entry is a DELETE followed by an INSERT, and NationalAreaRowInsert.getPolygon()
+        // reads its file lazily, right here, so a bad file (missing, unreadable, changed since
+        // an earlier '-f' validation pass) can fail after an earlier entry's delete has already
+        // run. Under auto-commit that delete would be permanent. Wrap the whole delete/insert/
+        // sanitize sequence in one transaction so it succeeds or fails as a unit, mirroring
+        // updateMetadata's pattern (see the comments there for the setAutoCommit(true)-commits-
+        // an-open-transaction trap this also has to avoid).
+        boolean previousAutoCommit = conn.getAutoCommit();
+        conn.setAutoCommit(false);
+        boolean transactionEnded = false;
 
-        // sanitize table, once per distinct country
-        for (String iso : Arrays.stream(areaCountryISOs).distinct().toList()) {
-            this.qr.update(conn,
-                String.format("DELETE FROM %s.nationalarea "
-                    + "WHERE narea_type = ? AND narea_countryiso3 = ?", schema),
-                NationalAreaRowInsert.TYPE_TYPES, iso);
+        try {
+            for (NationalAreaRowInsert areaInsert : areaInserts) {
+                this.qr.update(conn, NationalAreaRowInsert.cleanQuery(schema), areaInsert.getCountryISO(), areaInsert.getNationalAreaType());
+                this.qr.update(conn, NationalAreaRowInsert.insertQuery(schema),
+                    areaInsert.getCountryISO(), areaInsert.getPolygon(), areaInsert.getNationalAreaType());
+            }
 
-            String types = jsonStringArray(
-                Arrays.stream(this.qr.query(conn,
-                    areaTypesExclusiveQuery(schema),
-                    new ArrayHandler(), iso, TYPE_BOUNDARY))
-                        .map(Object::toString).toArray(String[]::new));
+            // sanitize table, once per distinct country
+            for (String iso : Arrays.stream(areaCountryISOs).distinct().toList()) {
+                this.qr.update(conn,
+                    String.format("DELETE FROM %s.nationalarea "
+                        + "WHERE narea_type = ? AND narea_countryiso3 = ?", schema),
+                    NationalAreaRowInsert.TYPE_TYPES, iso);
 
-            this.qr.update(conn,
-                String.format("INSERT INTO %s.nationalarea (narea_countryiso3, narea_type, narea_types) VALUES (?, ?, ?)", schema),
-                iso, NationalAreaRowInsert.TYPE_TYPES, types);
+                String types = jsonStringArray(
+                    Arrays.stream(this.qr.query(conn,
+                        areaTypesExclusiveQuery(schema),
+                        new ArrayHandler(), iso, TYPE_BOUNDARY))
+                            .map(Object::toString).toArray(String[]::new));
+
+                this.qr.update(conn,
+                    String.format("INSERT INTO %s.nationalarea (narea_countryiso3, narea_type, narea_types) VALUES (?, ?, ?)", schema),
+                    iso, NationalAreaRowInsert.TYPE_TYPES, types);
+            }
+
+            conn.commit();
+            transactionEnded = true;
+        } catch (SQLException | RuntimeException e) {
+            // Rolled back here rather than only in the finally, so that a failure to roll back
+            // is attached to the original exception instead of replacing it. getPolygon() throws
+            // a RuntimeException (wrapping an IO failure), not a SQLException, so both are caught.
+            transactionEnded = true;
+            try {
+                conn.rollback();
+            } catch (SQLException rollbackFailure) {
+                e.addSuppressed(rollbackFailure);
+            }
+            throw e;
+        } finally {
+            // Anything that escaped the catch above leaves the transaction open, and
+            // setAutoCommit(true) commits an open transaction per the JDBC contract. That would
+            // commit the half-updated table this whole transaction exists to prevent, so end the
+            // transaction explicitly before restoring the connection.
+            if (!transactionEnded) {
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackFailure) {
+                    System.err.println(
+                        "Warning: could not roll back the aborted national areas import: "
+                            + rollbackFailure.getMessage());
+                }
+            }
+
+            // Never let a failure to restore the connection mask the real outcome
+            try {
+                conn.setAutoCommit(previousAutoCommit);
+            } catch (SQLException restoreFailure) {
+                System.err.println(
+                    "Warning: could not restore the connection's auto-commit setting: "
+                        + restoreFailure.getMessage());
+            }
         }
 
         System.out.println("National areas import finished.");

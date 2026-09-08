@@ -96,7 +96,8 @@ public class SymphonySetup {
                updateOption      = newOption("u", "update", true,
                    "Update an existing baseline version. Must be combined with '-bv' option to specify the target baseline version id.\n" +
                    "Takes an optional argument which may be specified as ('u'/'update' or 'r'/'replace'), differentiating \"update mode\".\n" +
-                   "When set to 'replace', ALL band metadata for the target baseline version is deleted before the update runs.\n" +
+                   "This argument is not currently honoured on the command line: 'replace' mode is only available via the '-f' configuration file option.\n" +
+                   "When set to 'replace' (via '-f'), ALL band metadata for the target baseline version is deleted before the update runs.\n" +
                    "This cascades to every sensitivity score on the baseline, including user-created matrices.\n" +
                    "Sensitivity matrices and calculation areas are not themselves cleared: re-importing them appends duplicates.", v1_0),
                configFileOption  = newOption("f", "file", true,
@@ -638,10 +639,19 @@ public class SymphonySetup {
             }
 
             // Set update mode (default to UPDATE if not specified)
-            updateMode = bl.getUpdateMode() != null ? 
+            updateMode = bl.getUpdateMode() != null ?
                 bl.getUpdateMode() : UpdateMode.UPDATE;
 
-            guardReplaceMode();
+            // clear() only ever triggers a destructive delete inside importMetadataFromConfig
+            // (via db.updateMetadata's clearBandData call); matrices and calculation areas never
+            // consult it. So a 'replace' with no 'metadata' section changes nothing, and the guard
+            // must not fire for it: without this gate, a matrices-only replace on a baseline with
+            // reliability partitions was refused outright, and one with user-owned matrices warned
+            // about a deletion that would never happen. See IMPORT-CONFIG.md's "replace has no
+            // effect at all unless the configuration also carries a metadata section".
+            if (config.getMetadata() != null && !config.getMetadata().isEmpty()) {
+                guardReplaceMode();
+            }
 
             commonConfigImportSequence(config);
 
@@ -881,6 +891,7 @@ public class SymphonySetup {
         if (setupCmd.hasOption("f")) {
             String disallowed = Arrays.stream(setupCmd.getOptions())
                 .map(Option::getOpt)
+                .filter(Objects::nonNull) // a long-only option has no short opt; Set.of(...).contains(null) throws
                 .filter(opt -> !FILE_MODE_ALLOWED_OPTIONS.contains(opt))
                 .sorted()
                 .collect(Collectors.joining(", "));
@@ -980,7 +991,9 @@ public class SymphonySetup {
             boolean hasLang = languageParams != null && languageParams.length > i;
 
             T settingObj = TextualSettingsBase.create(settingsType, selectedBaselineVersion, files[i],
-                                hasLang ? languageParams[i] : null, currentDefaultLang, clear(), i);
+                                hasLang ? languageParams[i] : null, currentDefaultLang,
+                                clear() && i == 0,   // clear once for the whole update, not once per file
+                                i);
 
             if (!settingObj.validate()) {
                 throw new ParseException(settingObj.errorMessage());
