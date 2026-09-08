@@ -234,6 +234,16 @@ public class DbTestInterface extends DbInterface {
         }
     }
 
+    public Integer getBaselineVersionByName(String name) {
+        try {
+            return query(
+                String.format("SELECT bver_id FROM %s.baselineversion WHERE bver_name = ?", schema),
+                idHandler, name);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error querying baseline version by name", e);
+        }
+    }
+
     public void cleanCalculationAreas(int bvId) {
         try (Connection conn = getConnection()) {
             // Delete calculation areas
