@@ -104,6 +104,17 @@ public class DbInterface {
             idHandler);
     }
 
+    /**
+     * MSP-Symphony resolves the current baseline by validFrom and throws
+     * BASELINE_VERSION_MULT_MATCHES when more than one baseline version shares a date.
+     */
+    public boolean baselineVersionExistsForDate(java.sql.Date validFrom) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %s.baselineversion WHERE bver_validfrom = ?", schema),
+            longHandler, validFrom);
+        return n != null && n > 0;
+    }
+
     public int[] getAvailableBaselineVersionIds() throws SQLException {
         Connection conn = getConnection();
 

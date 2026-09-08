@@ -217,6 +217,44 @@ public class FileBasedConfigValidationTest extends CliTestBase {
         assertRejected(cfg, "'nationalAreas[0].type' is required");
     }
 
+    @Test
+    void secondBaselineOnTheSameDayIsRejected() {
+        String first = writeConfig("same-day-a.yaml",
+            "operation: newBaseline",
+            "baseline:",
+            "  name: same-day-a",
+            "  validFrom: \"2031-02-02\"",
+            "  ecoPath: " + TEST_TIFF_E_PATH,
+            "  pressurePath: " + TEST_TIFF_P_PATH);
+
+        String second = writeConfig("same-day-b.yaml",
+            "operation: newBaseline",
+            "baseline:",
+            "  name: same-day-b",
+            "  validFrom: \"2031-02-02\"",
+            "  ecoPath: " + TEST_TIFF_E_PATH,
+            "  pressurePath: " + TEST_TIFF_P_PATH);
+
+        try {
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", first)), "y");
+            assertNotNull(getDbInterface().getBaselineVersionByName("same-day-a"),
+                "Precondition: the first baseline installs");
+
+            assertRejected(second, "validFrom");
+
+            assertNull(getDbInterface().getBaselineVersionByName("same-day-b"),
+                "A second baseline sharing validFrom must not be installed: the application "
+                    + "throws BASELINE_VERSION_MULT_MATCHES when resolving the current baseline");
+        } finally {
+            for (String name : new String[]{"same-day-a", "same-day-b"}) {
+                Integer id = getDbInterface().getBaselineVersionByName(name);
+                if (id != null) {
+                    getDbInterface().cleanBaselineVersion(id);
+                }
+            }
+        }
+    }
+
     private String writeConfig(String name, String... lines) {
         try {
             Path dir = Path.of("target/test-resources");
