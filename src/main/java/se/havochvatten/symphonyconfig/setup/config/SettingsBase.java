@@ -10,11 +10,9 @@ public abstract class SettingsBase extends ProcedureBase {
     public final String typeDescriptor;
 
     public final BaselineVersion baselineVersion;
-    public final boolean clear;
 
-    public SettingsBase(BaselineVersion baselineVersion, String inputFilePath, String inputFileOption, String typeDescriptor, boolean clear) {
+    public SettingsBase(BaselineVersion baselineVersion, String inputFilePath, String inputFileOption, String typeDescriptor) {
         this.baselineVersion = baselineVersion;
-        this.clear = clear;
         this.typeDescriptor = typeDescriptor;
 
         if (inputFilePath != null) {

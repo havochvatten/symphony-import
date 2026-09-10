@@ -5,7 +5,8 @@ import se.havochvatten.symphonyconfig.setup.config.SettingsBase;
 import se.havochvatten.symphonyconfig.setup.model.ProcedureBase;
 
 import javax.annotation.Nullable;
-import java.util.Scanner;
+
+import static se.havochvatten.symphonyconfig.setup.ConfirmImport.confirmToProceed;
 
 public abstract class ImportProcedure<T extends SettingsBase> extends ProcedureBase {
 
@@ -38,20 +39,7 @@ public abstract class ImportProcedure<T extends SettingsBase> extends ProcedureB
         }
     }
 
-    protected Scanner pendingImportMessage(@Nullable String notice) {
-        Scanner prompt = new Scanner(System.in);
-
-        System.out.println(String.format("Pending %s import: \"%s\"", settings.getTypeDescriptor(), getImportItemName()));
-        System.out.println(String.format("-------------------%s", "-".repeat(
-            settings.getTypeDescriptor().length() + getImportItemName().length())));
-
-        if (notice != null) {
-            System.out.println(notice);
-        }
-
-        System.out.println("\nProceed with the import? ('y' to confirm)");
-        System.out.print("> ");
-
-        return prompt;
+    protected boolean confirmPendingImport(@Nullable String notice) {
+        return confirmToProceed(String.format("Pending %s import: \"%s\"", settings.getTypeDescriptor(), getImportItemName()), notice);
     }
 }

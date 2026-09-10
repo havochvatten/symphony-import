@@ -2,14 +2,14 @@ package se.havochvatten.symphonyconfig.setup.database;
 
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static se.havochvatten.symphonyconfig.TestBase.*;
@@ -84,37 +84,8 @@ public class DbTestInterface extends DbInterface {
 
     public int installTestBaselineVersion() {
         if (testBvId == null) {
-            String insertQuery = String.format("INSERT INTO %s.baselineversion " +
-                "(bver_name, bver_desc, bver_validfrom, " +
-                "bver_ecofilepath, bver_presfilepath, bver_locale) " +
-                "VALUES ('%s', '', ?, ?, ?, 'en')", schema, DEFAULT_TEST_BASELINE_NAME);
-
-            String isoToday = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-
-            try (Connection conn = getConnection()) {
-                PreparedStatement insertStmt =
-                    conn.prepareStatement(insertQuery, RETURN_GENERATED_KEYS);
-
-                insertStmt.setObject(1, isoToday, Types.DATE);
-                insertStmt.setString(2, TEST_TIFF_E_PATH);
-                insertStmt.setString(3, TEST_TIFF_P_PATH);
-
-                insertStmt.executeUpdate();
-                ResultSet rs = insertStmt.getGeneratedKeys();
-
-                if (rs.next()) {
-                    testBvId = rs.getInt(1);
-                    insertStmt.close();
-                } else {
-                    insertStmt.close();
-                    throw new SQLException("Failure inserting baseline version for test");
-                }
-
-            } catch (SQLException e) {
-                throw new RuntimeException("Database transaction error");
-            }
+            testBvId = installBaselineVersion(DEFAULT_TEST_BASELINE_NAME, LocalDate.now());
         }
-
         return testBvId;
     }
 
@@ -125,14 +96,17 @@ public class DbTestInterface extends DbInterface {
      * themselves via {@link #cleanBaselineVersion(int)}.
      */
     public int installSecondaryBaselineVersion(String name) {
+        // A day before the primary fixture's 'today', avoiding collision
+        return installBaselineVersion(name, LocalDate.now().minus(1, ChronoUnit.DAYS));
+    }
+
+    private int installBaselineVersion(String name, LocalDate validFrom) {
         String insertQuery = String.format("INSERT INTO %s.baselineversion " +
             "(bver_name, bver_desc, bver_validfrom, " +
             "bver_ecofilepath, bver_presfilepath, bver_locale) " +
             "VALUES ('%s', '', ?, ?, ?, 'en')", schema, name);
 
-        // A day before the primary fixture's 'today', so the two never collide.
-        String isoValidFrom = new SimpleDateFormat("yyyy-MM-dd")
-            .format(new Date(System.currentTimeMillis() - 24L * 60 * 60 * 1000));
+        String isoValidFrom = validFrom.format(DateTimeFormatter.ISO_DATE);
 
         try (Connection conn = getConnection()) {
             PreparedStatement insertStmt =

@@ -17,6 +17,7 @@ import java.util.Properties;
 public abstract class TestBase {
 
     protected static final String RESOURCES_PATH = "src/test/resources/";
+    protected static final String TEMP_DIR = "target/test-resources";
 
     protected static final String propertiesPath          = RESOURCES_PATH + "test.properties";
     protected static final String csvMetaFilePartialSV    = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.csv";

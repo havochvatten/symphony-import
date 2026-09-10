@@ -5,8 +5,6 @@ import se.havochvatten.symphonyconfig.setup.model.SymphonyBand;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyCategory;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static se.havochvatten.symphonyconfig.setup.SymphonySetup.Util.parseNullableBoolean;
 
@@ -19,6 +17,8 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
     protected static final String DEFAULT_SELECTED = "default_selected";
     static final String Ecosystem = SymphonyCategory.ECOSYSTEM.getDbVal();
     static final String Pressure  = SymphonyCategory.PRESSURE.getDbVal();
+
+    private static final int FILENAME_LENGTH = 76; // semi-arbitrary limit for output formatting
 
     protected static final String[] reqFields = new String[]{ BANDNUMBER, SYMPHONY_CATEGORY, TITLE };
 
@@ -39,7 +39,15 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
 
     @Override
     protected String getImportItemName() {
-        return settings.fileName();
+        String itemName = settings.fileName();
+        if (itemName.length() > FILENAME_LENGTH) {
+            int extPosition = itemName.lastIndexOf('.'); // assumes a positive result reliant
+                                                         // on previous file type validation
+            return String.format("%s..%s",
+                itemName.substring(0, FILENAME_LENGTH - 6),
+                itemName.substring(extPosition));
+        }
+        return itemName;
     }
 
     protected boolean validateFieldSet(Set<String> allFields) {
@@ -146,20 +154,6 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
             );
         }
 
-        // The prompt must not read identically whether or not the confirmation destroys data
-        String clearNotice = settings.clear
-            ? "REPLACE MODE: all existing band metadata for this baseline version will be "
-                + "deleted before this file is imported.\n"
-                + "This cascades to every sensitivity score on the baseline, including "
-                + "user-created matrices."
-            : null;
-
-        String notice = Stream.of(clearNotice, partialNotice)
-            .filter(Objects::nonNull)
-            .collect(Collectors.joining("\n"));
-
-        Scanner prompt = pendingImportMessage(notice.isEmpty() ? null : notice);
-
-        return prompt.nextLine().trim().equalsIgnoreCase("y");
+        return confirmPendingImport(partialNotice);
     }
 }

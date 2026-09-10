@@ -17,9 +17,9 @@ public abstract class BandsBasedSettingsBase extends TextualSettingsBase {
         String inputFileOption,
         String typeDescriptor,
         String language,
-        String defaultLanguage, boolean clear, int order) throws Exception {
+        String defaultLanguage, int order) throws Exception {
 
-        super(baselineVersion, inputFilePath, inputFileOption, typeDescriptor, language, defaultLanguage, clear, order);
+        super(baselineVersion, inputFilePath, inputFileOption, typeDescriptor, language, defaultLanguage, order);
         GridCoverage2D coverage;
 
         try {

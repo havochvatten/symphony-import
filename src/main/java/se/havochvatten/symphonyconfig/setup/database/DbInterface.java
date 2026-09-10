@@ -99,9 +99,8 @@ public class DbInterface {
     }
 
     public Integer baselineVersionIdByName(String bvName) throws SQLException {
-        return qr.query(getConnection(),
-            String.format("SELECT bver_id from %s.baselineversion WHERE bver_name = ?", this.schema), bvName,
-            idHandler);
+        return query(String.format("SELECT bver_id from %s.baselineversion WHERE bver_name = ?", this.schema), idHandler,
+            bvName);
     }
 
     /**
@@ -116,24 +115,18 @@ public class DbInterface {
     }
 
     public int[] getAvailableBaselineVersionIds() throws SQLException {
-        Connection conn = getConnection();
-
-        return qr.query(conn, BaselineVersion.selectAvailableVersions(this.schema), idListHandler)
+        return query(BaselineVersion.selectAvailableVersions(this.schema), idListHandler)
                         .stream().mapToInt(Integer::valueOf).toArray();
     }
 
     public Set<Integer> getAvailableAreaTypes() throws SQLException {
-        Connection conn = getConnection();
-
         return new HashSet<>(
-            qr.query(conn, AreaType.getAvailableAreaTypeIdsQuery(this.schema), idListHandler)
+            query(AreaType.getAvailableAreaTypeIdsQuery(this.schema), idListHandler)
         );
     }
 
     public int[] getAvailableCalculationAreaIds() throws SQLException {
-        Connection conn = getConnection();
-
-        return qr.query(conn, String.format("SELECT carea_id FROM %s.calculationarea", this.schema), idListHandler)
+        return query(String.format("SELECT carea_id FROM %s.calculationarea", this.schema), idListHandler)
                         .stream().mapToInt(Integer::valueOf).toArray();
     }
 
@@ -216,11 +209,11 @@ public class DbInterface {
      * Owners of user-created sensitivity matrices on this baseline. Clearing band data
      * cascades through sensitivity.sens_*_band_fk and empties their matrices.
      */
-    public List<String> ownedMatrixOwners(int bvId) throws SQLException {
+    public List<String> userDefinedMatrixOwners(int bvId) throws SQLException {
         return query(String.format(
             "SELECT DISTINCT sensm_owner FROM %s.sensitivitymatrix "
                 + "WHERE sensm_bver_id = ? AND sensm_owner IS NOT NULL ORDER BY 1", schema),
-            new ColumnListHandler<String>(), bvId);
+                new ColumnListHandler<>(), bvId);
     }
 
     protected void clearBandData(int bvId) throws SQLException {
@@ -231,7 +224,7 @@ public class DbInterface {
         }
     }
 
-    public void updateMetadata(MetadataBase metadata) throws SQLException, ParseException {
+    public void updateMetadata(MetadataBase metadata, boolean clear) throws SQLException, ParseException {
         Connection conn = getConnection();
         int blvId = metadata.settings.baselineVersion.getId();
         Integer bandId;
@@ -244,7 +237,10 @@ public class DbInterface {
             boolean transactionEnded = false;
 
             try {
-                if(metadata.settings.clear) {
+                if (clear) {
+                    clearReliabilityPartitions(blvId);
+                    clearCalculationAreas(blvId);
+                    clearSensitivityMatrices(blvId);
                     clearBandData(blvId);
                 }
 
@@ -317,10 +313,16 @@ public class DbInterface {
         }
     }
 
-    public void updateMatrix(MatrixBase matrix) throws SQLException, ParseException {
+    public void updateMatrix(MatrixBase matrix, boolean clear) throws SQLException, ParseException {
         Connection conn = getConnection();
 
         if (matrix.confirmImport()) {
+            int bvId = matrix.settings.baselineVersion.getId();
+
+            if (clear) {
+                clearSensitivityMatrices(bvId);
+            }
+
             int mxId = qr.insert(conn, MatrixBase.insertSensMatrix(schema), idHandler,
                 matrix.settings.getMatrixName(),
                 matrix.settings.baselineVersion.getId());
@@ -331,7 +333,6 @@ public class DbInterface {
             qr.execute(conn, String.format("%s %s",
                 Sensitivity.insertRowColumns(schema),
                 String.join(",", valuesToInsert)));
-
 
         } else {
             throw new ParseException("Matrix import aborted interactively.");
@@ -510,7 +511,11 @@ public class DbInterface {
         return qr.query(getConnection(), query, handler, args);
     }
 
-    public void importCalculationAreas(CalcAreaProcedure.AreaMatrixTuple[] calcAreaMatrixTuples, int bvId) throws SQLException, ParseException {
+    public void importCalculationAreas(CalcAreaProcedure.AreaMatrixTuple[] calcAreaMatrixTuples, int bvId, boolean clear) throws SQLException, ParseException {
+        if (clear) {
+            clearCalculationAreas(bvId);
+        }
+
         for (CalcAreaProcedure.AreaMatrixTuple camx : calcAreaMatrixTuples) {
             CalculationArea ca = camx.area();
             Integer matrixId = this.query(
@@ -537,5 +542,57 @@ public class DbInterface {
                 qr.insert(conn, CalculationArea.additionalMatrixCouplingInsert(schema, areaId, camx.matrixIds()), idHandler);
             }
         }
+    }
+
+    public void clearReliabilityPartitions(int bvId) throws SQLException {
+        qr.update(getConnection(), String.format(
+            "DELETE FROM %1$s.reliabilitypartition rp "
+            + "USING %1$s.meta_bands mb WHERE mb.metaband_id = rp.rp_metaband_id "
+            + "AND mb.metaband_bver_id = ?", schema), bvId);
+    }
+
+    public void clearSensitivityMatrices(int bvId) throws SQLException {
+        Connection conn = getConnection();
+
+        // For robustness, rows that should be removed implicitly by cascading from the
+        // removal of the corresponding meta band entries are removed explicitly upfront
+        // We're neither relying on the expected FK relationship sensitivity -> parent
+        // matrix (second query should be sufficient in a correctly configured ds)
+        qr.update(conn, String.format(
+            "DELETE FROM %1$s.sensitivity s USING %1$s.sensitivitymatrix m " +
+            "WHERE s.sens_sensm_id = m.sensm_id AND m.sensm_bver_id = ?", schema), bvId);
+
+        qr.update(conn, String.format(
+            "DELETE FROM %1$s.sensitivitymatrix m WHERE m.sensm_bver_id = ?", schema), bvId);
+    }
+
+    public void clearCalculationAreas(int bvId) throws SQLException {
+        Connection conn = getConnection();
+
+        // To stay agnostic about actual FK constraints, first record the area ids to remove
+        // and reuse as literal values in the delete sequence
+        List<Integer> coupledCalcAreas = query(String.format(
+            "SELECT DISTINCT carea_id dc FROM "
+            + "(SELECT carea_id FROM %1$s.calculationarea ca "
+            +  "WHERE ca.carea_default_sensm_id IN "
+            +   "(SELECT sensm_id FROM %1$s.sensitivitymatrix sm WHERE sensm_bver_id = ?) "
+            + "UNION "
+            + "SELECT carea_id FROM %1$s.calculationarea ca "
+            +   "JOIN %1$s.calcareasensmatrix cm ON cm.casen_carea_id = ca.carea_id AND cm.casen_sensm_id IN "
+            +     "(SELECT sensm_id FROM %1$s.sensitivitymatrix sm WHERE sensm_bver_id = ?)) bverArea", schema),
+            idListHandler, bvId, bvId);
+
+        qr.update(conn, String.format(
+            "DELETE FROM %1$s.calcareasensmatrix " +
+            "WHERE casen_sensm_id IN " +
+            "(SELECT sensm_id FROM %1$s.sensitivitymatrix sm WHERE sensm_bver_id = ?)", schema), bvId);
+
+        qr.update(conn, String.format(
+            "DELETE FROM %1$s.capolygon WHERE cap_carea_id IN (%2$s)", schema,
+            delimitedIds(coupledCalcAreas.stream().mapToInt(Integer::intValue).toArray())));
+
+        qr.update(conn, String.format(
+            "DELETE FROM %1$s.calculationarea WHERE carea_id IN (%2$s)", schema,
+            delimitedIds(coupledCalcAreas.stream().mapToInt(Integer::intValue).toArray())));
     }
 }

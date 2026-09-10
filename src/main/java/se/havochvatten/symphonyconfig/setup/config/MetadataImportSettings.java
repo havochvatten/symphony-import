@@ -11,9 +11,9 @@ public class MetadataImportSettings extends BandsBasedSettingsBase {
     }
 
     public MetadataImportSettings(BaselineVersion baselineVersion, String mdFilePath,
-                                  String language, String defaultLanguage, boolean clear, int order) throws Exception {
+                                  String language, String defaultLanguage, int order) throws Exception {
 
-        super(baselineVersion, mdFilePath, "md", "metadata", language, defaultLanguage, clear, order);
+        super(baselineVersion, mdFilePath, "md", "metadata", language, defaultLanguage, order);
 
         argMissingDesc      = "Insufficient arguments to carry out the Metadata import procedure";
         validationErrorDesc = "Metadata import - invalid settings";

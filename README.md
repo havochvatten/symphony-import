@@ -22,7 +22,7 @@ The tool will work for specific MSP-Symphony release versions as shown in the ta
 | 1.1                    | <center>1.25.0</center>  |
 
 ## Usage
-The option table below is adapted from the tool's `-h` output, reflowed for width and with a `Since` column added. 
+Below is the output of invoking the tool with the `-h` (usage) option, reflowed for width. 
 <details><summary>Expand to view full usage instruction.</summary>
 
 ```
@@ -81,18 +81,26 @@ package MSP-Symphony
                                                     target baseline version id.      
                                                     Takes an optional argument which may be 
                                                     specified as ('u'/'update' or  'r'/'replace'), 
-                                                    differentiating "update mode".                    
-                                                    This argument is not currently honoured on the
-                                                    command line: 'replace' mode is only available
-                                                    via the '-f' configuration file option.
-                                                    When set to 'replace' (via '-f'), ALL band
-                                                    metadata for the target baseline version is
-                                                    deleted before the update runs. This cascades
-                                                    to every sensitivity score on the baseline,
-                                                    including user-created matrices. Sensitivity
-                                                    matrices and calculation areas are not
-                                                    themselves cleared: re-importing them appends
-                                                    duplicates.
+                                                    differentiating "update mode".
+                                                    - REPLACE MODE:
+                                                    When set to 'replace', coupled data for the      
+                                                    target baseline version is deleted before the
+                                                    update runs.
+                                                    There is a subtlety to which content gets
+                                                    targeted for removal, depending on the other
+                                                    options that accompany the same invocation:
+                                                    Called in conjuction with the metadata option 
+                                                    (-md ...) - ALL associated content, in addition
+                                                    to the band metadata: matrices, calculation areas
+                                                    and reliability partitions will also be wiped 
+                                                    from the database, regardless of other options.
+                                                    Called with the matrix option (-mx ...), all 
+                                                    matrices that is associated with the baseline
+                                                    version will be removed.
+                                                    If calculation area options (-caF etc) are set,
+                                                    calculation areas that is coupled via some 
+                                                    sensitivity matrix to the targeted baseline 
+                                                    version are removed, prior to the insert.
 -bv, --baselineVersion <arg>             v1.0       Target baseline version to update. Used in           
                                                     conjunction with the -u option only.              
 -md, --metadata <arg>                    v1.0       Path to metadata file to import (csv or xlsx

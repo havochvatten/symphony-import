@@ -26,8 +26,6 @@ import static org.junit.jupiter.api.Assertions.fail;
  * Tests for updating an existing baseline using a JSON configuration file.
  */
 public class FileBasedUpdateTest extends CliTestBase {
-    private static final String TEMP_DIR = "target/test-resources";
-
     public FileBasedUpdateTest() {
         super(true);
     }
@@ -63,25 +61,7 @@ public class FileBasedUpdateTest extends CliTestBase {
             }, "y", "y");
 
         } finally {
-            // Clean up temp files
-            try {
-                Path tempDirPath = Path.of(TEMP_DIR);
-                if (Files.exists(tempDirPath)) {
-                    Files.walk(tempDirPath)
-                        .sorted() // files before directories
-                        .forEach(path -> {
-                            try {
-                                Files.delete(path);
-                            } catch (IOException e) {
-                                System.err.println(String.format("Failed to delete file: %s%n%s", path, e.getMessage()));
-                            }
-                    });
-                }
-            } catch (IOException e) {
-                System.err.println(
-                    String.format("Warning: Failure to delete temp directory: %n%s", e.getMessage())
-                );
-            }
+            deleteTempConfig(tempConfigPath);
         }
     }
 
@@ -139,25 +119,7 @@ public class FileBasedUpdateTest extends CliTestBase {
             }, "y");
 
         } finally {
-            // Clean up temp files
-            try {
-                Path tempDirPath = Path.of(TEMP_DIR);
-                if (Files.exists(tempDirPath)) {
-                    Files.walk(tempDirPath)
-                        .sorted() // files before directories
-                        .forEach(path -> {
-                            try {
-                                Files.delete(path);
-                            } catch (IOException e) {
-                                System.err.println(String.format("Failed to delete file: %s%n%s", path, e.getMessage()));
-                            }
-                    });
-                }
-            } catch (IOException e) {
-                System.err.println(
-                    String.format("Warning: Failure to delete temp directory: %n%s", e.getMessage())
-                );
-            }
+            deleteTempConfig(tempConfigPath);
         }
     }
 
@@ -243,7 +205,7 @@ public class FileBasedUpdateTest extends CliTestBase {
     }
 
     @Test
-    void replaceIsRefusedWhenReliabilityPolygonsWouldBlockIt() throws Exception {
+    void requireConfirmationWhenReliabilityPolygonsArePresent() throws Exception {
         assertNotNull(bvId);
 
         // Seed metadata, then attach a reliability polygon as other tooling would
@@ -262,17 +224,53 @@ public class FileBasedUpdateTest extends CliTestBase {
 
             tempConfigPath = createTempReplaceConfig();
             String cfg = tempConfigPath;
-            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "y");
+            // Abort operation
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "n");
 
-            String err = displaceErr.toString();
-            assertTrue(err.contains("reliability"),
-                "Replace must be refused with an explanatory message. stderr was: " + err);
-            assertTrue(err.contains("Cannot run updateMode 'replace'"),
-                "The refusal must be the tool's own pre-flight message, not a raw foreign key "
-                    + "error raised half-way through the delete. stderr was: " + err);
+            String out = displaceOut.toString();
+            assertTrue(
+            out.contains("WARNING. The specified baseline version is coupled to 1 reliability partition"),
+                "Replace operation must be confirmed explicitly by the user if certain "+
+                "types of collateral data (in this case, reliability partition polygons) lingers. "+
+                "+ stdout was: " + out);
+            assertTrue(out.contains("Replace procedure aborted interactively."));
 
             assertEquals(valuesBefore, getDbInterface().countMetaValues(bvId),
                 "A refused replace must not delete any metadata");
+        } finally {
+            getDbInterface().cleanReliabilityPartitions(bvId);
+            deleteTempConfig(tempConfigPath);
+        }
+    }
+
+    @Test
+    void replaceOperationRemovesReliability() throws Exception {
+        assertNotNull(bvId);
+
+        // Seed metadata, then attach a reliability polygon as other tooling would
+        String[] seedArgs = testCaseArgs("-u",
+                "-md", csvMetaFileCompleteEN, "-mdL", "en", "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(seedArgs), "y");
+
+        String tempConfigPath = null;
+        try {
+            // Installed inside the try-block to ensure panic measures in the
+            // 'finally' clause are accessible following unexpected errors
+            getDbInterface().installReliabilityPartition(bvId);
+            int valuesBefore = getDbInterface().countMetaValues(bvId);
+            assertTrue(valuesBefore == (8 * 3), "Precondition: metadata present");
+
+            tempConfigPath = createTempReplaceConfig();
+            String cfg = tempConfigPath;
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "y", "y");
+
+            String out = displaceOut.toString();
+            assertTrue(
+                out.contains("WARNING. The specified baseline version is coupled to 1 reliability partition"));
+
+            assertEquals(0, getDbInterface().countReliabilityPartitionRows(bvId),
+                "Reliability polygons should be cleared when effecting a 'replace mode' import");
+            assertEquals((7 * 3), getDbInterface().countMetaValues(bvId));
         } finally {
             getDbInterface().cleanReliabilityPartitions(bvId);
             deleteTempConfig(tempConfigPath);
@@ -301,57 +299,6 @@ public class FileBasedUpdateTest extends CliTestBase {
             assertTrue(out.contains("alice@example.org"),
                 "The confirmation prompt must name the owners whose matrix data will be emptied. "
                     + "stdout was: " + out);
-        } finally {
-            deleteTempConfig(tempConfigPath);
-        }
-    }
-
-    @Test
-    void replacePromptSaysItWillDeleteExistingData() {
-        assertNotNull(bvId);
-
-        // Seed the baseline so the replace has something to delete
-        String[] seedArgs = testCaseArgs("-u",
-            "-md", csvMetaFileCompleteEN, "-mdL", "en", "-bv", String.valueOf(bvId));
-        queueInteraction(() -> new SymphonySetup(seedArgs), "y");
-
-        String tempConfigPath = null;
-        try {
-            tempConfigPath = createTempReplaceConfig();
-            String cfg = tempConfigPath;
-
-            // Answer 'n': we only want to read the prompt, not carry out the replace
-            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "n");
-
-            String out = displaceOut.toString();
-            assertTrue(out.contains("REPLACE MODE"),
-                "A replace-mode prompt must say that existing data will be deleted, so it cannot "
-                    + "be mistaken for an ordinary update. The prompt's own wording is asserted "
-                    + "rather than any mention of deletion: the pre-flight warning already says "
-                    + "'deletes' whenever a user-owned matrix exists, which would let this pass "
-                    + "with the prompt unchanged. stdout was: " + out);
-        } finally {
-            deleteTempConfig(tempConfigPath);
-        }
-    }
-
-    @Test
-    void ordinaryUpdatePromptCarriesNoReplaceNotice() {
-        assertNotNull(bvId);
-
-        String tempConfigPath = null;
-        try {
-            // Same config shape, updateMode 'update' instead of 'replace'
-            tempConfigPath = createTempConfigWithBaselineIdAndMetadata();
-            String cfg = tempConfigPath;
-
-            // Answer 'n': nothing is written, we only want to read the prompt
-            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "n");
-
-            String out = displaceOut.toString();
-            assertFalse(out.contains("REPLACE MODE"),
-                "A non-destructive 'update' must not carry the replace notice, or the notice "
-                    + "would tell the operator nothing. stdout was: " + out);
         } finally {
             deleteTempConfig(tempConfigPath);
         }

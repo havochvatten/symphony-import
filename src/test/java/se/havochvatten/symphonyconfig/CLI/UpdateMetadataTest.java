@@ -5,9 +5,18 @@ import se.havochvatten.symphonyconfig.setup.SymphonySetup;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyCategory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.junit.jupiter.api.Assertions.*;
 
+
 class UpdateMetadataTest extends CliTestBase {
+
+    private static final String LONG_FILENAME_CSV =           "a_long_truncated_file_name_given_as_a_parameter_ABCDEFGHILJKLMNOPQRSTUVWXYX0123.csv";
+    private static final String LONG_TRUNCATED_FILENAME_CSV = "a_long_truncated_file_name_given_as_a_parameter_ABCDEFGHILJKLMNOPQRSTU...csv";
 
     public UpdateMetadataTest() {
         super(true);
@@ -201,5 +210,28 @@ class UpdateMetadataTest extends CliTestBase {
                 fail();
             }
         }, "y", "y");
+    }
+
+    @Test
+    void testLongFilenameTruncationInInteraction() throws IOException {
+        Path tempDir = Path.of(TEMP_DIR);
+        Files.createDirectories(tempDir);
+
+        String longFilenamePath = TEMP_DIR + "/" + LONG_FILENAME_CSV;
+        Files.copy(Path.of(csvMetaFileCompleteEN), tempDir.resolve(LONG_FILENAME_CSV), REPLACE_EXISTING);
+
+        String[] args = testCaseArgs("-u", "-md", longFilenamePath, "-mdL", "en", "-bv", String.valueOf(bvId));
+
+        queueInteraction(() -> {
+            new SymphonySetup(args);
+            String output = displaceOut.toString();
+
+            assertTrue(output.startsWith(
+                    "Pending metadata import:")
+            );
+            assertTrue(output.contains(LONG_TRUNCATED_FILENAME_CSV),
+                "Check that truncation works as expected for unusually long metadata filenames");
+
+        }, "y");
     }
 }
