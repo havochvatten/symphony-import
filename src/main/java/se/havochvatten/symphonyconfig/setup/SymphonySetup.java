@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.geotools.coverage.grid.io.GridFormatFinder.findFormat;
-import static se.havochvatten.symphonyconfig.setup.ConfirmImport.confirmToProceed;
+import static se.havochvatten.symphonyconfig.setup.ConfirmImport.*;
 import static se.havochvatten.symphonyconfig.setup.SymphonySetupOptionBuilder.newOption;
 import static se.havochvatten.symphonyconfig.setup.SymphonySetupVersion.*;
 import static se.havochvatten.symphonyconfig.setup.config.SupportedTabularFileFormat.CSV;
@@ -41,6 +41,7 @@ public class SymphonySetup {
     private BaselineVersion currentBaselineVersion;
 
     public static final Options options = new Options();
+    private ImportConfigFile config;
 
     public static final Set<String> NationalAreaOptionAliases;
     public static final Set<String> RequiredNewBaselineOptionAliases;
@@ -106,10 +107,15 @@ public class SymphonySetup {
                updateOption      = newOption("u", "update", true,
                    "Update an existing baseline version. Must be combined with '-bv' option to specify the target baseline version id.\n" +
                    "Takes an optional argument which may be specified as ('u'/'update' or 'r'/'replace'), differentiating \"update mode\".\n" +
-                   "This argument is not currently honoured on the command line: 'replace' mode is only available via the '-f' configuration file option.\n" +
-                   "When set to 'replace' (via '-f'), ALL band metadata for the target baseline version is deleted before the update runs.\n" +
-                   "This cascades to every sensitivity score on the baseline, including user-created matrices.\n" +
-                   "Sensitivity matrices and calculation areas are not themselves cleared: re-importing them appends duplicates.", v1_0),
+                   "- REPLACE MODE:\n" +
+                   "When set to 'replace', coupled data for the target baseline version is deleted before the update runs.\n" +
+                   "There is a subtlety to which content gets targeted for removal, depending on the other options that accompany the same " +
+                   "invocation:\n" +
+                   "Called in conjuction with the metadata option (-md ...) - ALL associated content, in addition to the band metadata: matrices, " +
+                   "calculation areas and reliability partitions will also be wiped from the database, regardless of other options.\n" +
+                   "Called with the matrix option (-mx ...), all matrices that is associated with the baseline version will be removed.\n" +
+                   "If calculation area options (-caF etc) are set, calculation areas that is coupled via some sensitivity matrix to the targeted " +
+                   "baseline version are removed, prior to the insert.", v1_0),
                configFileOption  = newOption("f", "file", true,
                     "Pass a json/yaml configuration file with bundled input parameters instead of separate cli options.\n " +
                     "The expected format is documented separately.\n", v1_1),
@@ -275,6 +281,16 @@ public class SymphonySetup {
     public UpdateMode updateMode = UpdateMode.UPDATE;
     public boolean clear() { return updateMode == UpdateMode.REPLACE; }
 
+    public boolean metadataImportInvoked() {
+        return (setupCmd.hasOption("md") && !setupCmd.hasOption("f")) ||
+               (setupCmd.hasOption("f") && !(config.getMetadata() == null || config.getMetadata().isEmpty()));
+    }
+
+    public boolean matrixImportInvoked() {
+        return (setupCmd.hasOption("mx") && !setupCmd.hasOption("f")) ||
+               (setupCmd.hasOption("f") && !(config.getMatrices() == null || config.getMatrices().isEmpty()));
+    }
+
     private boolean failed = false;
 
     public boolean hasFailed() {
@@ -433,13 +449,11 @@ public class SymphonySetup {
                     setBaselineVersion();
                     if (selectedBaselineVersion == null) return;
 
-                    // Currently unreachable: the value of '-u' is never parsed
-                    // (UpdateModeConverter is registered on the option, but
-                    // getParsedOptionValue is never called), so updateMode stays UPDATE
-                    // and clear() is always false on the switch path. Deliberate
-                    // insurance, so that fixing that wiring inherits the guard rather
-                    // than reintroducing the destructive behaviour through the CLI.
-                    guardReplaceMode();
+                    updateMode = setupCmd.getParsedOptionValue("u");
+
+                    if (guardReplaceMode()) {
+                        return;
+                    }
                 }
 
                 if (setupCmd.hasOption("n")) {
@@ -521,15 +535,14 @@ public class SymphonySetup {
         String configFilePath = setupCmd.getOptionValue("f");
 
         try {
-            ImportConfigFile config = ImportConfigFile.parse(configFilePath);
-
+            config = ImportConfigFile.parse(configFilePath);
             // Validate the configuration in full before any database write occurs
             config.validate();
 
             switch (config.getOperation()) {
-                case NEW_BASELINE -> executeNewBaselineFromConfig(config);
-                case UPDATE -> executeUpdateFromConfig(config);
-                case NATIONAL_AREAS -> executeNationalAreasFromConfig(config);
+                case NEW_BASELINE -> executeNewBaselineFromConfig();
+                case UPDATE -> executeUpdateFromConfig();
+                case NATIONAL_AREAS -> executeNationalAreasFromConfig();
             }
 
         } catch (IOException e) {
@@ -544,24 +557,24 @@ public class SymphonySetup {
         }
     }
 
-    private void commonConfigImportSequence(ImportConfigFile config) throws Exception {
+    private void commonConfigImportSequence() throws Exception {
         // Import metadata if specified
         if (config.getMetadata() != null && !config.getMetadata().isEmpty()) {
-            importMetadataFromConfig(config);
+            importMetadataFromConfig();
         }
 
         // Import matrices if specified
         if (config.getMatrices() != null && !config.getMatrices().isEmpty()) {
-            importMatricesFromConfig(config);
+            importMatricesFromConfig();
         }
 
         // Import calculation areas if specified
         if (config.getCalculationAreas() != null) {
-            importCalculationAreasFromConfig(config);
+            importCalculationAreasFromConfig();
         }
     }
 
-    private void executeNewBaselineFromConfig(ImportConfigFile config) throws ParseException {
+    private void executeNewBaselineFromConfig() throws ParseException {
         // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
         if (config.getBaseline() == null) {
             throw new ParseException("Configuration must include 'baseline' section for newBaseline operation");
@@ -625,7 +638,7 @@ public class SymphonySetup {
             selectedBaselineVersion = db.getBaselineVersion(bvId);
             updateMode = UpdateMode.UPDATE;
 
-            commonConfigImportSequence(config);
+            commonConfigImportSequence();
 
         } catch (SQLException e) {
             throw new ParseException("Database error: " + e.getMessage());
@@ -634,7 +647,7 @@ public class SymphonySetup {
         }
     }
 
-    private void executeUpdateFromConfig(ImportConfigFile config) throws ParseException {
+    private void executeUpdateFromConfig() throws ParseException {
         // Retained as a guard only: ImportConfigFile.validate() fires first on the '-f' path.
         if (config.getBaseline() == null) {
             throw new ParseException("Configuration must include 'baseline' section for update operation");
@@ -658,18 +671,11 @@ public class SymphonySetup {
             updateMode = bl.getUpdateMode() != null ?
                 bl.getUpdateMode() : UpdateMode.UPDATE;
 
-            // clear() only ever triggers a destructive delete inside importMetadataFromConfig
-            // (via db.updateMetadata's clearBandData call); matrices and calculation areas never
-            // consult it. So a 'replace' with no 'metadata' section changes nothing, and the guard
-            // must not fire for it: without this gate, a matrices-only replace on a baseline with
-            // reliability partitions was refused outright, and one with user-owned matrices warned
-            // about a deletion that would never happen. See IMPORT-CONFIG.md's "replace has no
-            // effect at all unless the configuration also carries a metadata section".
-            if (config.getMetadata() != null && !config.getMetadata().isEmpty()) {
-                guardReplaceMode();
+            if (guardReplaceMode()) {
+                return;
             }
 
-            commonConfigImportSequence(config);
+            commonConfigImportSequence();
 
         } catch (SQLException e) {
             throw new ParseException("Database error: " + e.getMessage());
@@ -678,7 +684,7 @@ public class SymphonySetup {
         }
     }
 
-    private void executeNationalAreasFromConfig(ImportConfigFile config) throws ParseException {
+    private void executeNationalAreasFromConfig() throws ParseException {
         // The 'nationalAreas' section, its BOUNDARY entry and every referenced file are
         // verified by ImportConfigFile.validate() before this method is reached.
 
@@ -691,7 +697,6 @@ public class SymphonySetup {
             ))
             .toArray(NationalAreaRowInsert[]::new);
 
-        Scanner prompt = new Scanner(System.in);
         String areaIdentifiers = config.getNationalAreas().stream()
             .map(ImportConfigFile.NationalAreaConfig::getType)
             .collect(Collectors.joining(", "));
@@ -710,48 +715,30 @@ public class SymphonySetup {
     }
 
     /**
-     * Pre-flight checks for updateMode 'replace', which clears all band metadata for the
-     * selected baseline version before re-importing.
+     * Pre-flight checks for updateMode 'replace', which clears all coupled data for the
+     * selected baseline version before importing.
      * <p>
-     * Two separate risks, handled differently:
-     * <ul>
-     *   <li>reliabilitypartition rows reference meta_bands with no ON DELETE action, so the
-     *       clear is guaranteed to fail part-way through. There is no way to complete it, so
-     *       the run is refused outright.</li>
-     *   <li>sensitivity scores cascade away with their bands, emptying every user-created
-     *       sensitivity matrix on the baseline. The operator may well intend this, so it is a
-     *       warning, but it names the owners so nobody discovers it afterwards.</li>
-     * </ul>
+     * Provide number of calculation areas that are to be removed, list potentially affected
+     * users (deleted user-defined matrices), count reliability partitions (if present) and
+     * require the operators confirmation to proceed.
+     * </p>
+     * @return boolean guard - true to abort
      */
-    private void guardReplaceMode() throws ParseException, SQLException {
+    private boolean guardReplaceMode() throws SQLException, ParseException {
         if (!clear() || selectedBaselineVersion == null) {
-            return;
+            return false;
         }
 
-        int reliabilityRows = db.countReliabilityPartitionRows(selectedBaselineVersion.getId());
-        if (reliabilityRows > 0) {
-            throw new ParseException(String.format(
-                "Cannot run updateMode 'replace' on this baseline version: %d reliability "
-                    + "partition polygon(s) reference its band metadata.%n"
-                    + "Clearing band data would fail part-way through and leave the baseline "
-                    + "in a broken state. Remove the reliability partitions first, or use "
-                    + "updateMode 'update'.",
-                reliabilityRows));
-        }
+        int reliabilityRows = metadataImportInvoked() ?
+            db.countReliabilityPartitionRows(selectedBaselineVersion.getId()) : 0;
 
-        List<String> owners = db.ownedMatrixOwners(selectedBaselineVersion.getId());
-        if (!owners.isEmpty()) {
-            System.out.printf(
-                "WARNING: updateMode 'replace' deletes all band metadata for this baseline "
-                    + "version.%nThis cascades to every sensitivity score on it, including "
-                    + "the user-created matrices owned by: %s%n"
-                    + "Those matrices will remain listed but will be empty. "
-                    + "This cannot be undone by this tool.%n",
-                String.join(", ", owners));
-        }
+        List<String> owners = metadataImportInvoked() || matrixImportInvoked() ?
+            db.userDefinedMatrixOwners(selectedBaselineVersion.getId()) : List.of();
+
+        return !confirmToProceedWithReplacement(owners, reliabilityRows);
     }
 
-    private void importMetadataFromConfig(ImportConfigFile config) throws Exception {
+    private void importMetadataFromConfig() throws Exception {
         String defaultLang = selectedBaselineVersion.getLocale();
 
         for (int i = 0; i < config.getMetadata().size(); ++i) {
@@ -764,7 +751,6 @@ public class SymphonySetup {
                 resolvedPath,
                 language,
                 defaultLang,
-                clear() && i == 0,   // clear once for the whole update, not once per file
                 i
             );
 
@@ -784,12 +770,14 @@ public class SymphonySetup {
                 default -> throw new ParseException("Unknown metadata file format");
             }
 
-            db.updateMetadata(md);
+                                    // in replacement mode, clear all coupled data
+                                    // on the first iteration
+            db.updateMetadata(md, clear() && i == 0);
             defaultLang = language; // Carry forward for next iteration
         }
     }
 
-    private void importMatricesFromConfig(ImportConfigFile config) throws Exception {
+    private void importMatricesFromConfig() throws Exception {
         Baseline selectedBaseline = db.getBaseline(selectedBaselineVersion.getId());
 
         if (selectedBaseline.isMetaIncomplete()) {
@@ -815,7 +803,6 @@ public class SymphonySetup {
                 resolvedPath,
                 language,
                 defaultLang,
-                clear() && i == 0,   // clear once for the whole update, not once per file
                 i
             );
 
@@ -836,13 +823,14 @@ public class SymphonySetup {
             } else {
                 throw new ParseException("Unknown sensitivity matrix file format");
             }
-
-            db.updateMatrix(mx);
+                                    // in replacement mode, clear on the first iteration
+                                    // provided that the metadata procedure hasn't already run
+            db.updateMatrix(mx, clear() && i == 0 && !metadataImportInvoked());
             defaultLang = language; // Carry forward for next iteration
         }
     }
 
-    private void importCalculationAreasFromConfig(ImportConfigFile config) throws ParseException, SQLException {
+    private void importCalculationAreasFromConfig() throws ParseException, SQLException {
         ImportConfigFile.CalculationAreasConfig caConfig = config.getCalculationAreas();
 
         // 'calculationAreas.file' is verified by ImportConfigFile.validate() before this point.
@@ -857,7 +845,6 @@ public class SymphonySetup {
                 selectedBaselineVersion,
                 resolvedPath,
                 nameProperty,
-                clear(),
                 allDefault,
                 defaultAreas,
                 db.getAvailableAreaTypes(),
@@ -866,7 +853,7 @@ public class SymphonySetup {
         );
 
         if (calcAreaProcedure.confirmImport()) {
-            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId());
+            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId(), clear());
         }
     }
 
@@ -907,7 +894,6 @@ public class SymphonySetup {
         if (setupCmd.hasOption("f")) {
             String disallowed = Arrays.stream(setupCmd.getOptions())
                 .map(Option::getOpt)
-                .filter(Objects::nonNull) // a long-only option has no short opt; Set.of(...).contains(null) throws
                 .filter(opt -> !FILE_MODE_ALLOWED_OPTIONS.contains(opt))
                 .sorted()
                 .collect(Collectors.joining(", "));
@@ -1007,9 +993,7 @@ public class SymphonySetup {
             boolean hasLang = languageParams != null && languageParams.length > i;
 
             T settingObj = TextualSettingsBase.create(settingsType, selectedBaselineVersion, files[i],
-                                hasLang ? languageParams[i] : null, currentDefaultLang,
-                                clear() && i == 0,   // clear once for the whole update, not once per file
-                                i);
+                                hasLang ? languageParams[i] : null, currentDefaultLang, i);
 
             if (!settingObj.validate()) {
                 throw new ParseException(settingObj.errorMessage());
@@ -1032,7 +1016,8 @@ public class SymphonySetup {
         List<MetadataImportSettings> metadataToImport =
             processSettings("md", "mdL", MetadataImportSettings.class);
 
-        for (MetadataImportSettings mdSettings : metadataToImport) {
+        for (int i = 0; i < metadataToImport.size(); ++i) {
+            MetadataImportSettings mdSettings = metadataToImport.get(i);
             MetadataBase md;
 
             switch (mdSettings.format) {
@@ -1041,8 +1026,9 @@ public class SymphonySetup {
                 case XLSX -> md = new MetadataXlsx(mdSettings);
                 default -> throw new ParseException("Unknown metadata file format");
             }
-
-            db.updateMetadata(md);
+                                    // in replacement mode, clear all coupled data
+                                    // on the first iteration
+            db.updateMetadata(md, clear() && i == 0);
         }
     }
 
@@ -1085,8 +1071,9 @@ public class SymphonySetup {
                 case XLSX -> throw new ParseException("");
                 default -> throw new ParseException("Unknown sensitivity matrix file format");
             }
-
-            db.updateMatrix(mx);
+                                // in replacement mode, clear on the first iteration
+                                // provided that the metadata procedure hasn't already run
+            db.updateMatrix(mx, clear() && i == 0);
         }
     }
 
@@ -1100,7 +1087,6 @@ public class SymphonySetup {
                     selectedBaselineVersion,
                     setupCmd.getOptionValue("caF"),
                     caNameProperty,
-                    clear(),
                     setupCmd.hasOption("caDA"),
                     setupCmd.getOptionValues("caD"),
                     db.getAvailableAreaTypes(),
@@ -1108,7 +1094,7 @@ public class SymphonySetup {
             );
 
         if (calcAreaProcedure.confirmImport()) {
-            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId());
+            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId(), clear());
         }
     }
 

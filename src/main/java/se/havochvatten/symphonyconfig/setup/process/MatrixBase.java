@@ -47,9 +47,7 @@ public abstract class MatrixBase extends ImportProcedure<MatrixImportSettings>  
     }
 
     public boolean confirmImport() {
-        Scanner prompt = pendingImportMessage(null);
-
-        return prompt.nextLine().trim().equalsIgnoreCase("y");
+        return confirmPendingImport(null);
     }
 
     public List<Sensitivity> getSensitivities() {

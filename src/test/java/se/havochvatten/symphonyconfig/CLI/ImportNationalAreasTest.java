@@ -80,8 +80,8 @@ class ImportNationalAreasTest extends CliTestBase {
         queueInteraction(() -> {
             new SymphonySetup(failingArgs);
 
-            assertEquals("Invalid invocation:\n" +
-                "option(s) not valid for a national area import: md, u.",
+            assertEquals(String.format("Invalid invocation:%n" +
+                "option(s) not valid for a national area import: md, u."),
                 displaceErr.toString().trim());
         });
     }

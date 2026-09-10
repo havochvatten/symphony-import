@@ -52,7 +52,7 @@ class ImportCalculationAreasTest extends CliTestBase {
                 CalcAreaProcedure caProcedure =
                     new CalcAreaProcedure(
                         new CalcAreaImportSettings(null, calculationAreaPackage,"name",
-                            false, true, null, Set.of(), Map.of())
+                            false, null, Set.of(), Map.of())
                     );
                 caProcedure.collect();
 
