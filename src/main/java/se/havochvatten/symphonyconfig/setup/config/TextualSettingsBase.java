@@ -16,8 +16,8 @@ public abstract class TextualSettingsBase extends SettingsBase {
     public final int order;
 
     public TextualSettingsBase(BaselineVersion baselineVersion, String inputFilePath, String inputFileOption,
-                               String typeDescriptor, String language, String defaultLanguage, boolean clear, int order) {
-        super(baselineVersion, inputFilePath, inputFileOption, typeDescriptor, clear);
+                               String typeDescriptor, String language, String defaultLanguage, int order) {
+        super(baselineVersion, inputFilePath, inputFileOption, typeDescriptor);
 
         this.order = order;
 
@@ -27,10 +27,10 @@ public abstract class TextualSettingsBase extends SettingsBase {
             this.language = defaultLanguage;
 
             if(order > 0) {
-                validationMessages.add(String.format("Language parameter missing for the %s provided %s file.\n" +
+                validationMessages.add(String.format("Language parameter missing for the %s provided %s file.%n" +
                     "Falling back to '%s'", ordinal(order + 1), getTypeDescriptor(), defaultLanguage));
             } else {
-                validationMessages.add(String.format("No language parameter specified.\n" +
+                validationMessages.add(String.format("No language parameter specified.%n" +
                     "Falling back to the baseline default: '%s'", defaultLanguage));
             }
         }
@@ -69,7 +69,7 @@ public abstract class TextualSettingsBase extends SettingsBase {
                 String ext = FilenameUtils.getExtension(inputFilePath);
                 if (!SUPPORTED_EXT.contains(ext.toUpperCase())) {
                     validationErrors.add(
-                        String.format("A %s file (%s) seems to be provided in an unsupported format.\n" +
+                        String.format("A %s file (%s) seems to be provided in an unsupported format.%n" +
                                 "Allowed file types are (%s)",
                             getTypeDescriptor(),
                             inputFilePath,
@@ -92,12 +92,12 @@ public abstract class TextualSettingsBase extends SettingsBase {
     @SuppressWarnings (value="unchecked")
     public static <T extends TextualSettingsBase> T create(Class<T> type, BaselineVersion baselineVersion,
                                                            String inputFilePath, String language,
-                                                           String defaultLanguage, boolean clear, int order) throws Exception {
+                                                           String defaultLanguage, int order) throws Exception {
         return switch(type.getSimpleName()) {
             case "MetadataImportSettings" -> (T) new MetadataImportSettings(baselineVersion, inputFilePath,
-                                                  language, defaultLanguage, clear, order);
+                                                  language, defaultLanguage, order);
             case "MatrixImportSettings" ->   (T) new MatrixImportSettings(baselineVersion, inputFilePath,
-                                                  language, defaultLanguage, clear, order);
+                                                  language, defaultLanguage, order);
             default -> throw new IllegalStateException("Unexpected type: " + type.getName());
         };
     }

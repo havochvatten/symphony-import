@@ -1,5 +1,6 @@
 package se.havochvatten.symphonyconfig.CLI;
 
+import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.junit.jupiter.api.Test;
 import se.havochvatten.symphonyconfig.setup.SymphonySetup;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
@@ -167,6 +168,31 @@ public class FileBasedImportTest extends CliTestBase {
             getDbInterface().cleanNationalAreas();
 
         }, "y");
+    }
+
+    @Test
+    void commandLineGeoTiffOverridesTheConfigValue() throws SQLException {
+        // Deliberately pass the PRESSURE tiff as the ECOSYSTEM override so the two differ:
+        // baseline-minimal.yaml's own ecoPath resolves to TEST_TIFF_E_PATH, so overriding with
+        // that same file would pass whether the CLI or the config file actually won.
+        String[] args = testCaseArgs("-f", MINIMAL_CONFIG_PATH,
+            "-bvpE", TEST_TIFF_P_PATH);
+
+        try {
+            queueInteraction(() -> new SymphonySetup(args), "y");
+
+            String stored = getDbInterface().query(String.format(
+                "SELECT bver_ecofilepath FROM %s.baselineversion WHERE bver_name = ?", dbSchema),
+                new ScalarHandler<String>(), "minimal-baseline");
+
+            assertEquals(TEST_TIFF_P_PATH, stored,
+                "-bvpE must take precedence over the config file's ecoPath");
+        } finally {
+            Integer id = getDbInterface().getBaselineVersionByName("minimal-baseline");
+            if (id != null) {
+                getDbInterface().cleanBaselineVersion(id);
+            }
+        }
     }
 
     @Test

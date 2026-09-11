@@ -22,16 +22,16 @@ The tool will work for specific MSP-Symphony release versions as shown in the ta
 | 1.1                    | <center>1.25.0</center>  |
 
 ## Usage
-Below is the console output of invoking the tool with `-h` option. 
+Below is the output of invoking the tool with the `-h` (usage) option, reflowed for width. 
 <details><summary>Expand to view full usage instruction.</summary>
 
 ```
 usage:  symphony-setup-tool [-bv <arg>] [-bvD <arg>] [-bvL <arg>] [-bvN <arg>] [-bvpE <arg>]
-[-bvpP <arg>] [-bvV <arg>] [-caD <arg>] [-caDA] [-caF <arg>] [-caP <arg>] [-csvN <arg>]
-[-csvS <arg>] [-db <arg>] [-dbH <arg>] [-dbP <arg>] [-dbPt <arg>] [-dbS <arg>] [-dbU <arg>] 
-[-envDb <arg>] [-envDbH <arg>] [-envDbP <arg>] [-envDbU <arg>] [-f <arg>] [-h] [-md <arg>]
-[-mdL <arg>] [-mx <arg>] [-mxL <arg>] [-mxN <arg>] [-n] [-na <arg>] [-naC <arg>] [-naP <arg>] 
-[-s] [-u <arg>] [-v]
+[-bvpP <arg>] [-bvT <arg>] [-bvV <arg>] [-caD <arg>] [-caDA] [-caF <arg>] [-caP <arg>]
+[-csvN <arg>] [-csvS <arg>] [-db <arg>] [-dbH <arg>] [-dbP <arg>] [-dbPt <arg>] [-dbS <arg>]
+[-dbU <arg>] [-envDb <arg>] [-envDbH <arg>] [-envDbP <arg>] [-envDbU <arg>] [-f <arg>] [-h]
+[-md <arg>] [-mdL <arg>] [-mx <arg>] [-mxL <arg>] [-mxN <arg>] [-n] [-na <arg>] [-naC <arg>]
+[-naP <arg>] [-s] [-u <arg>] [-v]
 
 Command-line utility to manage baseline data for instances of the software
 package MSP-Symphony
@@ -81,10 +81,26 @@ package MSP-Symphony
                                                     target baseline version id.      
                                                     Takes an optional argument which may be 
                                                     specified as ('u'/'update' or  'r'/'replace'), 
-                                                    differentiating "update mode".                    
-                                                    When set to 'replace', all existing coupled 
-                                                    data is cleared before the update procedure is
-                                                    run.         
+                                                    differentiating "update mode".
+                                                    - REPLACE MODE:
+                                                    When set to 'replace', coupled data for the      
+                                                    target baseline version is deleted before the
+                                                    update runs.
+                                                    There is a subtlety to which content gets
+                                                    targeted for removal, depending on the other
+                                                    options that accompany the same invocation:
+                                                    Called in conjuction with the metadata option 
+                                                    (-md ...) - ALL associated content, in addition
+                                                    to the band metadata: matrices, calculation areas
+                                                    and reliability partitions will also be wiped 
+                                                    from the database, regardless of other options.
+                                                    Called with the matrix option (-mx ...), all 
+                                                    matrices that is associated with the baseline
+                                                    version will be removed.
+                                                    If calculation area options (-caF etc) are set,
+                                                    calculation areas that is coupled via some 
+                                                    sensitivity matrix to the targeted baseline 
+                                                    version are removed, prior to the insert.
 -bv, --baselineVersion <arg>             v1.0       Target baseline version to update. Used in           
                                                     conjunction with the -u option only.              
 -md, --metadata <arg>                    v1.0       Path to metadata file to import (csv or xlsx
@@ -130,12 +146,16 @@ package MSP-Symphony
                                                     in the GeoPackage file slated for import by the  
                                                     '-caF' option as default for the target 
                                                     baseline.  
--csvS, --delimiter <arg>                 v1.0       Column delimiter character for CSV files
-                                                    (defaults to ',').                     
--csvN, --newline <arg>                   v1.0       Row delimiter character for CSV files
-                                                    (newline).      
+-csvS, --delimiter <arg>                 v1.0       Column delimiter character for CSV files.
+                                                    Defaults to ';', the Symphony convention.
+-csvN, --newline <arg>                   v1.0       Row delimiter for CSV files. Set to
+                                                    'windows' for CRLF input; omitted or any
+                                                    other value means LF.
 -bvN, --baselineVersionName <arg>        v1.0       Baseline version name, required for "new
                                                     baseline" invocations ('-n'). Must be unique.   
+-bvT, --baselineVersionTitle <arg>       v1.1       Baseline version title, used in
+                                                    conjunction with ('-n').
+                                                    Optional.
 -bvD, --baselineVersionDesc <arg>        v1.0       Baseline version description, used in 
                                                     conjunction with ('-n').  
                                                     Optional.                 
@@ -149,6 +169,10 @@ package MSP-Symphony
                                                     required for "new baseline" invocations ('-n').                   
 ```
 </details>
+
+### Exit codes
+The tool exits with status code `1` on any failure (a rejected invocation, a failed validation, a
+database error) and `0` on success, so it can be wrapped in a shell script that checks `$?`.
 
 ## File-based import (`-f`)
 
@@ -316,16 +340,16 @@ Most of the test cases installs a dummy baseline to the database that is removed
 
 >[!CAUTION]
 > It is recommended to run the test suite on a dedicated, otherwise empty data source.  
-> Specifically, be aware that the `ImportNationalAreasTest` will delete all entries of the `nationalarea` table, not only the entries created by the test. 
+> Specifically, be aware that three test classes delete **all** entries of the `nationalarea` table, not only the entries they created: `ImportNationalAreasTest` and `FileBasedImportTest` do so from within a test, and `FileBasedConfigValidationTest` does so from an `@AfterEach`, that is after every one of its test methods. 
 
 To run the test suite, simply invoke
 ```
 mvn test
 ```
 
-The command syntax to exclude the national areas test is
+The command syntax to exclude the tests that clear the national area table is
 ```
-mvn test -Dtest=!ImportNationalAreasTest
+mvn test -Dtest='!ImportNationalAreasTest,!FileBasedImportTest,!FileBasedConfigValidationTest'
 ```
 
 ## Limitations

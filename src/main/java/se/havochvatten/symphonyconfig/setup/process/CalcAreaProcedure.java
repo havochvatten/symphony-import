@@ -144,10 +144,6 @@ public class CalcAreaProcedure extends ImportProcedure<CalcAreaImportSettings> {
                 msg -> String.format("%nNotice: %s", msg)).collect(Collectors.joining()) :
                 "";
 
-        Scanner prompt = pendingImportMessage(
-            notice.isEmpty() ? null : notice
-        );
-
-        return prompt.nextLine().trim().equalsIgnoreCase("y");
+        return confirmPendingImport(notice.isEmpty() ? null : notice);
     }
 }

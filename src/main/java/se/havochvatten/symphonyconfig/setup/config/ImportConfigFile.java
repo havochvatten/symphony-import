@@ -3,14 +3,21 @@ package se.havochvatten.symphonyconfig.setup.config;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FilenameUtils;
 import se.havochvatten.symphonyconfig.setup.SymphonySetup;
+import se.havochvatten.symphonyconfig.setup.process.NationalAreaRowInsert;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Model class representing the structure of a JSON/YAML import configuration file.
@@ -46,8 +53,21 @@ public class ImportConfigFile {
     private List<NationalAreaConfig> nationalAreas;
     private CsvSettingsConfig csvSettings;
 
-    // Path to the config file itself (for relative path resolution)
+    // Path to the config file itself (for relative path resolution). Deliberately has no
+    // Jackson-visible getter/setter: it is derived at parse time, never user-supplied, and
+    // a plain @JsonIgnore on the accessors would make Jackson treat "configFilePath" as a
+    // known-but-ignorable key instead of rejecting it as unrecognized. Omitting any bean
+    // accessor is what makes FAIL_ON_UNKNOWN_PROPERTIES actually reject it (see parse()
+    // below, which assigns the field directly since it is a static method of this class).
     private transient Path configFilePath;
+
+    // Reuse the process layer's own constant rather than duplicating the literal "BOUNDARY" here.
+    private static final String BOUNDARY_TYPE = NationalAreaRowInsert.TYPE_BOUNDARY;
+
+    // The same set of extensions TextualSettingsBase/ProcedureBase.SUPPORTED_EXT accepts, computed
+    // from the same enum so the two checks cannot disagree.
+    private static final Set<String> SUPPORTED_TABULAR_EXTENSIONS = Set.of(
+        Arrays.stream(SupportedTabularFileFormat.values()).map(Enum::name).toArray(String[]::new));
 
     public static class BaselineConfig {
         private Integer id;
@@ -185,9 +205,6 @@ public class ImportConfigFile {
     public CsvSettingsConfig getCsvSettings() { return csvSettings; }
     public void setCsvSettings(CsvSettingsConfig csvSettings) { this.csvSettings = csvSettings; }
 
-    public Path getConfigFilePath() { return configFilePath; }
-    public void setConfigFilePath(Path path) { this.configFilePath = path; }
-
     /**
      * Parse a configuration file (JSON or YAML format).
      *
@@ -210,10 +227,21 @@ public class ImportConfigFile {
             throw new IOException("Unsupported configuration file format. Use .json, .yaml, or .yml");
         }
 
-        ImportConfigFile config = mapper.readValue(file, ImportConfigFile.class);
-        config.setConfigFilePath(file.toPath().toAbsolutePath().getParent());
         mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS, true);
 
+        ImportConfigFile config;
+        try {
+            config = mapper.readValue(file, ImportConfigFile.class);
+        } catch (InvalidFormatException e) {
+            if (e.getTargetType() == Operation.class) {
+                throw new IOException(String.format(
+                    "Unknown operation type: '%s'. Must be one of: newBaseline, update, nationalAreas",
+                    e.getValue()));
+            }
+            throw e;
+        }
+
+        config.configFilePath = file.toPath().toAbsolutePath().getParent();
         return config;
     }
 
@@ -243,5 +271,200 @@ public class ImportConfigFile {
 
         // Fall back to current directory (edge case)
         return path.toAbsolutePath().normalize().toString();
+    }
+
+    /**
+     * Validate the entire configuration before any database write occurs.
+     * Throws on the first problem found, naming the offending configuration path.
+     */
+    public void validate() throws ParseException {
+        if (operation == null) {
+            throw new ParseException(
+                "Configuration must declare an 'operation'. "
+                    + "One of: newBaseline, update, nationalAreas");
+        }
+
+        switch (operation) {
+            case NEW_BASELINE   -> validateNewBaseline();
+            case UPDATE         -> validateUpdate();
+            case NATIONAL_AREAS -> validateNationalAreas();
+        }
+
+        validateCsvSettings();
+    }
+
+    private void validateNewBaseline() throws ParseException {
+        rejectInapplicable("nationalAreas", nationalAreas != null);
+
+        if (baseline == null || isBlank(baseline.getName())) {
+            throw new ParseException("'baseline.name' is required for operation 'newBaseline'.");
+        }
+        if (baseline.getId() != null) {
+            rejectInapplicable("baseline.id", true);
+        }
+        validateCommonSections();
+    }
+
+    private void validateUpdate() throws ParseException {
+        rejectInapplicable("nationalAreas", nationalAreas != null);
+
+        if (baseline == null || baseline.getId() == null) {
+            throw new ParseException("'baseline.id' is required for operation 'update'.");
+        }
+        rejectInapplicable("baseline.name",         !isBlank(baseline.getName()));
+        rejectInapplicable("baseline.ecoPath",      !isBlank(baseline.getEcoPath()));
+        rejectInapplicable("baseline.pressurePath", !isBlank(baseline.getPressurePath()));
+
+        if (metadata == null && matrices == null && calculationAreas == null) {
+            throw new ParseException(
+                "Operation 'update' requires at least one of 'metadata', 'matrices' "
+                    + "or 'calculationAreas'.");
+        }
+        validateCommonSections();
+    }
+
+    private void validateCommonSections() throws ParseException {
+        if (metadata != null) {
+            for (int i = 0; i < metadata.size(); ++i) {
+                requireReadableFile(metadata.get(i).getFile(), "metadata[" + i + "].file");
+                requireSupportedExtension(metadata.get(i).getFile(), "metadata[" + i + "].file");
+                requireValidLanguageIfPresent(metadata.get(i).getLanguage(), "metadata[" + i + "].language");
+            }
+        }
+        if (matrices != null) {
+            for (int i = 0; i < matrices.size(); ++i) {
+                requireReadableFile(matrices.get(i).getFile(), "matrices[" + i + "].file");
+                requireSupportedExtension(matrices.get(i).getFile(), "matrices[" + i + "].file");
+                requireValidLanguageIfPresent(matrices.get(i).getLanguage(), "matrices[" + i + "].language");
+                if (isBlank(matrices.get(i).getName())) {
+                    throw new ParseException("'matrices[" + i + "].name' is required.");
+                }
+            }
+        }
+        if (calculationAreas != null) {
+            requireReadableFile(calculationAreas.getFile(), "calculationAreas.file");
+
+            boolean allDefault = Boolean.TRUE.equals(calculationAreas.getAllDefault());
+            boolean namedDefaults = calculationAreas.getDefaultAreas() != null
+                && !calculationAreas.getDefaultAreas().isEmpty();
+
+            if (allDefault && namedDefaults) {
+                throw new ParseException(
+                    "'calculationAreas.allDefault' and 'calculationAreas.defaultAreas' are "
+                        + "mutually exclusive. Provide one or the other.");
+            }
+        }
+    }
+
+    private void validateNationalAreas() throws ParseException {
+        rejectInapplicable("baseline",         baseline != null);
+        rejectInapplicable("metadata",         metadata != null);
+        rejectInapplicable("matrices",         matrices != null);
+        rejectInapplicable("calculationAreas", calculationAreas != null);
+        rejectInapplicable("csvSettings",      csvSettings != null);
+
+        if (nationalAreas == null || nationalAreas.isEmpty()) {
+            throw new ParseException(
+                "Configuration must include a 'nationalAreas' section for operation 'nationalAreas'.");
+        }
+
+        String firstIso = null;
+        for (int i = 0; i < nationalAreas.size(); ++i) {
+            NationalAreaConfig na = nationalAreas.get(i);
+
+            if (isBlank(na.getType())) {
+                throw new ParseException("'nationalAreas[" + i + "].type' is required.");
+            }
+            if (isBlank(na.getCountryISO())) {
+                throw new ParseException("'nationalAreas[" + i + "].countryISO' is required.");
+            }
+            if (na.getCountryISO().trim().length() != 3) {
+                throw new ParseException(String.format(
+                    "'nationalAreas[%d].countryISO' must be an ISO 3166-1 alpha-3 code, e.g. 'SWE'. Got '%s'.",
+                    i, na.getCountryISO()));
+            }
+            if (firstIso == null) {
+                firstIso = na.getCountryISO();
+            } else if (!firstIso.equals(na.getCountryISO())) {
+                throw new ParseException(String.format(
+                    "All entries in one national areas import must share the same 'countryISO'. "
+                        + "Found both '%s' and '%s'. Import one country per configuration file.",
+                    firstIso, na.getCountryISO()));
+            }
+            requireReadableFile(na.getFile(), "nationalAreas[" + i + "].file");
+        }
+
+        // Counted after the per-entry loop, so a missing 'type' is reported as such
+        // rather than as a BOUNDARY entry that could not be found.
+        long boundaries = nationalAreas.stream()
+            .filter(na -> BOUNDARY_TYPE.equals(na.getType()))
+            .count();
+
+        if (boundaries != 1) {
+            throw new ParseException(String.format(
+                "A national areas import must contain exactly one BOUNDARY entry, found %d.",
+                boundaries));
+        }
+    }
+
+    private void validateCsvSettings() throws ParseException {
+        if (csvSettings != null && csvSettings.getDelimiter() != null
+                && csvSettings.getDelimiter().length() != 1) {
+            throw new ParseException("'csvSettings.delimiter' must be a single character.");
+        }
+    }
+
+    private void requireReadableFile(String configuredPath, String field) throws ParseException {
+        if (isBlank(configuredPath)) {
+            throw new ParseException("'" + field + "' is required.");
+        }
+        String resolved = resolvePath(configuredPath);
+        Path path = Paths.get(resolved);
+        // Files.isReadable() alone returns true for a directory; require a regular file too.
+        if (!Files.isRegularFile(path) || !Files.isReadable(path)) {
+            throw new ParseException(String.format(
+                "'%s' refers to a file that does not exist or cannot be read: %s%n"
+                    + "Paths are resolved relative to the configuration file's own directory.",
+                field, resolved));
+        }
+    }
+
+    /**
+     * Validates a metadata/matrix file's extension against the same set TextualSettingsBase
+     * accepts, up front rather than only after iterations before it have already committed.
+     */
+    private void requireSupportedExtension(String configuredPath, String field) throws ParseException {
+        String ext = FilenameUtils.getExtension(configuredPath);
+        if (ext == null || !SUPPORTED_TABULAR_EXTENSIONS.contains(ext.toUpperCase())) {
+            throw new ParseException(String.format(
+                "'%s' (%s) has an unsupported file extension. Allowed types are (%s)",
+                field, configuredPath,
+                String.join(", ", SUPPORTED_TABULAR_EXTENSIONS).toLowerCase()));
+        }
+    }
+
+    /**
+     * Language is optional on a metadata/matrix entry (it defaults to the baseline locale for the
+     * first entry, and to the previous entry's language thereafter), so this only validates a
+     * language that was actually supplied.
+     */
+    private void requireValidLanguageIfPresent(String language, String field) throws ParseException {
+        if (language != null && !SymphonySetup.ISO_LANG.contains(language.toLowerCase())) {
+            throw new ParseException(String.format(
+                "'%s' ('%s') is not a valid ISO 639-1 language code.", field, language));
+        }
+    }
+
+    private void rejectInapplicable(String section, boolean present) throws ParseException {
+        if (present) {
+            throw new ParseException(String.format(
+                "Section '%s' is not applicable to operation '%s' and would be silently ignored. "
+                    + "Remove it from the configuration file.",
+                section, operation.getValue()));
+        }
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

@@ -19,8 +19,8 @@ class UpdateMatrixTest extends CliTestBase {
     void invokeCompleteImportWithMatrixOption() {
         // cli arguments
         // -u   [update]
-        // -md  [metadata import] ( path to import )            // repeatable argument
-        // -mdL [metadata language] ( ISO-639 language code )   // repeatable argument like above
+        // -md  [metadata import] ( path to import )
+        // -mdL [metadata language] ( ISO-639 language code )
         // -bv  [baseline version database id]
 
         String[] args = testCaseArgs("-u",

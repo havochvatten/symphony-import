@@ -2,14 +2,14 @@ package se.havochvatten.symphonyconfig.setup.database;
 
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static se.havochvatten.symphonyconfig.TestBase.*;
@@ -50,6 +50,11 @@ public class DbTestInterface extends DbInterface {
     private Integer testBvId = null;
     private Integer testCalcAreaId = null;
 
+    public static String getAllNatAreasForCountryCodeQuery(String schema) {
+        return String.format("SELECT narea_id, narea_type, narea_areas, narea_countryiso3 " +
+            "FROM %s.nationalarea WHERE narea_countryiso3 = ?", schema);
+    }
+
     public String sensitivityControlQuery(String isoLang, String ecoTitle, String prTitle, String mxName) {
         return MessageFormat.format("SELECT sens_value FROM {0}.sensitivity s " +
             "JOIN {0}.sensitivitymatrix sm ON sm.sensm_id = s.sens_sensm_id " +
@@ -79,38 +84,53 @@ public class DbTestInterface extends DbInterface {
 
     public int installTestBaselineVersion() {
         if (testBvId == null) {
-            String insertQuery = String.format("INSERT INTO %s.baselineversion " +
-                "(bver_name, bver_desc, bver_validfrom, " +
-                "bver_ecofilepath, bver_presfilepath, bver_locale) " +
-                "VALUES ('%s', '', ?, ?, ?, 'en')", schema, DEFAULT_TEST_BASELINE_NAME);
-
-            String isoToday = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-
-            try (Connection conn = getConnection()) {
-                PreparedStatement insertStmt =
-                    conn.prepareStatement(insertQuery, RETURN_GENERATED_KEYS);
-
-                insertStmt.setObject(1, isoToday, Types.DATE);
-                insertStmt.setString(2, TEST_TIFF_E_PATH);
-                insertStmt.setString(3, TEST_TIFF_P_PATH);
-
-                insertStmt.executeUpdate();
-                ResultSet rs = insertStmt.getGeneratedKeys();
-
-                if (rs.next()) {
-                    testBvId = rs.getInt(1);
-                    insertStmt.close();
-                } else {
-                    insertStmt.close();
-                    throw new SQLException("Failure inserting baseline version for test");
-                }
-
-            } catch (SQLException e) {
-                throw new RuntimeException("Database transaction error");
-            }
+            testBvId = installBaselineVersion(DEFAULT_TEST_BASELINE_NAME, LocalDate.now());
         }
-
         return testBvId;
+    }
+
+    /**
+     * Installs a second, independently-named baseline version, distinct from the cached
+     * {@link #installTestBaselineVersion()} fixture. Unlike that method, this one is never cached:
+     * every call inserts a new row and returns its own generated id. Callers must clean it up
+     * themselves via {@link #cleanBaselineVersion(int)}.
+     */
+    public int installSecondaryBaselineVersion(String name) {
+        // A day before the primary fixture's 'today', avoiding collision
+        return installBaselineVersion(name, LocalDate.now().minus(1, ChronoUnit.DAYS));
+    }
+
+    private int installBaselineVersion(String name, LocalDate validFrom) {
+        String insertQuery = String.format("INSERT INTO %s.baselineversion " +
+            "(bver_name, bver_desc, bver_validfrom, " +
+            "bver_ecofilepath, bver_presfilepath, bver_locale) " +
+            "VALUES ('%s', '', ?, ?, ?, 'en')", schema, name);
+
+        String isoValidFrom = validFrom.format(DateTimeFormatter.ISO_DATE);
+
+        try (Connection conn = getConnection()) {
+            PreparedStatement insertStmt =
+                conn.prepareStatement(insertQuery, RETURN_GENERATED_KEYS);
+
+            insertStmt.setObject(1, isoValidFrom, Types.DATE);
+            insertStmt.setString(2, TEST_TIFF_E_PATH);
+            insertStmt.setString(3, TEST_TIFF_P_PATH);
+
+            insertStmt.executeUpdate();
+            ResultSet rs = insertStmt.getGeneratedKeys();
+
+            if (rs.next()) {
+                int newBvId = rs.getInt(1);
+                insertStmt.close();
+                return newBvId;
+            } else {
+                insertStmt.close();
+                throw new SQLException("Failure inserting secondary baseline version for test");
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Database transaction error");
+        }
     }
 
     public int provideDummySensitivityMatrixForCalcArea(int bvId, String matrixName) throws SQLException {
@@ -227,6 +247,69 @@ public class DbTestInterface extends DbInterface {
         } catch (SQLException e) {
             throw new RuntimeException("Error purging national areas table", e);
         }
+    }
+
+    public Integer getBaselineVersionByName(String name) {
+        try {
+            return query(
+                String.format("SELECT bver_id FROM %s.baselineversion WHERE bver_name = ?", schema),
+                idHandler, name);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error querying baseline version by name", e);
+        }
+    }
+
+    /** Insert a reliability partition polygon bound to the first band of the given baseline. */
+    public void installReliabilityPartition(int bvId) throws SQLException {
+        qr.update(getConnection(), String.format(
+            "INSERT INTO %1$s.reliabilitypartition (rp_metaband_id, rp_value, rp_polygon) "
+                + "SELECT metaband_id, 3, "
+                + "ST_Multi(ST_GeomFromText('POLYGON((0 0,1 0,1 1,0 1,0 0))',4326)) "
+                + "FROM %1$s.meta_bands WHERE metaband_bver_id = ? LIMIT 1", schema), bvId);
+    }
+
+    public void cleanReliabilityPartitions(int bvId) throws SQLException {
+        qr.update(getConnection(), String.format(
+            "DELETE FROM %1$s.reliabilitypartition rp USING %1$s.meta_bands mb "
+                + "WHERE mb.metaband_id = rp.rp_metaband_id AND mb.metaband_bver_id = ?", schema), bvId);
+    }
+
+    /** Mark an existing matrix as user-owned, simulating a matrix created through the GUI. */
+    public void setMatrixOwner(String matrixName, String owner) throws SQLException {
+        qr.update(getConnection(), String.format(
+            "UPDATE %s.sensitivitymatrix SET sensm_owner = ? WHERE sensm_name = ?", schema),
+            owner, matrixName);
+    }
+
+    public int countMetaValues(int bvId) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %1$s.meta_values mv JOIN %1$s.meta_bands mb "
+                + "ON mb.metaband_id = mv.metaval_band_id WHERE mb.metaband_bver_id = ?", schema),
+            longHandler, bvId);
+        return n == null ? 0 : n.intValue();
+    }
+
+    /** Count calculation areas flagged 'default' for the sensitivity matrices of the given baseline. */
+    public int countDefaultCalculationAreas(int bvId) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %1$s.calculationarea ca "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE m.sensm_bver_id = ? AND ca.carea_default", schema), longHandler, bvId);
+        return n == null ? 0 : n.intValue();
+    }
+
+    /**
+     * Whether the named calculation area, on the given baseline's sensitivity matrices, is flagged
+     * as the default area. Scoped by name (not just counted) so a test can assert identity: which
+     * area is default, not merely how many are.
+     */
+    public boolean isCalculationAreaDefault(int bvId, String careaName) throws SQLException {
+        Boolean isDefault = query(String.format(
+            "SELECT ca.carea_default FROM %1$s.calculationarea ca "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE m.sensm_bver_id = ? AND ca.carea_name = ?", schema),
+            new ScalarHandler<Boolean>(), bvId, careaName);
+        return Boolean.TRUE.equals(isDefault);
     }
 
     public void cleanCalculationAreas(int bvId) {

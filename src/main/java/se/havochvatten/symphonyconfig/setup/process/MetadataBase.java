@@ -18,6 +18,8 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
     static final String Ecosystem = SymphonyCategory.ECOSYSTEM.getDbVal();
     static final String Pressure  = SymphonyCategory.PRESSURE.getDbVal();
 
+    private static final int FILENAME_LENGTH = 76; // semi-arbitrary limit for output formatting
+
     protected static final String[] reqFields = new String[]{ BANDNUMBER, SYMPHONY_CATEGORY, TITLE };
 
     public final Map<SymphonyCategory, List<SymphonyBand>> bands =
@@ -37,7 +39,15 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
 
     @Override
     protected String getImportItemName() {
-        return settings.fileName();
+        String itemName = settings.fileName();
+        if (itemName.length() > FILENAME_LENGTH) {
+            int extPosition = itemName.lastIndexOf('.'); // assumes a positive result reliant
+                                                         // on previous file type validation
+            return String.format("%s..%s",
+                itemName.substring(0, FILENAME_LENGTH - 6),
+                itemName.substring(extPosition));
+        }
+        return itemName;
     }
 
     protected boolean validateFieldSet(Set<String> allFields) {
@@ -144,8 +154,6 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
             );
         }
 
-        Scanner prompt = pendingImportMessage(partialNotice);
-
-        return prompt.nextLine().trim().equalsIgnoreCase("y");
+        return confirmPendingImport(partialNotice);
     }
 }
