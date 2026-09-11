@@ -126,23 +126,18 @@ metadata:
 ### `updateMode: replace` is destructive
 
 `replace` deletes every band metadata row on the target baseline version before re-importing.
-Two consequences are easy to miss, so the tool checks for both before it writes anything:
+Two consequences are easy to miss, so the tool checks for both before it writes anything and
+demands explicit confirmation from the user to avoid any accidental loss of information. See
+the usage documentation for the "update" option `-u r` (under [Usage](README.md#usage) in the
+README) for more detail. 
 
-* Sensitivity scores are deleted along with their bands. Any sensitivity matrix on the baseline
-  version, including matrices users created through the GUI, is left in place but emptied. When
-  such user owned matrices exist, the tool prints a warning naming their owners before the
-  import confirmation prompt. This cannot be undone by the tool.
-* Reliability partition polygons reference band metadata with no cascade, so the delete cannot
-  complete while any exist. The tool refuses the run outright and changes nothing. Remove the
-  reliability partitions first, or use `updateMode: update`.
+* Sensitivity scores are deleted along with their bands.  If user-defined matrices coupled to
+  the baseline version exists, the tool emits a warning naming their owners before the import 
+  operation proceeds.
+* Reliability partition polygons referencing bands in the targeted baseline version.
 
-Band metadata is the only thing `replace` targets; everything else it destroys, it destroys by
-cascade. Sensitivity matrices and calculation areas are left untouched, so re-importing them
-appends duplicates instead of superseding what is already there. For the same reason `replace` has
-no effect at all unless the configuration also carries a `metadata` section.
-
-The clear and the re-import of a given metadata file run as a single transaction, so a failure
-part way through rolls back rather than leaving a half emptied baseline version.
+The replacement of a given metadata file run as a single transaction, so a failure part way 
+through rolls back rather than leaving the import partially incomplete.
 
 ---
 
