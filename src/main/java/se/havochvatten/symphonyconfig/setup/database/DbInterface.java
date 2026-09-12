@@ -263,6 +263,12 @@ public class DbInterface {
             schema, ownedCalculationAreasQuery(schema)), bvId);
     }
 
+    public int countSensitivityScores(int bvId) throws SQLException {
+        return count(String.format(
+            "SELECT count(*) FROM %1$s.sensitivity s JOIN %1$s.sensitivitymatrix m "
+                + "ON m.sensm_id = s.sens_sensm_id WHERE m.sensm_bver_id = ?", schema), bvId);
+    }
+
     /**
      * Counts everything a 'replace' of the given width will delete on this baseline version.
      * Counted before the import runs, so the operator is told what is at stake rather than
@@ -290,79 +296,62 @@ public class DbInterface {
         }
     }
 
-    public void updateMetadata(MetadataBase metadata, boolean clear) throws SQLException, ParseException {
+    @FunctionalInterface
+    public interface TransactionalWork {
+        void run(Connection conn) throws SQLException, ParseException;
+    }
+
+    /**
+     * Runs the given work as one transaction on the shared connection, restoring the previous
+     * auto-commit setting afterwards.
+     * <p>
+     * The ordering here is load-bearing. setAutoCommit(true) commits an open transaction per
+     * the JDBC contract, so anything that escapes the catch below (an Error, or a checked
+     * exception a later edit introduces) would otherwise commit exactly the half-applied state
+     * this wrapper exists to prevent. The transaction is therefore always ended explicitly
+     * before the connection is restored, and {@code transactionEnded} is only set to true once
+     * an end (commit or rollback) has actually succeeded. If the transaction still could not be
+     * ended by the time the finally block runs, restoring auto-commit is exactly the commit this
+     * method exists to prevent, so the connection is closed instead and discarded: a future
+     * caller gets a fresh connection from {@link #getConnection()} rather than one that might
+     * still be holding the half-applied state open.
+     *
+     * @param description names the operation in the warning printed if a rollback itself fails
+     */
+    protected void inTransaction(String description, TransactionalWork work)
+            throws SQLException, ParseException {
         Connection conn = getConnection();
-        int blvId = metadata.settings.baselineVersion.getId();
-        Integer bandId;
 
-        if (metadata.confirmImport()) {
-            // Clearing band data cascades into sensitivity scores and can fail part-way
-            // through, so the clear and the re-insert must succeed or fail as one unit.
-            boolean previousAutoCommit = conn.getAutoCommit();
-            conn.setAutoCommit(false);
-            boolean transactionEnded = false;
+        boolean previousAutoCommit = conn.getAutoCommit();
+        conn.setAutoCommit(false);
+        boolean transactionEnded = false;
 
+        try {
+            work.run(conn);
+            conn.commit();
+            transactionEnded = true;
+        } catch (SQLException | ParseException | RuntimeException e) {
+            // Rolled back here rather than only in the finally, so that a failure to roll back
+            // is attached to the original exception instead of replacing it
             try {
-                if (clear) {
-                    clearReliabilityPartitions(blvId);
-                    clearCalculationAreas(blvId);
-                    clearSensitivityMatrices(blvId);
-                    clearBandData(blvId);
-                }
-
-                for (SymphonyCategory cat : SymphonyCategory.values()) {
-
-                    for (SymphonyBand band : metadata.bands.get(cat)) {
-                        bandId = qr.query(conn,
-                            SymphonyBand.preBandExists(schema), idHandler,
-                                blvId,
-                                cat.getDbVal(),
-                                band.getBandNumber());
-
-                        if (bandId == null) {
-                            bandId = qr.insert(conn, SymphonyBand.preBandInsert(schema), idHandler,
-                                blvId, cat.getDbVal(), band.getBandNumber(), band.isDefaultSelected());
-                            if (bandId == null) {
-                                throw new SQLException("");
-                            }
-                        }
-
-                        Map<String, String> metaMap = band.getMeta().get(metadata.settings.language);
-                        for (Map.Entry<String, String> mv : metaMap.entrySet()) {
-                            qr.insert(conn, SymphonyBand.preMetaInsert(schema), idHandler,
-                                bandId, metadata.settings.language, mv.getKey(), mv.getValue());
-                        }
-                    }
-                }
-
-                conn.commit();
+                conn.rollback();
                 transactionEnded = true;
-            } catch (SQLException | RuntimeException e) {
-                // Rolled back here rather than only in the finally, so that a failure to
-                // roll back is attached to the original exception instead of replacing it
-                transactionEnded = true;
+            } catch (SQLException rollbackFailure) {
+                e.addSuppressed(rollbackFailure);
+            }
+            throw e;
+        } finally {
+            if (!transactionEnded) {
                 try {
                     conn.rollback();
+                    transactionEnded = true;
                 } catch (SQLException rollbackFailure) {
-                    e.addSuppressed(rollbackFailure);
+                    System.err.println("Warning: could not roll back the aborted " + description
+                        + ": " + rollbackFailure.getMessage());
                 }
-                throw e;
-            } finally {
-                // Anything that escaped the catch above (an Error, or a checked exception a
-                // later edit introduces) leaves the transaction open, and setAutoCommit(true)
-                // commits an open transaction per the JDBC contract. That would commit the
-                // half-cleared baseline this whole transaction exists to prevent, so end the
-                // transaction explicitly before restoring the connection.
-                if (!transactionEnded) {
-                    try {
-                        conn.rollback();
-                    } catch (SQLException rollbackFailure) {
-                        System.err.println(
-                            "Warning: could not roll back the aborted metadata import: "
-                                + rollbackFailure.getMessage());
-                    }
-                }
+            }
 
+            if (transactionEnded) {
                 // Never let a failure to restore the connection mask the real outcome
                 try {
                     conn.setAutoCommit(previousAutoCommit);
@@ -371,22 +360,110 @@ public class DbInterface {
                         "Warning: could not restore the connection's auto-commit setting: "
                             + restoreFailure.getMessage());
                 }
+            } else {
+                // The transaction could not be ended by any means available. Restoring
+                // auto-commit on this connection would, per the JDBC contract, commit whatever
+                // half-applied state is still open on it, which is precisely what this wrapper
+                // exists to prevent. Close the connection instead, so it is discarded rather
+                // than reused to commit: getConnection() opens a replacement on next use.
+                System.err.println("Warning: could not end the transaction for the aborted "
+                    + description + "; closing the connection rather than risk committing it.");
+                try {
+                    conn.close();
+                } catch (SQLException closeFailure) {
+                    System.err.println("Warning: could not close the connection: "
+                        + closeFailure.getMessage());
+                }
             }
-
-            System.out.println("Metadata import finished.");
-        } else {
-            throw new ParseException("Metadata import aborted interactively.");
         }
     }
 
-    public void updateMatrix(MatrixBase matrix, boolean clear) throws SQLException, ParseException {
-        Connection conn = getConnection();
+    /**
+     * Empties the coupled data of one baseline version, to the requested width, in the only
+     * order the foreign keys permit: reliability partitions before bands, area couplings and
+     * polygons before areas, areas before matrices, matrices before bands.
+     * <p>
+     * Must run inside a transaction. Several of these deletes can fail part way through the
+     * sequence, and a half-cleared baseline is worse than one that was never touched.
+     */
+    protected void clearCoupledData(int bvId, ClearScope scope) throws SQLException {
+        if (getConnection().getAutoCommit()) {
+            throw new IllegalStateException(
+                "clearCoupledData must run inside a transaction: its deletes can fail part way "
+                    + "through, and a half-cleared baseline version is worse than an untouched one");
+        }
 
-        if (matrix.confirmImport()) {
-            int bvId = matrix.settings.baselineVersion.getId();
+        if (scope == ClearScope.BAND_METADATA) {
+            clearReliabilityPartitions(bvId);
+        }
 
+        clearCalculationAreas(bvId);
+
+        if (scope != ClearScope.CALCULATION_AREAS) {
+            clearSensitivityMatrices(bvId);
+        }
+
+        if (scope == ClearScope.BAND_METADATA) {
+            clearBandData(bvId);
+        }
+    }
+
+    public void updateMetadata(MetadataBase metadata, boolean clear) throws SQLException, ParseException {
+        int blvId = metadata.settings.baselineVersion.getId();
+
+        if (!metadata.confirmImport()) {
+            throw new ParseException("Metadata import aborted interactively.");
+        }
+
+        // Clearing band data cascades into sensitivity scores and can fail part way through,
+        // so the clear and the re-insert must succeed or fail as one unit.
+        inTransaction("metadata import", conn -> {
             if (clear) {
-                clearSensitivityMatrices(bvId);
+                clearCoupledData(blvId, ClearScope.BAND_METADATA);
+            }
+
+            for (SymphonyCategory cat : SymphonyCategory.values()) {
+                for (SymphonyBand band : metadata.bands.get(cat)) {
+                    Integer bandId = qr.query(conn,
+                        SymphonyBand.preBandExists(schema), idHandler,
+                        blvId,
+                        cat.getDbVal(),
+                        band.getBandNumber());
+
+                    if (bandId == null) {
+                        bandId = qr.insert(conn, SymphonyBand.preBandInsert(schema), idHandler,
+                            blvId, cat.getDbVal(), band.getBandNumber(), band.isDefaultSelected());
+                        if (bandId == null) {
+                            throw new SQLException("");
+                        }
+                    }
+
+                    Map<String, String> metaMap = band.getMeta().get(metadata.settings.language);
+                    for (Map.Entry<String, String> mv : metaMap.entrySet()) {
+                        qr.insert(conn, SymphonyBand.preMetaInsert(schema), idHandler,
+                            bandId, metadata.settings.language, mv.getKey(), mv.getValue());
+                    }
+                }
+            }
+        });
+
+        System.out.println("Metadata import finished.");
+    }
+
+    public void updateMatrix(MatrixBase matrix, boolean clear) throws SQLException, ParseException {
+        if (!matrix.confirmImport()) {
+            throw new ParseException("Matrix import aborted interactively.");
+        }
+
+        int bvId = matrix.settings.baselineVersion.getId();
+
+        // The clear deletes calculation areas before the matrices they reference, and the
+        // insert that follows must not be separable from it: carea_default_sensm_id restricts
+        // deletion of a referenced matrix, so an unguarded clear commits the sensitivity rows
+        // and then fails, leaving a matrix with no scores.
+        inTransaction("matrix import", conn -> {
+            if (clear) {
+                clearCoupledData(bvId, ClearScope.MATRICES);
             }
 
             int mxId = qr.insert(conn, MatrixBase.insertSensMatrix(schema), idHandler,
@@ -399,89 +476,51 @@ public class DbInterface {
             qr.execute(conn, String.format("%s %s",
                 Sensitivity.insertRowColumns(schema),
                 String.join(",", valuesToInsert)));
-
-        } else {
-            throw new ParseException("Matrix import aborted interactively.");
-        }
+        });
     }
 
     public void updateNationalAreas(NationalAreaRowInsert[] areaInserts) throws SQLException {
-        Connection conn = getConnection();
-
-        String[] areaCountryISOs = Arrays.stream(areaInserts).map(NationalAreaRowInsert::getCountryISO).toArray(String[]::new);
+        String[] areaCountryISOs = Arrays.stream(areaInserts)
+            .map(NationalAreaRowInsert::getCountryISO).toArray(String[]::new);
 
         // Each entry is a DELETE followed by an INSERT, and NationalAreaRowInsert.getPolygon()
         // reads its file lazily, right here, so a bad file (missing, unreadable, changed since
         // an earlier '-f' validation pass) can fail after an earlier entry's delete has already
-        // run. Under auto-commit that delete would be permanent. Wrap the whole delete/insert/
-        // sanitize sequence in one transaction so it succeeds or fails as a unit, mirroring
-        // updateMetadata's pattern (see the comments there for the setAutoCommit(true)-commits-
-        // an-open-transaction trap this also has to avoid).
-        boolean previousAutoCommit = conn.getAutoCommit();
-        conn.setAutoCommit(false);
-        boolean transactionEnded = false;
-
+        // run. getPolygon() throws a RuntimeException wrapping an IO failure, which the wrapper
+        // also rolls back on.
         try {
-            for (NationalAreaRowInsert areaInsert : areaInserts) {
-                this.qr.update(conn, NationalAreaRowInsert.cleanQuery(schema), areaInsert.getCountryISO(), areaInsert.getNationalAreaType());
-                this.qr.update(conn, NationalAreaRowInsert.insertQuery(schema),
-                    areaInsert.getCountryISO(), areaInsert.getPolygon(), areaInsert.getNationalAreaType());
-            }
-
-            // sanitize table, once per distinct country
-            for (String iso : Arrays.stream(areaCountryISOs).distinct().toList()) {
-                this.qr.update(conn,
-                    String.format("DELETE FROM %s.nationalarea "
-                        + "WHERE narea_type = ? AND narea_countryiso3 = ?", schema),
-                    NationalAreaRowInsert.TYPE_TYPES, iso);
-
-                String types = jsonStringArray(
-                    Arrays.stream(this.qr.query(conn,
-                        areaTypesExclusiveQuery(schema),
-                        new ArrayHandler(), iso, TYPE_BOUNDARY))
-                            .map(Object::toString).toArray(String[]::new));
-
-                this.qr.update(conn,
-                    String.format("INSERT INTO %s.nationalarea (narea_countryiso3, narea_type, narea_types) VALUES (?, ?, ?)", schema),
-                    iso, NationalAreaRowInsert.TYPE_TYPES, types);
-            }
-
-            conn.commit();
-            transactionEnded = true;
-        } catch (SQLException | RuntimeException e) {
-            // Rolled back here rather than only in the finally, so that a failure to roll back
-            // is attached to the original exception instead of replacing it. getPolygon() throws
-            // a RuntimeException (wrapping an IO failure), not a SQLException, so both are caught.
-            transactionEnded = true;
-            try {
-                conn.rollback();
-            } catch (SQLException rollbackFailure) {
-                e.addSuppressed(rollbackFailure);
-            }
-            throw e;
-        } finally {
-            // Anything that escaped the catch above leaves the transaction open, and
-            // setAutoCommit(true) commits an open transaction per the JDBC contract. That would
-            // commit the half-updated table this whole transaction exists to prevent, so end the
-            // transaction explicitly before restoring the connection.
-            if (!transactionEnded) {
-                try {
-                    conn.rollback();
-                } catch (SQLException rollbackFailure) {
-                    System.err.println(
-                        "Warning: could not roll back the aborted national areas import: "
-                            + rollbackFailure.getMessage());
+            inTransaction("national areas import", conn -> {
+                for (NationalAreaRowInsert areaInsert : areaInserts) {
+                    qr.update(conn, NationalAreaRowInsert.cleanQuery(schema),
+                        areaInsert.getCountryISO(), areaInsert.getNationalAreaType());
+                    qr.update(conn, NationalAreaRowInsert.insertQuery(schema),
+                        areaInsert.getCountryISO(), areaInsert.getPolygon(),
+                        areaInsert.getNationalAreaType());
                 }
-            }
 
-            // Never let a failure to restore the connection mask the real outcome
-            try {
-                conn.setAutoCommit(previousAutoCommit);
-            } catch (SQLException restoreFailure) {
-                System.err.println(
-                    "Warning: could not restore the connection's auto-commit setting: "
-                        + restoreFailure.getMessage());
-            }
+                // sanitize table, once per distinct country
+                for (String iso : Arrays.stream(areaCountryISOs).distinct().toList()) {
+                    qr.update(conn,
+                        String.format("DELETE FROM %s.nationalarea "
+                            + "WHERE narea_type = ? AND narea_countryiso3 = ?", schema),
+                        NationalAreaRowInsert.TYPE_TYPES, iso);
+
+                    String types = jsonStringArray(
+                        Arrays.stream(qr.query(conn,
+                            areaTypesExclusiveQuery(schema),
+                            new ArrayHandler(), iso, TYPE_BOUNDARY))
+                                .map(Object::toString).toArray(String[]::new));
+
+                    qr.update(conn,
+                        String.format("INSERT INTO %s.nationalarea "
+                            + "(narea_countryiso3, narea_type, narea_types) VALUES (?, ?, ?)", schema),
+                        iso, NationalAreaRowInsert.TYPE_TYPES, types);
+                }
+            });
+        } catch (ParseException e) {
+            // Nothing in the block above throws ParseException; the wrapper's signature carries
+            // it for the import paths that do.
+            throw new SQLException(e.getMessage(), e);
         }
 
         System.out.println("National areas import finished.");
@@ -577,47 +616,53 @@ public class DbInterface {
         return qr.query(getConnection(), query, handler, args);
     }
 
-    public void importCalculationAreas(CalcAreaProcedure.AreaMatrixTuple[] calcAreaMatrixTuples, int bvId, boolean clear) throws SQLException, ParseException {
-        if (clear) {
-            clearCalculationAreas(bvId);
-        }
-
-        for (CalcAreaProcedure.AreaMatrixTuple camx : calcAreaMatrixTuples) {
-            CalculationArea ca = camx.area();
-            Integer matrixId = this.query(
-                String.format("SELECT sensm_id FROM %s.sensitivitymatrix "
-                    + "WHERE sensm_name = ? AND sensm_bver_id = ?", schema),
-                idHandler, ca.getMatrixName(), bvId);
-            if (matrixId == null) {
-                throw new ParseException(String.format(
-                    "No sensitivity matrix named '%s' exists on baseline version %d. "
-                        + "Import the matrix before the calculation areas that reference it.",
-                    ca.getMatrixName(), bvId));
+    public void importCalculationAreas(CalcAreaProcedure.AreaMatrixTuple[] calcAreaMatrixTuples,
+                                       int bvId, boolean clear) throws SQLException, ParseException {
+        // The loop below throws when an area names a matrix that does not exist on this
+        // baseline, which is reachable with entirely valid input, so the clear that precedes
+        // it must be undone rather than left committed.
+        inTransaction("calculation area import", conn -> {
+            if (clear) {
+                clearCoupledData(bvId, ClearScope.CALCULATION_AREAS);
             }
 
-            Connection conn = getConnection();
-            Integer lastPolyId = qr.insert(conn,
-                CalculationArea.calcAreaInsert(schema, json.toString(ca.getPolygon())), idHandler,
-                    ca.getAreaName(), matrixId, ca.isDefault(), ca.getAreaType());
+            for (CalcAreaProcedure.AreaMatrixTuple camx : calcAreaMatrixTuples) {
+                CalculationArea ca = camx.area();
+                Integer matrixId = qr.query(conn,
+                    String.format("SELECT sensm_id FROM %s.sensitivitymatrix "
+                        + "WHERE sensm_name = ? AND sensm_bver_id = ?", schema),
+                    idHandler, ca.getMatrixName(), bvId);
+                if (matrixId == null) {
+                    throw new ParseException(String.format(
+                        "No sensitivity matrix named '%s' exists on baseline version %d. "
+                            + "Import the matrix before the calculation areas that reference it.",
+                        ca.getMatrixName(), bvId));
+                }
 
-            // 'extra' 'round trip' to get the area ID, seems unavoidable
-            Integer areaId = this.query(
-                String.format("SELECT cap_carea_id FROM %s.capolygon WHERE cap_id = ?", schema),
-                idHandler, lastPolyId);
-            if (!camx.matrixIds().isEmpty()) {
-                qr.insert(conn, CalculationArea.additionalMatrixCouplingInsert(schema, areaId, camx.matrixIds()), idHandler);
+                Integer lastPolyId = qr.insert(conn,
+                    CalculationArea.calcAreaInsert(schema, json.toString(ca.getPolygon())), idHandler,
+                        ca.getAreaName(), matrixId, ca.isDefault(), ca.getAreaType());
+
+                // 'extra' 'round trip' to get the area ID, seems unavoidable
+                Integer areaId = qr.query(conn,
+                    String.format("SELECT cap_carea_id FROM %s.capolygon WHERE cap_id = ?", schema),
+                    idHandler, lastPolyId);
+                if (!camx.matrixIds().isEmpty()) {
+                    qr.insert(conn, CalculationArea.additionalMatrixCouplingInsert(
+                        schema, areaId, camx.matrixIds()), idHandler);
+                }
             }
-        }
+        });
     }
 
-    public void clearReliabilityPartitions(int bvId) throws SQLException {
+    private void clearReliabilityPartitions(int bvId) throws SQLException {
         qr.update(getConnection(), String.format(
             "DELETE FROM %1$s.reliabilitypartition rp "
             + "USING %1$s.meta_bands mb WHERE mb.metaband_id = rp.rp_metaband_id "
             + "AND mb.metaband_bver_id = ?", schema), bvId);
     }
 
-    public void clearSensitivityMatrices(int bvId) throws SQLException {
+    private void clearSensitivityMatrices(int bvId) throws SQLException {
         Connection conn = getConnection();
 
         // For robustness, rows that should be removed implicitly by cascading from the
@@ -632,33 +677,38 @@ public class DbInterface {
             "DELETE FROM %1$s.sensitivitymatrix m WHERE m.sensm_bver_id = ?", schema), bvId);
     }
 
-    public void clearCalculationAreas(int bvId) throws SQLException {
+    /**
+     * Removes the calculation areas this baseline version owns, with their polygons and every
+     * matrix coupling they carry.
+     * <p>
+     * Scoped by ownership (calculationarea.carea_default_sensm_id), not by coupling: an area
+     * merely linked to one of this baseline's matrices belongs to another baseline version and
+     * must survive. Its link row disappears on its own when the matrix goes, through
+     * casen_sensm_fk's ON DELETE CASCADE.
+     * <p>
+     * For the areas that do go, every calcareasensmatrix row is removed, including links to
+     * matrices on other baseline versions: casen_carea_fk has no ON DELETE action, so a link
+     * left behind makes the area undeletable.
+     */
+    private void clearCalculationAreas(int bvId) throws SQLException {
         Connection conn = getConnection();
 
-        // To stay agnostic about actual FK constraints, first record the area ids to remove
-        // and reuse as literal values in the delete sequence
-        List<Integer> coupledCalcAreas = query(String.format(
-            "SELECT DISTINCT carea_id dc FROM "
-            + "(SELECT carea_id FROM %1$s.calculationarea ca "
-            +  "WHERE ca.carea_default_sensm_id IN "
-            +   "(SELECT sensm_id FROM %1$s.sensitivitymatrix sm WHERE sensm_bver_id = ?) "
-            + "UNION "
-            + "SELECT carea_id FROM %1$s.calculationarea ca "
-            +   "JOIN %1$s.calcareasensmatrix cm ON cm.casen_carea_id = ca.carea_id AND cm.casen_sensm_id IN "
-            +     "(SELECT sensm_id FROM %1$s.sensitivitymatrix sm WHERE sensm_bver_id = ?)) bverArea", schema),
-            idListHandler, bvId, bvId);
+        List<Integer> ownedCalcAreas = query(ownedCalculationAreasQuery(schema), idListHandler, bvId);
+
+        if (ownedCalcAreas.isEmpty()) {
+            return;
+        }
+
+        String areaIds = delimitedIds(
+            ownedCalcAreas.stream().mapToInt(Integer::intValue).toArray());
 
         qr.update(conn, String.format(
-            "DELETE FROM %1$s.calcareasensmatrix " +
-            "WHERE casen_sensm_id IN " +
-            "(SELECT sensm_id FROM %1$s.sensitivitymatrix sm WHERE sensm_bver_id = ?)", schema), bvId);
+            "DELETE FROM %1$s.calcareasensmatrix WHERE casen_carea_id IN (%2$s)", schema, areaIds));
 
         qr.update(conn, String.format(
-            "DELETE FROM %1$s.capolygon WHERE cap_carea_id IN (%2$s)", schema,
-            delimitedIds(coupledCalcAreas.stream().mapToInt(Integer::intValue).toArray())));
+            "DELETE FROM %1$s.capolygon WHERE cap_carea_id IN (%2$s)", schema, areaIds));
 
         qr.update(conn, String.format(
-            "DELETE FROM %1$s.calculationarea WHERE carea_id IN (%2$s)", schema,
-            delimitedIds(coupledCalcAreas.stream().mapToInt(Integer::intValue).toArray())));
+            "DELETE FROM %1$s.calculationarea WHERE carea_id IN (%2$s)", schema, areaIds));
     }
 }

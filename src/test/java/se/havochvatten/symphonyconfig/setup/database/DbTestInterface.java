@@ -314,4 +314,36 @@ public class DbTestInterface extends DbInterface {
             throw new RuntimeException("Error purging calculation areas", e);
         }
     }
+
+    /** Adds a secondary calcareasensmatrix coupling, as the GUI does when an area gains a matrix. */
+    public void linkCalculationAreaToMatrix(int areaId, int matrixId) throws SQLException {
+        qr.update(getConnection(), String.format(
+            "INSERT INTO %s.calcareasensmatrix (casen_carea_id, casen_sensm_id) VALUES (?, ?)",
+            schema), areaId, matrixId);
+    }
+
+    public boolean calculationAreaExists(int areaId) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %s.calculationarea WHERE carea_id = ?", schema),
+            longHandler, areaId);
+        return n != null && n > 0;
+    }
+
+    /**
+     * Removes one calculation area with its links and polygons, in foreign key order. Tests that
+     * install an area on a second baseline call this before cleaning that baseline, so a failure
+     * mid-test cannot leave a link row that then blocks cleanup on casen_carea_fk.
+     */
+    public void deleteCalculationArea(int areaId) {
+        try (Connection conn = getConnection()) {
+            qr.update(conn, String.format(
+                "DELETE FROM %s.calcareasensmatrix WHERE casen_carea_id = ?", schema), areaId);
+            qr.update(conn, String.format(
+                "DELETE FROM %s.capolygon WHERE cap_carea_id = ?", schema), areaId);
+            qr.update(conn, String.format(
+                "DELETE FROM %s.calculationarea WHERE carea_id = ?", schema), areaId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error removing test calculation area", e);
+        }
+    }
 }
