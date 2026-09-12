@@ -94,13 +94,18 @@ package MSP-Symphony
                                                     to the band metadata: matrices, calculation areas
                                                     and reliability partitions will also be wiped 
                                                     from the database, regardless of other options.
-                                                    Called with the matrix option (-mx ...), all 
-                                                    matrices that is associated with the baseline
-                                                    version will be removed.
+                                                    Called with the matrix option (-mx ...), all
+                                                    matrices associated with the baseline version
+                                                    will be removed, together with every
+                                                    calculation area owned by the baseline version,
+                                                    since such an area cannot survive the removal
+                                                    of the matrix it depends on.
                                                     If calculation area options (-caF etc) are set,
-                                                    calculation areas that is coupled via some 
-                                                    sensitivity matrix to the targeted baseline 
-                                                    version are removed, prior to the insert.
+                                                    calculation areas owned by the targeted baseline
+                                                    version are removed, prior to the insert. An
+                                                    area owned by another baseline version is left
+                                                    alone, even when it is coupled via some
+                                                    sensitivity matrix to this baseline version.
 -bv, --baselineVersion <arg>             v1.0       Target baseline version to update. Used in           
                                                     conjunction with the -u option only.              
 -md, --metadata <arg>                    v1.0       Path to metadata file to import (csv or xlsx
