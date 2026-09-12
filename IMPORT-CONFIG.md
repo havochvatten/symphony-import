@@ -111,10 +111,10 @@ operation: update
 baseline:
   id: 1                           # Required. Database ID of the target baseline version.
   updateMode: update              # Optional: 'update' (default) or 'replace'.
-                                  # 'replace' deletes ALL band metadata for the baseline version before
-                                  # importing, which cascades to every sensitivity score on it,
-                                  # user-created matrices included. Sensitivity matrices and calculation
-                                  # areas are not themselves cleared. Read the section below first.
+                                  # 'replace' deletes coupled data on the target baseline version
+                                  # before importing: band metadata, sensitivity matrices (user-created
+                                  # ones included), calculation areas owned by the baseline version, and
+                                  # reliability partition polygons. Read the section below first.
 
 # At least one of metadata / matrices / calculationAreas is required (same shape as newBaseline).
 # csvSettings is optional and may accompany any of them, but cannot stand alone.
@@ -125,19 +125,34 @@ metadata:
 
 ### `updateMode: replace` is destructive
 
-`replace` deletes every band metadata row on the target baseline version before re-importing.
-Two consequences are easy to miss, so the tool checks for both before it writes anything and
-demands explicit confirmation from the user to avoid any accidental loss of information. See
-the usage documentation for the "update" option `-u r` (under [Usage](README.md#usage) in the
-README) for more detail. 
+`replace` deletes, on the target baseline version, every one of the following before it imports
+anything:
 
-* Sensitivity scores are deleted along with their bands.  If user-defined matrices coupled to
-  the baseline version exists, the tool emits a warning naming their owners before the import 
-  operation proceeds.
-* Reliability partition polygons referencing bands in the targeted baseline version.
+* All band metadata and its translated values.
+* All sensitivity matrices, user-created ones included, together with every sensitivity score
+  they hold.
+* All calculation areas owned by the baseline version, together with their polygons and matrix
+  couplings.
+* All reliability partition polygons.
 
-The replacement of a given metadata file run as a single transaction, so a failure part way 
-through rolls back rather than leaving the import partially incomplete.
+Ownership of a calculation area is its default sensitivity matrix. An area owned by another
+baseline version is not touched, even when it is coupled to a matrix on this one.
+
+The tool counts all of the above before writing anything, and requires explicit confirmation
+from the operator whenever that count is non-zero. See the usage documentation for the "update"
+option `-u r` (under [Usage](README.md#usage) in the README) for more detail.
+
+Each import runs as a single transaction, so a failure part way through rolls the whole clear
+and re-import back rather than leaving the baseline half-cleared. This now holds for metadata,
+matrices and calculation areas alike.
+
+Replacing `calculationAreas` together with `metadata`, without also listing `matrices`, will
+fail: clearing band metadata cascades to remove every sensitivity matrix on the baseline
+version, and with no `matrices` section to reimport them, the calculation areas being imported
+cannot resolve the matrix each one references by name. List `matrices` alongside
+`calculationAreas` whenever `metadata` is part of the same replace. A replace of
+`calculationAreas` on its own, without `metadata` or `matrices`, does not clear matrices and is
+unaffected.
 
 ---
 
