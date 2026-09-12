@@ -6,8 +6,6 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ConfirmImport {
     private static final String PROCEED_WITH_THE_IMPORT = "Proceed with the import?";
@@ -16,23 +14,65 @@ public class ConfirmImport {
         return confirmToProceed(message, abortMessage, null, null);
     }
 
-    private static final Pattern splitWidthExpression = Pattern.compile("\\G(\\n{2,})|\\G(\\n)|\\G[ \\t]*(.{1,80}(?=\\s|$))");
-
-    public static void layoutMessage(String message) {
-        Matcher lineMatcher = splitWidthExpression.matcher(message);
-        StringBuilder justified = new StringBuilder();
-        while (lineMatcher.find()) {
-            if (lineMatcher.group(1) != null) {
-                justified.append('\n');
-            }
-            if (lineMatcher.group(3) != null) {
-                justified.append(lineMatcher.group(3)).append('\n');
-            }
-        }
-        System.out.println(justified);
-        System.out.println("-".repeat(Math.min(message.length(), 80)));
+    /**
+     * Confirms an action after printing {@code information} above the prompt. Distinct from
+     * {@link #confirmToProceed(String, String)}, whose second argument is the message printed
+     * when the operator declines: three consecutive nullable Strings in the full signature made
+     * the two slots easy to confuse, and a notice delivered after a refusal helps nobody.
+     */
+    public static boolean confirmToProceedWithInformation(String message, @Nullable String information) {
+        return confirmToProceed(message, null, information, null);
     }
 
+    private static final int LINE_WIDTH = 80;
+
+    /**
+     * Prints a message wrapped at {@link #LINE_WIDTH} columns, above a separator rule. Blank
+     * lines between paragraphs are preserved.
+     * <p>
+     * A word longer than the line width is broken rather than dropped. The regex this replaced
+     * anchored every alternative with \G and had no branch matching an over-long run of
+     * non-whitespace, so the matcher simply stopped there and everything after it was lost
+     * silently, including the subject of the confirmation the operator was being asked for.
+     */
+    public static void layoutMessage(String message) {
+        StringBuilder justified = new StringBuilder();
+
+        for (String paragraph : message.split("\n", -1)) {
+            String remaining = paragraph.strip();
+
+            if (remaining.isEmpty()) {
+                justified.append('\n');
+                continue;
+            }
+
+            while (!remaining.isEmpty()) {
+                int breakAt = breakPosition(remaining);
+                justified.append(remaining, 0, breakAt).append('\n');
+                remaining = remaining.substring(breakAt).stripLeading();
+            }
+        }
+
+        System.out.println(justified);
+        System.out.println("-".repeat(Math.min(Math.max(message.length(), 1), LINE_WIDTH)));
+    }
+
+    /** Where to break: the last space within the width, or a hard break through a long word. */
+    private static int breakPosition(String text) {
+        if (text.length() <= LINE_WIDTH) {
+            return text.length();
+        }
+
+        int lastSpace = text.lastIndexOf(' ', LINE_WIDTH);
+        return lastSpace > 0 ? lastSpace : LINE_WIDTH;
+    }
+
+    /**
+     * @param message      the headline, wrapped and printed above a separator rule
+     * @param abortMessage printed only when the operator declines; may be null
+     * @param information  printed after the headline and before the prompt; may be null
+     * @param userPrompt   overrides the default "Proceed with the import?"; may be null
+     */
     public static boolean confirmToProceed(String message, @Nullable String abortMessage, @Nullable String information, @Nullable String userPrompt) {
         Scanner prompt = new Scanner(System.in);
         layoutMessage(message);
