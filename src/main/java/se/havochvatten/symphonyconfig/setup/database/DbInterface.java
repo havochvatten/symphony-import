@@ -216,6 +216,72 @@ public class DbInterface {
                 new ColumnListHandler<>(), bvId);
     }
 
+    /**
+     * Calculation areas owned by the given baseline version. Ownership is
+     * calculationarea.carea_default_sensm_id, which is NOT NULL, so every area belongs to
+     * exactly one baseline version. An area that merely carries a calcareasensmatrix link to
+     * one of this baseline's matrices belongs to whichever baseline owns its default matrix,
+     * and must survive this baseline's clear; its link rows disappear on their own through
+     * casen_sensm_fk's ON DELETE CASCADE.
+     */
+    public static String ownedCalculationAreasQuery(String schema) {
+        return String.format(
+            "SELECT ca.carea_id FROM %1$s.calculationarea ca "
+                + "JOIN %1$s.sensitivitymatrix sm ON sm.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE sm.sensm_bver_id = ?", schema);
+    }
+
+    private int count(String query, int bvId) throws SQLException {
+        Long n = query(query, longHandler, bvId);
+        return n == null ? 0 : n.intValue();
+    }
+
+    public int countMetaBands(int bvId) throws SQLException {
+        return count(String.format(
+            "SELECT count(*) FROM %s.meta_bands WHERE metaband_bver_id = ?", schema), bvId);
+    }
+
+    public int countMetaValues(int bvId) throws SQLException {
+        return count(String.format(
+            "SELECT count(*) FROM %1$s.meta_values mv JOIN %1$s.meta_bands mb "
+                + "ON mb.metaband_id = mv.metaval_band_id WHERE mb.metaband_bver_id = ?", schema), bvId);
+    }
+
+    public int countSensitivityMatrices(int bvId) throws SQLException {
+        return count(String.format(
+            "SELECT count(*) FROM %s.sensitivitymatrix WHERE sensm_bver_id = ?", schema), bvId);
+    }
+
+    public int countOwnedCalculationAreas(int bvId) throws SQLException {
+        return count(String.format(
+            "SELECT count(*) FROM (%s) owned", ownedCalculationAreasQuery(schema)), bvId);
+    }
+
+    public int countCalculationAreaPolygons(int bvId) throws SQLException {
+        return count(String.format(
+            "SELECT count(*) FROM %1$s.capolygon cap WHERE cap.cap_carea_id IN (%2$s)",
+            schema, ownedCalculationAreasQuery(schema)), bvId);
+    }
+
+    /**
+     * Counts everything a 'replace' of the given width will delete on this baseline version.
+     * Counted before the import runs, so the operator is told what is at stake rather than
+     * shown the wreckage afterwards.
+     */
+    public ReplacementImpact assessReplacement(int bvId, ClearScope scope) throws SQLException {
+        boolean clearsBands = scope == ClearScope.BAND_METADATA;
+        boolean clearsMatrices = scope != ClearScope.CALCULATION_AREAS;
+
+        return new ReplacementImpact(
+            clearsBands ? countMetaBands(bvId) : 0,
+            clearsBands ? countMetaValues(bvId) : 0,
+            clearsMatrices ? countSensitivityMatrices(bvId) : 0,
+            clearsMatrices ? userDefinedMatrixOwners(bvId) : List.of(),
+            countOwnedCalculationAreas(bvId),
+            countCalculationAreaPolygons(bvId),
+            clearsBands ? countReliabilityPartitionRows(bvId) : 0);
+    }
+
     protected void clearBandData(int bvId) throws SQLException {
         Connection conn = getConnection();
         for (SymphonyCategory cat : SymphonyCategory.values()) {

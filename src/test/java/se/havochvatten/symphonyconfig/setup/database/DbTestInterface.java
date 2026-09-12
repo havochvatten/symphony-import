@@ -48,7 +48,6 @@ public class DbTestInterface extends DbInterface {
     private static final ScalarHandler<String> stringHandler = new ScalarHandler<>();
 
     private Integer testBvId = null;
-    private Integer testCalcAreaId = null;
 
     public static String getAllNatAreasForCountryCodeQuery(String schema) {
         return String.format("SELECT narea_id, narea_type, narea_areas, narea_countryiso3 " +
@@ -137,52 +136,52 @@ public class DbTestInterface extends DbInterface {
         return qr.insert(getConnection(), provideDummySensitivityMatrixForCalcAreaStatement(schema), idHandler, matrixName, bvId);
     }
 
-    public int installDummyCalculationArea(int matrixId, boolean makeDefault) {
-        if (testBvId == null) {
-            throw new IllegalStateException("Fatal error: test baseline version not installed.");
-        }
+    /**
+     * Inserts a calculation area with one polygon, owned by whichever baseline version owns
+     * the given matrix (calculationarea.carea_default_sensm_id is the ownership relation).
+     * Never cached: every call inserts a new row and returns its own generated id, so a test
+     * can install areas on two baseline versions at once.
+     */
+    public int installCalculationArea(String name, int matrixId, boolean makeDefault) {
+        try (Connection conn = getConnection()) {
+            String insertAreaQuery = String.format("INSERT INTO %s.calculationarea " +
+                    "(carea_name, carea_default, carea_default_sensm_id, " +
+                    "carea_maxvalue, carea_atype_id) " +
+                    "VALUES (?, %s, ?, NULL, NULL)",
+                schema, makeDefault ? "true" : "false");
 
-        if (testCalcAreaId == null) {
-            try (Connection conn = getConnection()) {
-                String insertAreaQuery = String.format("INSERT INTO %s.calculationarea " +
-                        "(carea_name, carea_default, carea_default_sensm_id, " +
-                        "carea_maxvalue, carea_atype_id) " +
-                        "VALUES ('TEST-CalculationArea', %s, ?, NULL, NULL)",
-                    schema, makeDefault ? "true" : "false");
+            String polygonDef = IOUtils.resourceToString(BASELINE_EXTENT_POLY_PATH, StandardCharsets.UTF_8);
 
-                String polygonDef = IOUtils.resourceToString(BASELINE_EXTENT_POLY_PATH, StandardCharsets.UTF_8);
+            PreparedStatement insertStmt =
+                conn.prepareStatement(insertAreaQuery, RETURN_GENERATED_KEYS);
 
-                PreparedStatement insertStmt =
-                    conn.prepareStatement(insertAreaQuery, RETURN_GENERATED_KEYS);
+            insertStmt.setString(1, name);
+            insertStmt.setObject(2, matrixId, Types.INTEGER);
 
-                insertStmt.setObject(1, matrixId, Types.INTEGER);
+            insertStmt.executeUpdate();
+            ResultSet rs = insertStmt.getGeneratedKeys();
 
-                insertStmt.executeUpdate();
-                ResultSet rs = insertStmt.getGeneratedKeys();
-
-                if (rs.next()) {
-                    testCalcAreaId = rs.getInt(1);
-                    insertStmt.close();
-
-                    String insertPolygonQuery =
-                        String.format("INSERT INTO %s.capolygon (cap_carea_id, cap_polygon) VALUES " +
-                            "(%d, '%s')", schema, testCalcAreaId, polygonDef);
-
-                    conn.createStatement().execute(insertPolygonQuery);
-
-                } else {
-                    insertStmt.close();
-                    throw new SQLException("Failure inserting dummy calculation area");
-                }
-
-            } catch (SQLException e) {
-                throw new RuntimeException("Database transaction error");
-            } catch (IOException ioe) {
-                throw new RuntimeException("Test resource access error");
+            if (!rs.next()) {
+                insertStmt.close();
+                throw new SQLException("Failure inserting calculation area for test");
             }
-        }
 
-        return testCalcAreaId;
+            int areaId = rs.getInt(1);
+            insertStmt.close();
+
+            String insertPolygonQuery =
+                String.format("INSERT INTO %s.capolygon (cap_carea_id, cap_polygon) VALUES " +
+                    "(%d, '%s')", schema, areaId, polygonDef);
+
+            conn.createStatement().execute(insertPolygonQuery);
+
+            return areaId;
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Database transaction error", e);
+        } catch (IOException ioe) {
+            throw new RuntimeException("Test resource access error", ioe);
+        }
     }
 
     public Double getFirstDoubleValueByQuery(String query) throws SQLException {
@@ -279,14 +278,6 @@ public class DbTestInterface extends DbInterface {
         qr.update(getConnection(), String.format(
             "UPDATE %s.sensitivitymatrix SET sensm_owner = ? WHERE sensm_name = ?", schema),
             owner, matrixName);
-    }
-
-    public int countMetaValues(int bvId) throws SQLException {
-        Long n = query(String.format(
-            "SELECT count(*) FROM %1$s.meta_values mv JOIN %1$s.meta_bands mb "
-                + "ON mb.metaband_id = mv.metaval_band_id WHERE mb.metaband_bver_id = ?", schema),
-            longHandler, bvId);
-        return n == null ? 0 : n.intValue();
     }
 
     /** Count calculation areas flagged 'default' for the sensitivity matrices of the given baseline. */
