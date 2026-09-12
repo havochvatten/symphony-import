@@ -115,9 +115,11 @@ public class SymphonySetup {
                    "invocation:\n" +
                    "Called in conjuction with the metadata option (-md ...) - ALL associated content, in addition to the band metadata: matrices, " +
                    "calculation areas and reliability partitions will also be wiped from the database, regardless of other options.\n" +
-                   "Called with the matrix option (-mx ...), all matrices that is associated with the baseline version will be removed.\n" +
-                   "If calculation area options (-caF etc) are set, calculation areas that is coupled via some sensitivity matrix to the targeted " +
-                   "baseline version are removed, prior to the insert.", v1_0),
+                   "Called with the matrix option (-mx ...), all matrices associated with the baseline version will be removed, together with " +
+                   "every calculation area owned by the baseline version, since such an area cannot survive the removal of the matrix it depends on.\n" +
+                   "If calculation area options (-caF etc) are set, calculation areas owned by the targeted baseline version are removed, prior " +
+                   "to the insert. An area owned by another baseline version is left alone, even when it is coupled via some sensitivity matrix " +
+                   "to this baseline version.", v1_0),
                configFileOption  = newOption("f", "file", true,
                     "Pass a json/yaml configuration file with bundled input parameters instead of separate cli options.\n " +
                     "The expected format is documented separately.\n", v1_1),
@@ -881,6 +883,8 @@ public class SymphonySetup {
 
         if (calcAreaProcedure.confirmImport()) {
             db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId(), clear());
+        } else {
+            throw new ParseException("Calculation area import aborted interactively.");
         }
     }
 
@@ -1122,6 +1126,8 @@ public class SymphonySetup {
 
         if (calcAreaProcedure.confirmImport()) {
             db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId(), clear());
+        } else {
+            throw new ParseException("Calculation area import aborted interactively.");
         }
     }
 

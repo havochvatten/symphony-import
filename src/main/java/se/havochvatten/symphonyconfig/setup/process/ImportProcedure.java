@@ -6,7 +6,7 @@ import se.havochvatten.symphonyconfig.setup.model.ProcedureBase;
 
 import javax.annotation.Nullable;
 
-import static se.havochvatten.symphonyconfig.setup.ConfirmImport.confirmToProceed;
+import static se.havochvatten.symphonyconfig.setup.ConfirmImport.confirmToProceedWithInformation;
 
 public abstract class ImportProcedure<T extends SettingsBase> extends ProcedureBase {
 
@@ -40,6 +40,9 @@ public abstract class ImportProcedure<T extends SettingsBase> extends ProcedureB
     }
 
     protected boolean confirmPendingImport(@Nullable String notice) {
-        return confirmToProceed(String.format("Pending %s import: \"%s\"", settings.getTypeDescriptor(), getImportItemName()), notice);
+        return confirmToProceedWithInformation(
+            String.format("Pending %s import: \"%s\"",
+                settings.getTypeDescriptor(), getImportItemName()),
+            notice);
     }
 }

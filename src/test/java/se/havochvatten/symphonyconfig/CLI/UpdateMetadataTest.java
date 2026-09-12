@@ -213,6 +213,26 @@ class UpdateMetadataTest extends CliTestBase {
     }
 
     @Test
+    void partialMetadataNoticeAppearsBeforeThePrompt() {
+        String[] args = testCaseArgs("-u",
+            "-md", csvMetaFilePartialSV, "-mdL", "sv", "-bv", String.valueOf(bvId));
+
+        queueInteraction(() -> {
+            new SymphonySetup(args);
+
+            String out = displaceOut.toString();
+            int noticeAt = out.indexOf("the provided metadata table is _partial_");
+            int promptAt = out.indexOf("Proceed with the import?");
+
+            assertTrue(noticeAt >= 0, "The partial-table notice must be printed. stdout was: " + out);
+            assertTrue(promptAt >= 0, "The prompt must be printed. stdout was: " + out);
+            assertTrue(noticeAt < promptAt,
+                "The operator must read the notice before being asked to confirm, not after "
+                    + "declining. stdout was: " + out);
+        }, "y");
+    }
+
+    @Test
     void testLongFilenameTruncationInInteraction() throws IOException {
         Path tempDir = Path.of(TEMP_DIR);
         Files.createDirectories(tempDir);
