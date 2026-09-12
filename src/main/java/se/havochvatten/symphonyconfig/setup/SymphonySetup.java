@@ -6,7 +6,9 @@ import org.apache.commons.cli.help.HelpFormatter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.geotools.gce.geotiff.GeoTiffFormat;
 import se.havochvatten.symphonyconfig.setup.config.*;
+import se.havochvatten.symphonyconfig.setup.database.ClearScope;
 import se.havochvatten.symphonyconfig.setup.database.DbInterface;
+import se.havochvatten.symphonyconfig.setup.database.ReplacementImpact;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
 import se.havochvatten.symphonyconfig.setup.model.BaselineVersion;
 import se.havochvatten.symphonyconfig.setup.model.converter.UpdateModeConverter;
@@ -289,6 +291,11 @@ public class SymphonySetup {
     public boolean matrixImportInvoked() {
         return (setupCmd.hasOption("mx") && !setupCmd.hasOption("f")) ||
                (setupCmd.hasOption("f") && !(config.getMatrices() == null || config.getMatrices().isEmpty()));
+    }
+
+    public boolean calculationAreaImportInvoked() {
+        return (setupCmd.hasOption("caF") && !setupCmd.hasOption("f")) ||
+               (setupCmd.hasOption("f") && config.getCalculationAreas() != null);
     }
 
     private boolean failed = false;
@@ -715,13 +722,10 @@ public class SymphonySetup {
     }
 
     /**
-     * Pre-flight checks for updateMode 'replace', which clears all coupled data for the
-     * selected baseline version before importing.
-     * <p>
-     * Provide number of calculation areas that are to be removed, list potentially affected
-     * users (deleted user-defined matrices), count reliability partitions (if present) and
-     * require the operators confirmation to proceed.
-     * </p>
+     * Pre-flight check for updateMode 'replace', which clears the coupled data of the selected
+     * baseline version before importing. Counts everything the invoked imports will delete and
+     * requires the operator's confirmation whenever that set is non-empty.
+     *
      * @return boolean guard - true to abort
      */
     private boolean guardReplaceMode() throws SQLException, ParseException {
@@ -729,13 +733,36 @@ public class SymphonySetup {
             return false;
         }
 
-        int reliabilityRows = metadataImportInvoked() ?
-            db.countReliabilityPartitionRows(selectedBaselineVersion.getId()) : 0;
+        ClearScope scope = replacementScope();
+        if (scope == null) {
+            // 'replace' was requested but no import that clears anything was invoked
+            return false;
+        }
 
-        List<String> owners = metadataImportInvoked() || matrixImportInvoked() ?
-            db.userDefinedMatrixOwners(selectedBaselineVersion.getId()) : List.of();
+        ReplacementImpact impact = db.assessReplacement(selectedBaselineVersion.getId(), scope);
+        String label = String.format("%d (\"%s\")",
+            selectedBaselineVersion.getId(), selectedBaselineVersion.getName());
 
-        return !confirmToProceedWithReplacement(owners, reliabilityRows);
+        return !confirmToProceedWithReplacement(label, impact);
+    }
+
+    /**
+     * The widest clear the invoked imports will perform. Metadata implies matrices implies
+     * calculation areas, because each of those foreign keys restricts deletion of its parent.
+     *
+     * @return the scope, or null when nothing that clears anything was invoked
+     */
+    private ClearScope replacementScope() {
+        if (metadataImportInvoked()) {
+            return ClearScope.BAND_METADATA;
+        }
+        if (matrixImportInvoked()) {
+            return ClearScope.MATRICES;
+        }
+        if (calculationAreaImportInvoked()) {
+            return ClearScope.CALCULATION_AREAS;
+        }
+        return null;
     }
 
     private void importMetadataFromConfig() throws Exception {

@@ -1,13 +1,13 @@
 package se.havochvatten.symphonyconfig.setup;
 
+import se.havochvatten.symphonyconfig.setup.database.ReplacementImpact;
+
 import javax.annotation.Nullable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class ConfirmImport {
     private static final String PROCEED_WITH_THE_IMPORT = "Proceed with the import?";
@@ -68,25 +68,63 @@ public class ConfirmImport {
         + "desired for this baseline version and you choose to proceed at this point, you "
         + "will need to insert them manually.";
 
-    public static boolean confirmToProceedWithReplacement(List<String> matrixOwnersList, int reliabilityCount) {
-        if (matrixOwnersList.size() + reliabilityCount > 0) {
-            String[] warningParts = new String[]{
-                !matrixOwnersList.isEmpty() ?
-                    String.format(SENSITIVITY_MATRICES_WARNING, String.join(", ", matrixOwnersList))
-                    : null,
-                reliabilityCount > 0 ?
-                    String.format(RELIABILITY_PARTITION_WARNING, reliabilityCount)
-                    : null,
-            };
+    private static final String REPLACEMENT_SUMMARY =
+        "WARNING. Update mode 'replace' will permanently delete the following existing data "
+        + "on baseline version %s before importing:\n%s";
 
-            return confirmToProceed(Arrays.stream(warningParts)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.joining("\n\n")),
-                "Replace procedure aborted interactively.",
-                null, "Confirm deletion of auxiliary resources to proceed.");
+    private static List<String> impactLines(ReplacementImpact impact) {
+        List<String> lines = new ArrayList<>();
+
+        if (impact.metadataBands() > 0 || impact.metadataValues() > 0) {
+            lines.add(String.format("- band metadata: %d band(s) carrying %d translated value(s)",
+                impact.metadataBands(), impact.metadataValues()));
+        }
+        if (impact.sensitivityMatrices() > 0) {
+            lines.add(String.format(
+                "- sensitivity matrices: %d (every sensitivity score they hold goes with them)",
+                impact.sensitivityMatrices()));
+        }
+        if (impact.calculationAreas() > 0) {
+            lines.add(String.format("- calculation areas: %d (with %d area polygon(s))",
+                impact.calculationAreas(), impact.calculationAreaPolygons()));
+        }
+        if (impact.reliabilityPartitions() > 0) {
+            lines.add(String.format("- reliability partition polygons: %d",
+                impact.reliabilityPartitions()));
         }
 
-        return true;
+        return lines;
+    }
+
+    /**
+     * Confirms a destructive replace. Fires whenever the replace would delete anything at all,
+     * not only when a matrix is user-owned or a reliability partition exists: on an ordinary
+     * operator-managed baseline neither of those holds, and the replace is destructive anyway.
+     *
+     * @param baselineLabel how to name the target baseline version in the warning
+     * @param impact        what the replace will delete, counted beforehand
+     * @return true to proceed
+     */
+    public static boolean confirmToProceedWithReplacement(String baselineLabel, ReplacementImpact impact) {
+        if (impact.isEmpty()) {
+            return true;
+        }
+
+        List<String> parts = new ArrayList<>();
+        parts.add(String.format(REPLACEMENT_SUMMARY, baselineLabel,
+            String.join("\n", impactLines(impact))));
+
+        if (!impact.matrixOwners().isEmpty()) {
+            parts.add(String.format(SENSITIVITY_MATRICES_WARNING,
+                String.join(", ", impact.matrixOwners())));
+        }
+        if (impact.reliabilityPartitions() > 0) {
+            parts.add(String.format(RELIABILITY_PARTITION_WARNING, impact.reliabilityPartitions()));
+        }
+
+        return confirmToProceed(String.join("\n\n", parts),
+            "Replace procedure aborted interactively.",
+            null, "Confirm deletion of the data listed above to proceed.");
     }
 
     private ConfirmImport() {}

@@ -66,6 +66,51 @@ public class FileBasedUpdateTest extends CliTestBase {
     }
 
     @Test
+    void replaceIsConfirmedEvenWithoutOwnedMatricesOrPartitions() throws Exception {
+        assertNotNull(bvId);
+
+        // Seed metadata and a tool-imported matrix. sensm_owner stays NULL, which is the
+        // ordinary state of an operator-managed baseline and precisely the case the old
+        // owners-or-partitions gate let through unannounced.
+        String[] seedArgs = testCaseArgs("-u",
+            "-md", csvMetaFileCompleteEN, "-mdL", "en",
+            "-mx", csvMatrixFileEN, "-mxN", csvMatrixCompleteName, "-mxL", "en",
+            "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(seedArgs), "y", "y");
+
+        int matrixId = getDbInterface().getMatrixMap(bvId).get(csvMatrixCompleteName);
+        getDbInterface().installCalculationArea("TEST-Area-Collateral", matrixId, false);
+
+        int valuesBefore = getDbInterface().countMetaValues(bvId);
+        assertTrue(valuesBefore > 0, "Precondition: metadata present");
+
+        String cfg = createTempReplaceConfig();
+        try {
+            // Decline at the replacement guard. One queued line: the guard prompt is the
+            // first thing a replace asks, before any per-file import prompt.
+            String config = cfg;
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", config)), "n");
+
+            String out = displaceOut.toString();
+            assertTrue(out.contains("Update mode 'replace' will permanently delete"),
+                "A replace that destroys existing data must announce it, even when no matrix "
+                    + "is user-owned and no reliability partition exists. stdout was: " + out);
+            assertTrue(out.contains("sensitivity matrices: 1"),
+                "The prompt must count the matrices it will delete. stdout was: " + out);
+            assertTrue(out.contains("calculation areas: 1"),
+                "The prompt must count the calculation areas it will delete. stdout was: " + out);
+            assertTrue(out.contains("Replace procedure aborted interactively."));
+
+            assertEquals(valuesBefore, getDbInterface().countMetaValues(bvId),
+                "A declined replace must delete nothing");
+            assertEquals(1, getDbInterface().countSensitivityMatrices(bvId),
+                "A declined replace must leave the matrix in place");
+        } finally {
+            deleteTempConfig(cfg);
+        }
+    }
+
+    @Test
     void replaceExistingMetadataFromJSON() {
         assertNotNull(bvId);
 
@@ -116,7 +161,7 @@ public class FileBasedUpdateTest extends CliTestBase {
                 } catch (SQLException ex) {
                     fail("Database error: " + ex.getMessage());
                 }
-            }, "y");
+            }, "y", "y");   // guard prompt, then the single metadata file's prompt
 
         } finally {
             deleteTempConfig(tempConfigPath);
@@ -164,7 +209,7 @@ public class FileBasedUpdateTest extends CliTestBase {
                 } catch (SQLException ex) {
                     fail("Database error: " + ex.getMessage());
                 }
-            }, "y", "y");
+            }, "y", "y", "y");   // guard prompt, then one prompt per metadata file
         } finally {
             deleteTempConfig(tempConfigPath);
         }
