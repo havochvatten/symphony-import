@@ -435,6 +435,195 @@ public class FileBasedUpdateTest extends CliTestBase {
             "A pipe-delimited file must import when csvSettings.delimiter is '|'");
     }
 
+    @Test
+    void replaceDoesNotDeleteCalculationAreasOwnedByAnotherBaseline() throws Exception {
+        assertNotNull(bvId);
+
+        String[] seedArgs = testCaseArgs("-u",
+            "-md", csvMetaFileCompleteEN, "-mdL", "en", "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(seedArgs), "y");
+
+        int otherBvId = getDbInterface().installSecondaryBaselineVersion("TEST-Baseline-Other");
+        int otherArea = -1;
+        String cfg = null;
+
+        try {
+            // An area belonging to the OTHER baseline: its default matrix lives there
+            int otherMatrix = getDbInterface()
+                .provideDummySensitivityMatrixForCalcArea(otherBvId, "OTHER-Matrix");
+            otherArea = getDbInterface()
+                .installCalculationArea("OTHER-CalculationArea", otherMatrix, false);
+
+            // ...carrying a secondary link to a matrix on the TARGET baseline, which is the
+            // only thing that made the old UNION branch select it for deletion
+            int targetMatrix = getDbInterface()
+                .provideDummySensitivityMatrixForCalcArea(bvId, "TARGET-Matrix");
+            getDbInterface().linkCalculationAreaToMatrix(otherArea, targetMatrix);
+
+            cfg = createTempReplaceConfig();
+            String config = cfg;
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", config)), "y", "y");
+
+            assertTrue(getDbInterface().calculationAreaExists(otherArea),
+                "An area owned by another baseline version must survive this baseline's replace: "
+                    + "a calcareasensmatrix row is a secondary coupling, not ownership, and "
+                    + "casen_sensm_fk already cascades the link away on its own");
+        } finally {
+            if (otherArea > 0) {
+                getDbInterface().deleteCalculationArea(otherArea);
+            }
+            getDbInterface().cleanBaselineVersion(otherBvId);
+            deleteTempConfig(cfg);
+        }
+    }
+
+    @Test
+    void replaceSucceedsWhenAnOwnedAreaAlsoLinksToAnotherBaseline() throws Exception {
+        assertNotNull(bvId);
+
+        String[] seedArgs = testCaseArgs("-u",
+            "-md", csvMetaFileCompleteEN, "-mdL", "en", "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(seedArgs), "y");
+
+        int otherBvId = getDbInterface().installSecondaryBaselineVersion("TEST-Baseline-Other");
+        String cfg = null;
+
+        try {
+            // An area owned by the TARGET baseline that also links to a matrix elsewhere.
+            // casen_carea_fk has no ON DELETE action, so unless every link row for the area
+            // goes, deleting the area fails and replace is impossible on this baseline.
+            int targetMatrix = getDbInterface()
+                .provideDummySensitivityMatrixForCalcArea(bvId, "TARGET-Matrix");
+            int ownedArea = getDbInterface()
+                .installCalculationArea("TARGET-CalculationArea", targetMatrix, false);
+
+            int otherMatrix = getDbInterface()
+                .provideDummySensitivityMatrixForCalcArea(otherBvId, "OTHER-Matrix");
+            getDbInterface().linkCalculationAreaToMatrix(ownedArea, otherMatrix);
+
+            cfg = createTempReplaceConfig();
+            String config = cfg;
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", config)), "y", "y");
+
+            assertFalse(displaceErr.toString().contains("casen_carea_fk"),
+                "Replace must not fail on the link rows of an area it is deleting. stderr was: "
+                    + displaceErr);
+            assertEquals(0, getDbInterface().countOwnedCalculationAreas(bvId),
+                "The area owned by this baseline must be gone after a replace");
+            assertFalse(getDbInterface().calculationAreaExists(ownedArea),
+                "The owned area must be deleted, not merely unlinked");
+        } finally {
+            getDbInterface().cleanBaselineVersion(otherBvId);
+            deleteTempConfig(cfg);
+        }
+    }
+
+    @Test
+    void matrixReplaceDoesNotStrandScoresWhenACalculationAreaExists() throws Exception {
+        assertNotNull(bvId);
+
+        String[] seedArgs = testCaseArgs("-u",
+            "-md", csvMetaFileCompleteEN, "-mdL", "en",
+            "-mx", csvMatrixFileEN, "-mxN", csvMatrixCompleteName, "-mxL", "en",
+            "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(seedArgs), "y", "y");
+
+        int matrixId = getDbInterface().getMatrixMap(bvId).get(csvMatrixCompleteName);
+        getDbInterface().installCalculationArea("TEST-Area-Blocking-Matrix", matrixId, false);
+
+        int scoresBefore = getDbInterface().countSensitivityScores(bvId);
+        assertTrue(scoresBefore > 0, "Precondition: the seeded matrix holds scores");
+
+        // A matrix-only replace. carea_default_sensm_id has no ON DELETE action, so before the
+        // fix the clear deleted and committed the sensitivity rows and then died on the matrix
+        // delete, leaving a matrix with zero scores and a committed partial destruction.
+        String[] replaceArgs = testCaseArgs("-u", "r",
+            "-mx", csvMatrixFileEN, "-mxN", csvMatrixCompleteName, "-mxL", "en",
+            "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(replaceArgs), "y", "y");
+
+        String out = displaceOut.toString();
+        assertTrue(out.contains("calculation areas: 1"),
+            "The MATRICES-scope guard prompt must name the calculation area it will delete "
+                + "along with the matrix it depends on; otherwise a regression that dropped the "
+                + "guard here would go unnoticed since queued 'y' input is never verified as "
+                + "consumed. stdout was: " + out);
+        assertFalse(displaceErr.toString().contains("carea_default_sensm_fk"),
+            "A matrix replace must clear the calculation areas that reference the matrices "
+                + "before deleting them. stderr was: " + displaceErr);
+        assertEquals(scoresBefore, getDbInterface().countSensitivityScores(bvId),
+            "A matrix replace must end with a fully populated matrix, not an empty one");
+        assertEquals(1, getDbInterface().countSensitivityMatrices(bvId),
+            "The replaced matrix must exist exactly once");
+    }
+
+    @Test
+    void failedCalculationAreaReplaceRollsBackTheClear() throws Exception {
+        assertNotNull(bvId);
+
+        // Seed an area under a matrix whose name does NOT match the one the gpkg fixture
+        // references, so the import's matrix lookup throws after the clear has run.
+        int matrixId = getDbInterface()
+            .provideDummySensitivityMatrixForCalcArea(bvId, "UNRELATED-Matrix");
+        getDbInterface().installCalculationArea("TEST-Area-Pre-Existing", matrixId, false);
+
+        assertEquals(1, getDbInterface().countOwnedCalculationAreas(bvId),
+            "Precondition: one calculation area present");
+
+        String cfg = writeConfig("replace-calcareas.yaml",
+            "operation: update",
+            "baseline:",
+            "  id: " + bvId,
+            "  updateMode: replace",
+            "calculationAreas:",
+            "  file: " + absoluteResourcePath("/import/calcarea-package.gpkg"),
+            "  allDefault: true");
+
+        try {
+            queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", cfg)), "y", "y");
+
+            assertTrue(displaceErr.toString().contains("No sensitivity matrix named"),
+                "Precondition: the import fails on the unresolvable matrix name. stderr was: "
+                    + displaceErr);
+            assertEquals(1, getDbInterface().countOwnedCalculationAreas(bvId),
+                "A calculation area import that fails part way through must roll back its "
+                    + "clear, not leave the baseline with neither the old areas nor the new");
+        } finally {
+            deleteTempConfig(cfg);
+        }
+    }
+
+    @Test
+    void calculationAreaOnlyReplaceGuardNamesWhatItWillDelete() throws Exception {
+        assertNotNull(bvId);
+
+        int matrixId = getDbInterface()
+            .provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+        getDbInterface().installCalculationArea("TEST-Area-Guard-Only", matrixId, false);
+
+        assertEquals(1, getDbInterface().countOwnedCalculationAreas(bvId),
+            "Precondition: one calculation area present");
+
+        // A CALCULATION_AREAS-scope replace, declined at the guard. Only one 'n' is queued:
+        // withTextFromSystemIn tolerates unconsumed input, so if the guard stopped firing for
+        // this scope, the import would run to completion unconfirmed rather than fail loudly.
+        String[] replaceArgs = testCaseArgs("-u", "r",
+            "-caF", calculationAreaPackage, "-caDA",
+            "-bv", String.valueOf(bvId));
+        queueInteraction(() -> new SymphonySetup(replaceArgs), "n");
+
+        String out = displaceOut.toString();
+        assertTrue(out.contains("Update mode 'replace' will permanently delete"),
+            "A CALCULATION_AREAS-scope replace must show the guard prompt naming what it will "
+                + "delete before it deletes anything. stdout was: " + out);
+        assertTrue(out.contains("calculation areas: 1"),
+            "The guard prompt must count the calculation area it will delete. stdout was: " + out);
+        assertTrue(out.contains("Replace procedure aborted interactively."));
+
+        assertEquals(1, getDbInterface().countOwnedCalculationAreas(bvId),
+            "A declined replace must delete nothing");
+    }
+
     private String writeConfig(String name, String... lines) {
         try {
             Path dir = Path.of(TEMP_DIR);
