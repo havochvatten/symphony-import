@@ -119,8 +119,7 @@ public class SymphonySetup {
                    "every calculation area coupled to the baseline version, since such an area cannot survive the removal of a matrix it depends on.\n" +
                    "If calculation area options (-caF etc) are set, calculation areas coupled to the targeted baseline version are removed, prior " +
                    "to the insert. Coupling counts either way round: an area is removed both when its own default sensitivity matrix belongs to the " +
-                   "targeted baseline version and when it merely references one of that version's matrices, so an area belonging to another " +
-                   "baseline version is removed too. Scenarios referencing a removed area as their custom calculation area lose that reference.", v1_0),
+                   "targeted baseline version or is referencing one of that version's matrices (via calcareasensmatrix table).", v1_0),
                configFileOption  = newOption("f", "file", true,
                     "Pass a json/yaml configuration file with bundled input parameters instead of separate cli options.\n " +
                     "The expected format is documented separately.\n", v1_1),
