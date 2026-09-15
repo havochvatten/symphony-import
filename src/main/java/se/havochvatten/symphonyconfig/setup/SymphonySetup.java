@@ -116,10 +116,11 @@ public class SymphonySetup {
                    "Called in conjuction with the metadata option (-md ...) - ALL associated content, in addition to the band metadata: matrices, " +
                    "calculation areas and reliability partitions will also be wiped from the database, regardless of other options.\n" +
                    "Called with the matrix option (-mx ...), all matrices associated with the baseline version will be removed, together with " +
-                   "every calculation area owned by the baseline version, since such an area cannot survive the removal of the matrix it depends on.\n" +
-                   "If calculation area options (-caF etc) are set, calculation areas owned by the targeted baseline version are removed, prior " +
-                   "to the insert. An area owned by another baseline version is left alone, even when it is coupled via some sensitivity matrix " +
-                   "to this baseline version.", v1_0),
+                   "every calculation area coupled to the baseline version, since such an area cannot survive the removal of a matrix it depends on.\n" +
+                   "If calculation area options (-caF etc) are set, calculation areas coupled to the targeted baseline version are removed, prior " +
+                   "to the insert. Coupling counts either way round: an area is removed both when its own default sensitivity matrix belongs to the " +
+                   "targeted baseline version and when it merely references one of that version's matrices, so an area belonging to another " +
+                   "baseline version is removed too. Scenarios referencing a removed area as their custom calculation area lose that reference.", v1_0),
                configFileOption  = newOption("f", "file", true,
                     "Pass a json/yaml configuration file with bundled input parameters instead of separate cli options.\n " +
                     "The expected format is documented separately.\n", v1_1),

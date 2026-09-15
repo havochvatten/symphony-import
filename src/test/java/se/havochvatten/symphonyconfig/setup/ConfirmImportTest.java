@@ -2,8 +2,11 @@ package se.havochvatten.symphonyconfig.setup;
 
 import org.junit.jupiter.api.Test;
 
+import se.havochvatten.symphonyconfig.setup.database.ReplacementImpact;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,6 +23,37 @@ class ConfirmImportTest {
             System.setOut(previous);
         }
         return captured.toString();
+    }
+
+    private static String calculationAreaLine(int areas, int foreign, int polygons) {
+        List<String> lines = ConfirmImport.impactLines(
+            new ReplacementImpact(0, 0, 0, List.of(), areas, foreign, polygons, 0));
+
+        return lines.stream()
+            .filter(line -> line.startsWith("- calculation areas:"))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("No calculation area line in " + lines));
+    }
+
+    @Test
+    void namesTheAreasBelongingToAnotherBaselineVersion() {
+        String line = calculationAreaLine(3, 1, 12);
+
+        assertTrue(line.contains("calculation areas: 3 (with 12 area polygon(s))"),
+            "The totals must stay as they were. Line was: " + line);
+        assertTrue(line.contains("1 of them belonging to another baseline version"),
+            "An area a replace deletes on behalf of another baseline version is the one part of "
+                + "the delete set the option name does not suggest, so the prompt must say so. "
+                + "Line was: " + line);
+    }
+
+    @Test
+    void omitsTheForeignClauseWhenNoAreaBelongsElsewhere() {
+        String line = calculationAreaLine(3, 0, 12);
+
+        assertEquals("- calculation areas: 3 (with 12 area polygon(s))", line,
+            "With nothing owned elsewhere the line must carry no trailing clause at all, not a "
+                + "zero count");
     }
 
     @Test
