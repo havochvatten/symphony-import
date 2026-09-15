@@ -105,13 +105,9 @@ package MSP-Symphony
                                                     baseline version are removed, prior to the
                                                     insert. Coupling counts either way round: an
                                                     area is removed both when its own default
-                                                    sensitivity matrix belongs to the targeted
-                                                    baseline version and when it merely references
-                                                    one of that version's matrices, so an area
-                                                    belonging to another baseline version is removed
-                                                    too. Scenarios referencing a removed area as
-                                                    their custom calculation area lose that
-                                                    reference.
+                                                    sensitivity matrix belongs to the targeted 
+                                                    baseline version or is referencing one of that 
+                                                    version's matrices (via calcareasensmatrix table).                   
 -bv, --baselineVersion <arg>             v1.0       Target baseline version to update. Used in           
                                                     conjunction with the -u option only.              
 -md, --metadata <arg>                    v1.0       Path to metadata file to import (csv or xlsx
