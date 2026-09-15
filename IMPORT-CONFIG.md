@@ -113,8 +113,9 @@ baseline:
   updateMode: update              # Optional: 'update' (default) or 'replace'.
                                   # 'replace' deletes coupled data on the target baseline version
                                   # before importing: band metadata, sensitivity matrices (user-created
-                                  # ones included), calculation areas owned by the baseline version, and
-                                  # reliability partition polygons. Read the section below first.
+                                  # ones included), every calculation area coupled to the baseline
+                                  # version, and reliability partition polygons. Read the section
+                                  # below first.
 
 # At least one of metadata / matrices / calculationAreas is required (same shape as newBaseline).
 # csvSettings is optional and may accompany any of them, but cannot stand alone.
@@ -131,12 +132,19 @@ anything:
 * All band metadata and its translated values.
 * All sensitivity matrices, user-created ones included, together with every sensitivity score
   they hold.
-* All calculation areas owned by the baseline version, together with their polygons and matrix
-  couplings.
+* Every calculation area coupled to the baseline version, together with their polygons and
+  matrix couplings.
 * All reliability partition polygons.
 
-Ownership of a calculation area is its default sensitivity matrix. An area owned by another
-baseline version is not touched, even when it is coupled to a matrix on this one.
+A calculation area is coupled to the baseline version either by being its own (its default
+sensitivity matrix belongs to the version) or by referencing one of the version's matrices
+through a secondary link. Both count, so an area belonging to another baseline version is
+deleted as well once it references a matrix here. This is deliberate: a replace is meant to
+leave nothing behind that referenced the data it removes.
+
+Deleting a calculation area also clears it from any scenario that used it as a custom
+calculation area (`scenarioarea.custom_calcarea` is `ON DELETE SET NULL`), including scenarios
+on other baseline versions.
 
 The tool counts all of the above before writing anything, and requires explicit confirmation
 from the operator whenever that count is non-zero. See the usage documentation for the "update"
