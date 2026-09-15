@@ -112,7 +112,8 @@ public class ConfirmImport {
         "WARNING. Update mode 'replace' will permanently delete the following existing data "
         + "on baseline version %s before importing:\n%s";
 
-    private static List<String> impactLines(ReplacementImpact impact) {
+    /** Package-private so the wording of each line can be asserted without driving stdin. */
+    static List<String> impactLines(ReplacementImpact impact) {
         List<String> lines = new ArrayList<>();
 
         if (impact.metadataBands() > 0 || impact.metadataValues() > 0) {
@@ -125,8 +126,15 @@ public class ConfirmImport {
                 impact.sensitivityMatrices()));
         }
         if (impact.calculationAreas() > 0) {
-            lines.add(String.format("- calculation areas: %d (with %d area polygon(s))",
-                impact.calculationAreas(), impact.calculationAreaPolygons()));
+            // The foreign clause is stated only when it applies: an area another baseline
+            // version owns is in scope through its link to a matrix here, which is the one
+            // part of the delete set the option name does not suggest.
+            lines.add(String.format("- calculation areas: %d (with %d area polygon(s))%s",
+                impact.calculationAreas(), impact.calculationAreaPolygons(),
+                impact.foreignCalculationAreas() > 0
+                    ? String.format(", %d of them belonging to another baseline version",
+                        impact.foreignCalculationAreas())
+                    : ""));
         }
         if (impact.reliabilityPartitions() > 0) {
             lines.add(String.format("- reliability partition polygons: %d",

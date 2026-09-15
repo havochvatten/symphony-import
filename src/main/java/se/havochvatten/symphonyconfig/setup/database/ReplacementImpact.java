@@ -11,7 +11,9 @@ import java.util.List;
  * @param metadataValues         rows in meta_values, across every language
  * @param sensitivityMatrices    rows in sensitivitymatrix, tool-imported and user-created alike
  * @param matrixOwners           usernames owning any of those matrices, for the separate warning
- * @param calculationAreas       areas owned by this baseline version
+ * @param calculationAreas       areas coupled to this baseline version, by default matrix or
+ *                               by secondary link, whichever baseline version owns them
+ * @param foreignCalculationAreas how many of those areas another baseline version owns
  * @param calculationAreaPolygons polygons belonging to those areas
  * @param reliabilityPartitions  partition polygons bound to this baseline version's bands
  */
@@ -21,10 +23,15 @@ public record ReplacementImpact(
     int sensitivityMatrices,
     List<String> matrixOwners,
     int calculationAreas,
+    int foreignCalculationAreas,
     int calculationAreaPolygons,
     int reliabilityPartitions) {
 
-    /** True when the replace would delete nothing, so there is nothing to confirm. */
+    /**
+     * True when the replace would delete nothing, so there is nothing to confirm.
+     * foreignCalculationAreas takes no part: it counts a subset of calculationAreas, so it
+     * cannot be the only non-zero category.
+     */
     public boolean isEmpty() {
         return metadataBands == 0
             && metadataValues == 0

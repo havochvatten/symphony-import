@@ -436,7 +436,7 @@ public class FileBasedUpdateTest extends CliTestBase {
     }
 
     @Test
-    void replaceDoesNotDeleteCalculationAreasOwnedByAnotherBaseline() throws Exception {
+    void replaceDeletesAreasCoupledToThisBaselineWhicheverVersionOwnsThem() throws Exception {
         assertNotNull(bvId);
 
         String[] seedArgs = testCaseArgs("-u",
@@ -454,8 +454,9 @@ public class FileBasedUpdateTest extends CliTestBase {
             otherArea = getDbInterface()
                 .installCalculationArea("OTHER-CalculationArea", otherMatrix, false);
 
-            // ...carrying a secondary link to a matrix on the TARGET baseline, which is the
-            // only thing that made the old UNION branch select it for deletion
+            // ...carrying a secondary link to a matrix on the TARGET baseline. That link alone
+            // puts the area in scope: replace is meant to leave nothing behind that referenced
+            // the data it removes, whichever baseline version the area belongs to.
             int targetMatrix = getDbInterface()
                 .provideDummySensitivityMatrixForCalcArea(bvId, "TARGET-Matrix");
             getDbInterface().linkCalculationAreaToMatrix(otherArea, targetMatrix);
@@ -464,10 +465,17 @@ public class FileBasedUpdateTest extends CliTestBase {
             String config = cfg;
             queueInteraction(() -> new SymphonySetup(testCaseArgs("-f", config)), "y", "y");
 
-            assertTrue(getDbInterface().calculationAreaExists(otherArea),
-                "An area owned by another baseline version must survive this baseline's replace: "
-                    + "a calcareasensmatrix row is a secondary coupling, not ownership, and "
-                    + "casen_sensm_fk already cascades the link away on its own");
+            assertFalse(getDbInterface().calculationAreaExists(otherArea),
+                "An area referencing a matrix on the targeted baseline version must be deleted "
+                    + "even though another baseline version owns it. Narrowing the clear to the "
+                    + "areas this version owns would leave the referencing area behind, which is "
+                    + "the opposite of what replace is for");
+            // Collapsed because layoutMessage wraps at 80 columns, and the clause lands across
+            // the break for these counts.
+            String unwrapped = displaceOut.toString().replaceAll("\\s+", " ");
+            assertTrue(unwrapped.contains("1 of them belonging to another baseline version"),
+                "The confirmation prompt must state that an area of another baseline version is "
+                    + "among those it will delete. stdout was: " + displaceOut);
         } finally {
             if (otherArea > 0) {
                 getDbInterface().deleteCalculationArea(otherArea);
@@ -508,7 +516,7 @@ public class FileBasedUpdateTest extends CliTestBase {
             assertFalse(displaceErr.toString().contains("casen_carea_fk"),
                 "Replace must not fail on the link rows of an area it is deleting. stderr was: "
                     + displaceErr);
-            assertEquals(0, getDbInterface().countOwnedCalculationAreas(bvId),
+            assertEquals(0, getDbInterface().countCoupledCalculationAreas(bvId),
                 "The area owned by this baseline must be gone after a replace");
             assertFalse(getDbInterface().calculationAreaExists(ownedArea),
                 "The owned area must be deleted, not merely unlinked");
@@ -567,7 +575,7 @@ public class FileBasedUpdateTest extends CliTestBase {
             .provideDummySensitivityMatrixForCalcArea(bvId, "UNRELATED-Matrix");
         getDbInterface().installCalculationArea("TEST-Area-Pre-Existing", matrixId, false);
 
-        assertEquals(1, getDbInterface().countOwnedCalculationAreas(bvId),
+        assertEquals(1, getDbInterface().countCoupledCalculationAreas(bvId),
             "Precondition: one calculation area present");
 
         String cfg = writeConfig("replace-calcareas.yaml",
@@ -585,7 +593,7 @@ public class FileBasedUpdateTest extends CliTestBase {
             assertTrue(displaceErr.toString().contains("No sensitivity matrix named"),
                 "Precondition: the import fails on the unresolvable matrix name. stderr was: "
                     + displaceErr);
-            assertEquals(1, getDbInterface().countOwnedCalculationAreas(bvId),
+            assertEquals(1, getDbInterface().countCoupledCalculationAreas(bvId),
                 "A calculation area import that fails part way through must roll back its "
                     + "clear, not leave the baseline with neither the old areas nor the new");
         } finally {
@@ -601,7 +609,7 @@ public class FileBasedUpdateTest extends CliTestBase {
             .provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
         getDbInterface().installCalculationArea("TEST-Area-Guard-Only", matrixId, false);
 
-        assertEquals(1, getDbInterface().countOwnedCalculationAreas(bvId),
+        assertEquals(1, getDbInterface().countCoupledCalculationAreas(bvId),
             "Precondition: one calculation area present");
 
         // A CALCULATION_AREAS-scope replace, declined at the guard. Only one 'n' is queued:
@@ -620,7 +628,7 @@ public class FileBasedUpdateTest extends CliTestBase {
             "The guard prompt must count the calculation area it will delete. stdout was: " + out);
         assertTrue(out.contains("Replace procedure aborted interactively."));
 
-        assertEquals(1, getDbInterface().countOwnedCalculationAreas(bvId),
+        assertEquals(1, getDbInterface().countCoupledCalculationAreas(bvId),
             "A declined replace must delete nothing");
     }
 

@@ -217,18 +217,23 @@ public class DbInterface {
     }
 
     /**
-     * Calculation areas owned by the given baseline version. Ownership is
-     * calculationarea.carea_default_sensm_id, which is NOT NULL, so every area belongs to
-     * exactly one baseline version. An area that merely carries a calcareasensmatrix link to
-     * one of this baseline's matrices belongs to whichever baseline owns its default matrix,
-     * and must survive this baseline's clear; its link rows disappear on their own through
-     * casen_sensm_fk's ON DELETE CASCADE.
+     * Calculation areas coupled to the given baseline version, by either route: the area's own
+     * default matrix (calculationarea.carea_default_sensm_id, which is NOT NULL) or a secondary
+     * calcareasensmatrix link. Both routes count, so an area whose default matrix belongs to
+     * another baseline version is in scope as soon as it links to a matrix on this one. A
+     * replace is meant to leave nothing behind that referenced what it removes.
+     * <p>
+     * The ids are collected up front and the deletes then issued in an explicit order, which
+     * keeps the clear agnostic about the ON DELETE actions the schema happens to declare.
      */
-    public static String ownedCalculationAreasQuery(String schema) {
+    public static String coupledCalculationAreasQuery(String schema) {
         return String.format(
-            "SELECT ca.carea_id FROM %1$s.calculationarea ca "
-                + "JOIN %1$s.sensitivitymatrix sm ON sm.sensm_id = ca.carea_default_sensm_id "
-                + "WHERE sm.sensm_bver_id = ?", schema);
+            "WITH scope AS (SELECT sensm_id FROM %1$s.sensitivitymatrix WHERE sensm_bver_id = ?) "
+                + "SELECT ca.carea_id FROM %1$s.calculationarea ca "
+                + "WHERE ca.carea_default_sensm_id IN (SELECT sensm_id FROM scope) "
+                + "OR EXISTS (SELECT 1 FROM %1$s.calcareasensmatrix cm "
+                + "WHERE cm.casen_carea_id = ca.carea_id "
+                + "AND cm.casen_sensm_id IN (SELECT sensm_id FROM scope))", schema);
     }
 
     private int count(String query, int bvId) throws SQLException {
@@ -252,15 +257,33 @@ public class DbInterface {
             "SELECT count(*) FROM %s.sensitivitymatrix WHERE sensm_bver_id = ?", schema), bvId);
     }
 
-    public int countOwnedCalculationAreas(int bvId) throws SQLException {
+    public int countCoupledCalculationAreas(int bvId) throws SQLException {
         return count(String.format(
-            "SELECT count(*) FROM (%s) owned", ownedCalculationAreasQuery(schema)), bvId);
+            "SELECT count(*) FROM (%s) coupled", coupledCalculationAreasQuery(schema)), bvId);
+    }
+
+    /**
+     * Of the coupled areas, the ones another baseline version owns: they reach this baseline
+     * version only through a calcareasensmatrix link, yet a replace deletes them all the same.
+     * Counted apart from the rest so the confirmation prompt can say so. An operator can
+     * predict losing this baseline version's own areas from the option name; losing another
+     * baseline version's areas is the part worth stating outright.
+     */
+    public int countForeignCalculationAreas(int bvId) throws SQLException {
+        return count(String.format(
+            "WITH scope AS (SELECT sensm_id FROM %1$s.sensitivitymatrix WHERE sensm_bver_id = ?) "
+                + "SELECT count(*) FROM %1$s.calculationarea ca "
+                + "WHERE ca.carea_default_sensm_id NOT IN (SELECT sensm_id FROM scope) "
+                + "AND EXISTS (SELECT 1 FROM %1$s.calcareasensmatrix cm "
+                + "WHERE cm.casen_carea_id = ca.carea_id "
+                + "AND cm.casen_sensm_id IN (SELECT sensm_id FROM scope))", schema), bvId);
     }
 
     public int countCalculationAreaPolygons(int bvId) throws SQLException {
         return count(String.format(
-            "SELECT count(*) FROM %1$s.capolygon cap WHERE cap.cap_carea_id IN (%2$s)",
-            schema, ownedCalculationAreasQuery(schema)), bvId);
+            "SELECT count(*) FROM (%2$s) coupled "
+                + "JOIN %1$s.capolygon cap ON cap.cap_carea_id = coupled.carea_id",
+            schema, coupledCalculationAreasQuery(schema)), bvId);
     }
 
     public int countSensitivityScores(int bvId) throws SQLException {
@@ -283,7 +306,8 @@ public class DbInterface {
             clearsBands ? countMetaValues(bvId) : 0,
             clearsMatrices ? countSensitivityMatrices(bvId) : 0,
             clearsMatrices ? userDefinedMatrixOwners(bvId) : List.of(),
-            countOwnedCalculationAreas(bvId),
+            countCoupledCalculationAreas(bvId),
+            countForeignCalculationAreas(bvId),
             countCalculationAreaPolygons(bvId),
             clearsBands ? countReliabilityPartitionRows(bvId) : 0);
     }
@@ -678,29 +702,29 @@ public class DbInterface {
     }
 
     /**
-     * Removes the calculation areas this baseline version owns, with their polygons and every
-     * matrix coupling they carry.
+     * Removes every calculation area coupled to this baseline version, with its polygons and
+     * all of its matrix couplings. Coupling is either route, default matrix or secondary link,
+     * so an area owned by another baseline version goes too once it references a matrix here.
      * <p>
-     * Scoped by ownership (calculationarea.carea_default_sensm_id), not by coupling: an area
-     * merely linked to one of this baseline's matrices belongs to another baseline version and
-     * must survive. Its link row disappears on its own when the matrix goes, through
-     * casen_sensm_fk's ON DELETE CASCADE.
-     * <p>
-     * For the areas that do go, every calcareasensmatrix row is removed, including links to
-     * matrices on other baseline versions: casen_carea_fk has no ON DELETE action, so a link
-     * left behind makes the area undeletable.
+     * The link rows are cleared by area (casen_carea_id) rather than by matrix
+     * (casen_sensm_id). Every area holding a link to a matrix in scope is itself in the delete
+     * set, so a matrix-keyed delete would remove nothing this one misses; and clearing by area
+     * also removes that area's links to matrices on other baseline versions, which a
+     * matrix-keyed delete would leave behind to block the area delete through casen_carea_fk,
+     * which has no ON DELETE action.
      */
     private void clearCalculationAreas(int bvId) throws SQLException {
         Connection conn = getConnection();
 
-        List<Integer> ownedCalcAreas = query(ownedCalculationAreasQuery(schema), idListHandler, bvId);
+        List<Integer> coupledCalcAreas =
+            query(coupledCalculationAreasQuery(schema), idListHandler, bvId);
 
-        if (ownedCalcAreas.isEmpty()) {
+        if (coupledCalcAreas.isEmpty()) {
             return;
         }
 
         String areaIds = delimitedIds(
-            ownedCalcAreas.stream().mapToInt(Integer::intValue).toArray());
+            coupledCalcAreas.stream().mapToInt(Integer::intValue).toArray());
 
         qr.update(conn, String.format(
             "DELETE FROM %1$s.calcareasensmatrix WHERE casen_carea_id IN (%2$s)", schema, areaIds));
