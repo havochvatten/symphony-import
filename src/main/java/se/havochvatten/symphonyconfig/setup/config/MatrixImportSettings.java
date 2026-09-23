@@ -6,8 +6,8 @@ public class MatrixImportSettings extends BandsBasedSettingsBase {
 
     private String matrixName;
 
-    public MatrixImportSettings(BaselineVersion baselineVersion, String inputFilePath, String language, String defaultLanguage, boolean clear, int order) throws Exception {
-        super(baselineVersion, inputFilePath, "mx", "matrix", language, defaultLanguage, clear, order);
+    public MatrixImportSettings(BaselineVersion baselineVersion, String inputFilePath, String language, String defaultLanguage, int order) throws Exception {
+        super(baselineVersion, inputFilePath, "mx", "matrix", language, defaultLanguage, order);
 
         argMissingDesc      = "Insufficient arguments for carrying out the sensitivity matrix import procedure";
         validationErrorDesc = "Sensitivity matrix import - invalid settings";

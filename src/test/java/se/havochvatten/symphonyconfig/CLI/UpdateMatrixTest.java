@@ -7,6 +7,7 @@ import se.havochvatten.symphonyconfig.setup.model.Baseline;
 import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class UpdateMatrixTest extends CliTestBase {
@@ -19,8 +20,8 @@ class UpdateMatrixTest extends CliTestBase {
     void invokeCompleteImportWithMatrixOption() {
         // cli arguments
         // -u   [update]
-        // -md  [metadata import] ( path to import )            // repeatable argument
-        // -mdL [metadata language] ( ISO-639 language code )   // repeatable argument like above
+        // -md  [metadata import] ( path to import )
+        // -mdL [metadata language] ( ISO-639 language code )
         // -bv  [baseline version database id]
 
         String[] args = testCaseArgs("-u",
@@ -92,6 +93,35 @@ class UpdateMatrixTest extends CliTestBase {
                 fail();
             }
         }, "y", "y", "y");
+    }
+
+    @Test
+    void aVeryLongMatrixNameStillReachesThePrompt() {
+        // MatrixBase.getImportItemName() returns the operator-supplied name untruncated. The
+        // name below is a single 88 character token with no spaces at all, so it cannot be
+        // wrapped at a word boundary: the only way the tail survives is a hard break through the
+        // token itself. A name built from ordinary words, however long, would still wrap cleanly
+        // under the old regex and would not exercise the defect.
+        String longName = "Sensitivity_matrix_with_an_unusually_long_operator_supplied_name_that_has_no_spaces_TEST";
+
+        String[] args = testCaseArgs("-u",
+            "-md", csvMetaFileCompleteSV,
+            "-mdL", "sv",
+            "-bv", String.valueOf(bvId),
+            "-mx", csvMatrixFileSV,
+            "-mxN", longName,
+            "-mxL", "sv");
+
+        queueInteraction(() -> {
+            new SymphonySetup(args);
+
+            String out = displaceOut.toString();
+            assertTrue(out.contains("Pending matrix import:"),
+                "stdout was: " + out);
+            assertTrue(out.replace(NEW_LINE, "").replace("\n", "").contains(longName),
+                "The full over-long token must survive the prompt layout, reassembled across "
+                    + "whatever hard break split it. stdout was: " + out);
+        }, "y", "y");
     }
 
     @Test

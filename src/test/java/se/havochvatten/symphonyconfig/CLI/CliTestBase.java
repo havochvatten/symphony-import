@@ -4,18 +4,22 @@ import com.github.stefanbirkner.systemlambda.Statement;
 import org.junit.jupiter.api.AfterAll;
 import se.havochvatten.symphonyconfig.TestBase;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
+import se.havochvatten.symphonyconfig.setup.model.NationalArea;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyBand;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyCategory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.withTextFromSystemIn;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static se.havochvatten.symphonyconfig.setup.database.DbTestInterface.getAllNatAreasForCountryCodeQuery;
 
 public abstract class CliTestBase extends TestBase {
 
@@ -24,19 +28,59 @@ public abstract class CliTestBase extends TestBase {
     protected static final String NEW_LINE = System.lineSeparator();
 
     protected final List<String> requiredArgs;
+    protected final List<String> routingArgs;
 
     protected final ByteArrayOutputStream displaceOut = new ByteArrayOutputStream();
     protected final ByteArrayOutputStream displaceErr = new ByteArrayOutputStream();
 
     public CliTestBase(boolean provideBaseline) {
         super(provideBaseline);
-        requiredArgs = Arrays.asList("-db", database, "-dbU", dbUser, "-dbP", dbPassword);
+
+        routingArgs = List.copyOf(buildRoutingArgs());
+
+        List<String> args = new ArrayList<>(
+            List.of("-db", database, "-dbU", dbUser, "-dbP", dbPassword));
+        args.addAll(routingArgs);
+
+        requiredArgs = List.copyOf(args);
+
         System.setOut(new PrintStream(displaceOut));
         System.setErr(new PrintStream(displaceErr));
     }
 
+    /**
+     * Builds the connection-routing arguments (host, port, schema) only, omitting the
+     * '-db'/'-dbU'/'-dbP' trio. Useful for tests that exercise those three settings via a
+     * different path (e.g. environment variables) but still need to reach the configured
+     * test database's host/port/schema.
+     */
+    private List<String> buildRoutingArgs() {
+        List<String> args = new ArrayList<>();
+
+        if (dbHost != null) {
+            args.add("-dbH");
+            args.add(dbHost);
+        }
+        if (dbPort != null) {
+            args.add("-dbPt");
+            args.add(String.valueOf(dbPort));
+        }
+        if (dbSchema != null) {
+            args.add("-dbS");
+            args.add(dbSchema);
+        }
+
+        return args;
+    }
+
     protected String[] testCaseArgs(String... args) {
         ArrayList<String> caseArgs = new ArrayList<>(requiredArgs);
+        caseArgs.addAll(Arrays.asList(args));
+        return caseArgs.toArray(String[]::new);
+    }
+
+    protected String[] routingCaseArgs(String... args) {
+        ArrayList<String> caseArgs = new ArrayList<>(routingArgs);
         caseArgs.addAll(Arrays.asList(args));
         return caseArgs.toArray(String[]::new);
     }
@@ -80,8 +124,10 @@ public abstract class CliTestBase extends TestBase {
     public void queueInteraction(Statement s, String ... input) {
         try {
             withTextFromSystemIn(input).execute(s);
+        } catch (AssertionError e) {
+            throw e; // let real assertion failures through untouched
         } catch (Exception e) {
-            fail("A system-level error occurred:\n" + e.getMessage());
+            throw new AssertionError("A system-level error occurred: " + e, e);
         }
     }
 
@@ -97,6 +143,27 @@ public abstract class CliTestBase extends TestBase {
                 );
             }
         }
+    }
+
+    protected void assertNationalAreasImportSuccess() throws IOException, SQLException {
+        String expectedBoundaryJson = Files.readString(Path.of(nationalAreaBoundary));
+        String expectedSelectableJson = Files.readString(Path.of(nationalAreaSelectable));
+
+        List<NationalArea> nationalAreas = getDbInterface().query(
+            getAllNatAreasForCountryCodeQuery(dbSchema), NationalArea.handler, "SWE");
+
+        // check that the boundary row exists and that the 'areas' property equals the file contents
+        NationalArea boundaryRow = nationalAreas.stream().filter(nationalArea -> nationalArea.getType().equals("BOUNDARY")).findFirst().orElse(null);
+        NationalArea selectableRow = nationalAreas.stream().filter(nationalArea -> nationalArea.getType().equals("TEST")).findFirst().orElse(null);
+
+        assertNotNull(boundaryRow);
+        assertNotNull(selectableRow);
+
+        assertNotNull(boundaryRow.getAreasJson());
+        assertNotNull(selectableRow.getAreasJson());
+
+        assertEquals(expectedBoundaryJson, boundaryRow.getAreasJson());
+        assertEquals(expectedSelectableJson, selectableRow.getAreasJson());
     }
 
     @AfterAll

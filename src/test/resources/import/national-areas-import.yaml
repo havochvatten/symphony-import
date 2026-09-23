@@ -1,0 +1,13 @@
+# Example: Importing national areas with boundary and selectable areas
+# National areas can be imported separately from baseline data
+
+operation: nationalAreas
+
+nationalAreas:
+  - type: BOUNDARY
+    file: national-area/test-national-boundary.json
+    countryISO: SWE
+  - type: TEST
+    file: national-area/test-national-selectable.json
+    countryISO: SWE
+

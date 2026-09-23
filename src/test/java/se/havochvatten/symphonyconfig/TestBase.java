@@ -17,6 +17,7 @@ import java.util.Properties;
 public abstract class TestBase {
 
     protected static final String RESOURCES_PATH = "src/test/resources/";
+    protected static final String TEMP_DIR = "target/test-resources";
 
     protected static final String propertiesPath          = RESOURCES_PATH + "test.properties";
     protected static final String csvMetaFilePartialSV    = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.csv";
@@ -59,7 +60,7 @@ public abstract class TestBase {
     protected DbTestInterface dbInterface = null;
     protected Integer bvId;
 
-    static String absoluteResourcePath(String resourcePath) {
+    protected static String absoluteResourcePath(String resourcePath) {
         try {
             return new File(TestBase.class.getResource(resourcePath).toURI()).getAbsolutePath();
         } catch (URISyntaxException e) {

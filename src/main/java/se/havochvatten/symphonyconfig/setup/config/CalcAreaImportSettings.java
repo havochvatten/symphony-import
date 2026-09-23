@@ -19,12 +19,11 @@ public class CalcAreaImportSettings extends SettingsBase {
         BaselineVersion baselineVersion,
         String inputFilePath,
         String nameProperty,
-        boolean clear,
         boolean allDefault,
         String[] defaultAreaNames,
         Set<Integer> availableAreaTypes,
         Map<String, Integer> matrixNamesMap) {
-        super(baselineVersion, inputFilePath, "caF", "calculation area GeoPackage", clear);
+        super(baselineVersion, inputFilePath, "caF", "calculation area GeoPackage");
 
         this.availableAreaTypes = availableAreaTypes;
         this.matrixNamesMap = matrixNamesMap;
