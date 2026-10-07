@@ -47,7 +47,8 @@ public class DbInterface {
     // assuming integer id is present in first column
     public static final ColumnListHandler<Integer> idListHandler = new ColumnListHandler<>();
 
-    static final GeometryJSON json = new GeometryJSON();
+    // 10 decimals (about 0.01 mm) keep the source coordinates; the default of 4 rounds them to about 11 m
+    static final GeometryJSON json = new GeometryJSON(10);
 
     protected Connection getConnection() throws SQLException {
         if (activeConnection == null || activeConnection.isClosed()) {

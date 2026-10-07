@@ -156,6 +156,30 @@ class ImportCalculationAreasTest extends CliTestBase {
             "No calculation area may be written when any maxValue is unusable");
     }
 
+    @Test
+    void importKeepsPolygonCoordinatesAtSourcePrecision() throws Exception {
+        getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+
+        String[] args = testCaseArgs("-u", "-bv", String.valueOf(bvId),
+            "-caF", calculationAreaPackage, "-caDA");
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(args);
+            assertFalse(setup.hasFailed(), displaceErr.toString());
+        }, "y");
+
+        CalcAreaProcedure source = new CalcAreaProcedure(
+            new CalcAreaImportSettings(null, calculationAreaPackage, "name", false, null, Set.of(), Map.of()));
+
+        for (CalcAreaProcedure.AreaMatrixTuple tuple : source.areaTuples) {
+            String area = tuple.area().getAreaName();
+            double distance = getDbInterface()
+                .calculationAreaDistanceFromSource(bvId, area, tuple.area().getPolygon().toText());
+            // The fixture's coordinates have 13 decimals; 1e-9 degrees is about 0.1 mm
+            assertTrue(distance < 1e-9,
+                area + " is stored " + distance + " degrees away from the GeoPackage polygon");
+        }
+    }
+
     @AfterEach
     void cleanCalculationAreas() {
         getDbInterface().cleanCalculationAreas(bvId);
