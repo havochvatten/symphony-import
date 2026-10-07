@@ -1,6 +1,7 @@
 package se.havochvatten.symphonyconfig.setup.process;
 
 import se.havochvatten.symphonyconfig.setup.config.MetadataImportSettings;
+import se.havochvatten.symphonyconfig.setup.model.MetaValue;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyBand;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyCategory;
 
@@ -36,6 +37,16 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
     }
 
     public MetadataBase(MetadataImportSettings settings) { super(settings); }
+
+    /**
+     * Records a cell's value on the band unless the cell is empty. An empty cell means "no value":
+     * stored as '' it would, for symphonytheme, put the band in a theme without a name in the GUI.
+     */
+    protected void setMetaValueUnlessEmpty(SymphonyBand band, String field, String value) {
+        if (value != null && !value.isBlank()) {
+            band.setMetaValue(settings.language, new MetaValue(field, value, settings.language));
+        }
+    }
 
     @Override
     protected String getImportItemName() {

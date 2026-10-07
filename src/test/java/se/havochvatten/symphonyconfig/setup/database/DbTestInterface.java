@@ -323,6 +323,17 @@ public class DbTestInterface extends DbInterface {
         return n == null ? 0 : n.intValue();
     }
 
+    /** Stored meta values for one field of one band; bandNumber is 1-based, as in the input files. */
+    public int countBandMetaValues(int bvId, String category, int bandNumber, String field) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %1$s.meta_values mv "
+                + "JOIN %1$s.meta_bands mb ON mb.metaband_id = mv.metaval_band_id "
+                + "WHERE mb.metaband_bver_id = ? AND mb.metaband_category = ? "
+                + "AND mb.metaband_number = ? AND mv.metaval_field = ?", schema),
+            longHandler, bvId, category, bandNumber - 1, field);
+        return n == null ? 0 : n.intValue();
+    }
+
     /**
      * carea_maxvalue of the named calculation area on the given baseline's matrices. Throws when the
      * area does not exist exactly once, so a null return always means "stored as NULL".

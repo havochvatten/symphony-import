@@ -23,6 +23,8 @@ public abstract class TestBase {
     protected static final String csvMetaFilePartialSV    = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.csv";
     protected static final String csvMetaFileCompleteSV   = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.csv";
     protected static final String csvMetaFileCompleteEN   = RESOURCES_PATH + "import/metadata-wellformed-complete-en.csv";
+    protected static final String csvMetaFileEmptyCellsEN = RESOURCES_PATH + "import/metadata-wellformed-empty-cells-en.csv";
+    protected static final String xlsxMetaFileEmptyCellsEN = RESOURCES_PATH + "import/metadata-wellformed-empty-cells-en.xlsx";
 
     protected static final String excelMetaFilePartial        = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.xlsx";
     protected static final String excelMetaFileCompleteSV     = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.xlsx";

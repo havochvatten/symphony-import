@@ -233,6 +233,33 @@ class UpdateMetadataTest extends CliTestBase {
     }
 
     @Test
+    void emptyCsvCellsAreNotStored() throws Exception {
+        assertEmptyCellsAreNotStored(csvMetaFileEmptyCellsEN);
+    }
+
+    @Test
+    void emptyExcelCellsAreNotStored() throws Exception {
+        assertEmptyCellsAreNotStored(xlsxMetaFileEmptyCellsEN);
+    }
+
+    private void assertEmptyCellsAreNotStored(String metadataFile) throws Exception {
+        String[] args = testCaseArgs("-u", "-md", metadataFile, "-mdL", "en", "-bv", String.valueOf(bvId));
+
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(args);
+            assertFalse(setup.hasFailed(), displaceErr.toString());
+        }, "y");
+
+        // An empty symphonytheme stored as '' would put the band in a theme without a name in the GUI
+        assertEquals(0, getDbInterface().countBandMetaValues(bvId, "Ecosystem", 2, "symphonytheme"));
+        assertEquals(0, getDbInterface().countBandMetaValues(bvId, "Pressure", 1, "summary"));
+        // The filled cells around them are still stored
+        assertEquals(1, getDbInterface().countBandMetaValues(bvId, "Ecosystem", 1, "symphonytheme"));
+        assertEquals(1, getDbInterface().countBandMetaValues(bvId, "Ecosystem", 2, "title"));
+        assertEquals(1, getDbInterface().countBandMetaValues(bvId, "Pressure", 1, "symphonytheme"));
+    }
+
+    @Test
     void testLongFilenameTruncationInInteraction() throws IOException {
         Path tempDir = Path.of(TEMP_DIR);
         Files.createDirectories(tempDir);
