@@ -37,13 +37,16 @@ public class CalculationArea {
         return isDefault;
     }
 
+    // pg_polygon is what MSP-Symphony intersects scenario areas against, and nothing in the database
+    // derives it from cap_polygon. PostGIS is assumed to live in 'public', as in the install scripts.
     public static String calcAreaInsert(String schema, String polygon) {
         return String.format(
             "WITH ca AS (" +
                 "INSERT INTO %1$s.calculationarea(carea_name, carea_default_sensm_id, carea_default, carea_atype_id) " +
                 "VALUES (?, ?, ?, ?) RETURNING carea_id) " +
-            "INSERT INTO %1$s.capolygon(cap_carea_id, cap_polygon) " +
-            "SELECT ca.carea_id, '%2$s' FROM ca", schema, polygon);
+            "INSERT INTO %1$s.capolygon(cap_carea_id, cap_polygon, pg_polygon) " +
+            "SELECT ca.carea_id, '%2$s', public.ST_Multi(public.ST_GeomFromGeoJSON('%2$s')) FROM ca",
+            schema, polygon);
     }
 
     public static String additionalMatrixCouplingInsert(String schema, int areaId, List<Integer> matrixIds) {

@@ -15,6 +15,7 @@ import se.havochvatten.symphonyconfig.setup.database.DbInterface;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static se.havochvatten.symphonyconfig.setup.database.DbInterface.idHandler;
 
@@ -62,6 +63,12 @@ class ImportCalculationAreasTest extends CliTestBase {
                             getCalculationAreaByNameQueryStr(dbSchema), idHandler, areaTuple.area().getAreaName());
                     assertNotNull(carea);
                 }
+
+                assertTrue(getDbInterface().countCalculationAreaPolygons(bvId) > 0,
+                    "The import should have written calculation area polygons");
+                assertEquals(0, getDbInterface().countCalculationAreaPolygonsWithoutGeometry(bvId),
+                    "Every imported polygon needs a pg_polygon matching its GeoJSON: "
+                        + "MSP-Symphony intersects scenario areas against that column");
             }, "y");
         } catch (SQLException sqlx) {
             fail(sqlx.getMessage());

@@ -303,6 +303,24 @@ public class DbTestInterface extends DbInterface {
         return Boolean.TRUE.equals(isDefault);
     }
 
+    /**
+     * Counts polygons of the calculation areas on the given baseline's matrices whose pg_polygon is
+     * missing, has the wrong SRID, or does not describe the same shape as the cap_polygon GeoJSON.
+     * MSP-Symphony intersects scenario areas against pg_polygon, so any such polygon is invisible to it.
+     */
+    public int countCalculationAreaPolygonsWithoutGeometry(int bvId) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %1$s.capolygon cap "
+                + "JOIN %1$s.calculationarea ca ON ca.carea_id = cap.cap_carea_id "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE m.sensm_bver_id = ? AND (cap.pg_polygon IS NULL "
+                + "OR public.ST_SRID(cap.pg_polygon) <> 4326 "
+                + "OR NOT public.ST_Equals(cap.pg_polygon, "
+                + "public.ST_Multi(public.ST_GeomFromGeoJSON(cap.cap_polygon))))", schema),
+            longHandler, bvId);
+        return n == null ? 0 : n.intValue();
+    }
+
     public void cleanCalculationAreas(int bvId) {
         try (Connection conn = getConnection()) {
             // Delete calculation areas
