@@ -7,14 +7,17 @@ import se.havochvatten.symphonyconfig.setup.config.CalcAreaImportSettings;
 import se.havochvatten.symphonyconfig.setup.process.CalcAreaProcedure;
 
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import se.havochvatten.symphonyconfig.setup.database.DbInterface;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static se.havochvatten.symphonyconfig.setup.database.DbInterface.idHandler;
@@ -109,6 +112,48 @@ class ImportCalculationAreasTest extends CliTestBase {
                 getDbInterface().cleanBaselineVersion(otherBvId);
             }
         }
+    }
+
+    @Test
+    void importStoresMaxValueAndLeavesAbsentValueNull() throws Exception {
+        getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+
+        String[] args = testCaseArgs("-u", "-bv", String.valueOf(bvId),
+            "-caF", calculationAreaPackageMaxValue, "-caD", "test-calc-area-calibrated");
+
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(args);
+            assertFalse(setup.hasFailed(), displaceErr.toString());
+        }, "y");
+
+        assertEquals(3098.8, getDbInterface().getCalculationAreaMaxValue(bvId, "test-calc-area-calibrated"));
+        assertNull(getDbInterface().getCalculationAreaMaxValue(bvId, "test-calc-area-uncalibrated"),
+            "An area without the attribute must stay uncalibrated, not get 0 or a neighbour's value");
+        // This fixture is MultiPolygon-typed; testImportDefaultCalculationAreas covers the Polygon-typed package
+        assertEquals(0, getDbInterface().countCalculationAreaPolygonsWithoutGeometry(bvId));
+    }
+
+    @Test
+    void importRejectsUnusableMaxValuesAndWritesNoArea() throws Exception {
+        getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+
+        String[] args = testCaseArgs("-u", "-bv", String.valueOf(bvId),
+            "-caF", calculationAreaPackageMaxValueFaulty, "-caDA");
+
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(args);
+            assertTrue(setup.hasFailed(), "An unusable maxValue must fail the import");
+        }, "y");
+
+        String errorOutput = displaceErr.toString();
+        assertTrue(errorOutput.contains("maxValue"), errorOutput);
+        // Text, decimal comma, zero, negative and blank: each must be named, none silently read
+        for (String area : List.of("test-calc-area-text", "test-calc-area-comma", "test-calc-area-zero",
+                                   "test-calc-area-negative", "test-calc-area-blank")) {
+            assertTrue(errorOutput.contains(area), "The error should name '" + area + "': " + errorOutput);
+        }
+        assertEquals(0, getDbInterface().countCoupledCalculationAreas(bvId),
+            "No calculation area may be written when any maxValue is unusable");
     }
 
     @AfterEach

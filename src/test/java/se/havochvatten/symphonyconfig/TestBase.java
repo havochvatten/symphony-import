@@ -41,6 +41,8 @@ public abstract class TestBase {
     protected static final String nationalAreaSelectable =  RESOURCES_PATH + "import/national-area/test-national-selectable.json";
 
     protected static final String calculationAreaPackage = RESOURCES_PATH + "import/calcarea-package.gpkg";
+    protected static final String calculationAreaPackageMaxValue = RESOURCES_PATH + "import/calcarea-package-maxvalue.gpkg";
+    protected static final String calculationAreaPackageMaxValueFaulty = RESOURCES_PATH + "import/calcarea-package-maxvalue-faulty.gpkg";
 
     public static final String TEST_TIFF_E_PATH = absoluteResourcePath("/baseline/symphony-import-test-BaselineE.tiff");
     public static final String TEST_TIFF_P_PATH = absoluteResourcePath("/baseline/symphony-import-test-BaselineP.tiff");

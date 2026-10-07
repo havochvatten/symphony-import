@@ -1,5 +1,6 @@
 package se.havochvatten.symphonyconfig.setup.database;
 
+import org.apache.commons.dbutils.handlers.ArrayListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.io.IOUtils;
 
@@ -10,6 +11,7 @@ import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static se.havochvatten.symphonyconfig.TestBase.*;
@@ -319,6 +321,26 @@ public class DbTestInterface extends DbInterface {
                 + "public.ST_Multi(public.ST_GeomFromGeoJSON(cap.cap_polygon))))", schema),
             longHandler, bvId);
         return n == null ? 0 : n.intValue();
+    }
+
+    /**
+     * carea_maxvalue of the named calculation area on the given baseline's matrices. Throws when the
+     * area does not exist exactly once, so a null return always means "stored as NULL".
+     */
+    public Double getCalculationAreaMaxValue(int bvId, String careaName) throws SQLException {
+        List<Object[]> rows = query(String.format(
+            "SELECT ca.carea_maxvalue FROM %1$s.calculationarea ca "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE m.sensm_bver_id = ? AND ca.carea_name = ?", schema),
+            new ArrayListHandler(), bvId, careaName);
+
+        if (rows.size() != 1) {
+            throw new IllegalStateException(String.format(
+                "Expected one calculation area named '%s' on baseline version %d, found %d",
+                careaName, bvId, rows.size()));
+        }
+
+        return (Double) rows.get(0)[0];
     }
 
     public void cleanCalculationAreas(int bvId) {

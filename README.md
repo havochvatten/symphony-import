@@ -243,10 +243,13 @@ A valid sensitivity score must be present in each cell in the table body as a re
 ### Calculation areas
 Calculation areas should be provided as a [GeoPackage](www.geopackage.org) file containing the area polygons that are to be coupled to the baseline. All polygons should define two attributes, a 'name' attribute (either indicated by the `-caP`/`--calcAreaNameProperty` or defaulting to "name") and the 'matrixName' which will be used to determine (by 'name' - ie value of `sensitivitymatrix.sensm_name` column) which sensitivity matrix that calculations for spatial extents inside the specified area polygon will apply, by default.
 
-Additionally, calculation area polygons may define two optional properties: 'areaType' and 'addMatrices'. If given, 'areaType' must be an integer value specifying a corresponding "area type" id (`areatype.atype_id` in the database) for the calculation area.  
+Additionally, calculation area polygons may define three optional properties: 'areaType', 'addMatrices' and 'maxValue'. If given, 'areaType' must be an integer value specifying a corresponding "area type" id (`areatype.atype_id` in the database) for the calculation area.  
 Please note that "area types" _can not_ presently be imported using this tool (see [Limitations](#limitations)).
 
 The attribute 'addMatrices' is expected to specify one or more comma separated sensitivity matrix names. These will be coupled and available for use with calculations contained in the corresponding polygon.
+
+The attribute 'maxValue' sets the area's calibration value (`calculationarea.carea_maxvalue`), the constant MSP-Symphony uses for "domain" normalization of calculation results. It must be a number greater than 0, with '.' as decimal separator. Any other value fails the calculation area import, naming the offending areas, before any area is written. Areas without the attribute (or with a NULL value) are imported without a calibration value.  
+The value is normally obtained by calibrating an installed baseline version, so the attribute is mostly useful when re-importing areas or installing a baseline whose calibration value is already known.
 
 
 ### National areas / Boundary polygon

@@ -76,9 +76,9 @@ matrices:
 
 calculationAreas:
   file: areas.gpkg                # Every feature must also carry a 'matrixName' attribute naming an
-                                  # already-imported sensitivity matrix. 'areaType' and 'addMatrices' are
-                                  # read when present. See the README section on calculation areas for
-                                  # the full attribute list.
+                                  # already-imported sensitivity matrix. 'areaType', 'addMatrices' and
+                                  # 'maxValue' (the calibration value) are read when present. See the
+                                  # README section on calculation areas for the full attribute list.
   nameProperty: name              # Optional. GeoPackage Feature attribute for area "name". Defaults to 'name'.
   defaultAreas:                   # Name the areas to set as default.
     - Area_1

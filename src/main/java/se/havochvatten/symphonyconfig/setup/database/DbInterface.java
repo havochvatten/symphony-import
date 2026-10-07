@@ -665,7 +665,7 @@ public class DbInterface {
 
                 Integer lastPolyId = qr.insert(conn,
                     CalculationArea.calcAreaInsert(schema, json.toString(ca.getPolygon())), idHandler,
-                        ca.getAreaName(), matrixId, ca.isDefault(), ca.getAreaType());
+                        ca.getAreaName(), matrixId, ca.isDefault(), ca.getAreaType(), ca.getMaxValue());
 
                 // 'extra' 'round trip' to get the area ID, seems unavoidable
                 Integer areaId = qr.query(conn,
