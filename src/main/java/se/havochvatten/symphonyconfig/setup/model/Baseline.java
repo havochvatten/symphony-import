@@ -2,15 +2,12 @@ package se.havochvatten.symphonyconfig.setup.model;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang3.StringUtils;
-import org.geotools.coverage.grid.GridCoverage2D;
-import org.geotools.coverage.grid.io.GridFormatFinder;
-import org.geotools.util.factory.Hints;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 import static se.havochvatten.symphonyconfig.setup.SymphonySetup.Util.*;
+import static se.havochvatten.symphonyconfig.setup.config.BandsBasedSettingsBase.countBands;
 
 public class Baseline {
 
@@ -23,7 +20,6 @@ public class Baseline {
     public List<DbCalculationArea> defaultCalcAreas;
 
     private boolean metaIncomplete = false;
-    private static final Hints g2h = new Hints(Hints.FORCE_LONGITUDE_FIRST_AXIS_ORDER, Boolean.TRUE);
 
     public Baseline(BaselineVersion version) throws Exception {
         for(String path : version.tiffFilePaths().values()) {
@@ -38,24 +34,18 @@ public class Baseline {
         this.version = version;
     }
 
-    public static GridCoverage2D readTiff(String path) throws IOException {
-        File file = new File(path);
-        return GridFormatFinder.findFormat(file)
-                .getReader(file, g2h).read(null);
-    }
-
     // WIP
-    public void collectComponents(SymphonyBand[] ecoBands, SymphonyBand[] pressureBands) throws Exception {
+    public void collectComponents(SymphonyBand[] ecoBands, SymphonyBand[] pressureBands) {
         SymphonyBand[][] bands = new SymphonyBand[][]{ ecoBands, pressureBands };
 
         for (Map.Entry<SymphonyCategory, String> pathEntry : version.tiffFilePaths().entrySet()) {
             SymphonyCategory category = pathEntry.getKey();
             int cOrdinal = category.ordinal();
+            int bandCount = countBands(pathEntry.getValue());
 
-            GridCoverage2D coverage = readTiff(pathEntry.getValue());
-            bandsCount.put(category, coverage.getSampleDimensions().length);
+            bandsCount.put(category, bandCount);
 
-            metaIncomplete |= bands[cOrdinal].length < coverage.getSampleDimensions().length;
+            metaIncomplete |= bands[cOrdinal].length < bandCount;
 
             for (int ci = 0; ci < bands[cOrdinal].length; ++ci) {
                 SymphonyBand band = bands[cOrdinal][ci];

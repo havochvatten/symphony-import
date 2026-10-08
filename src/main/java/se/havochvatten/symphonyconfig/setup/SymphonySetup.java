@@ -3,8 +3,11 @@ package se.havochvatten.symphonyconfig.setup;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.commons.cli.*;
 import org.apache.commons.cli.help.HelpFormatter;
+import org.apache.commons.imaging.Imaging;
+import org.apache.commons.imaging.common.ImageMetadata;
+import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
+import org.apache.commons.imaging.formats.tiff.constants.GeoTiffTagConstants;
 import org.apache.commons.lang3.ArrayUtils;
-import org.geotools.gce.geotiff.GeoTiffFormat;
 import se.havochvatten.symphonyconfig.setup.config.*;
 import se.havochvatten.symphonyconfig.setup.database.ClearScope;
 import se.havochvatten.symphonyconfig.setup.database.DbInterface;
@@ -28,7 +31,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.geotools.coverage.grid.io.GridFormatFinder.findFormat;
 import static se.havochvatten.symphonyconfig.setup.ConfirmImport.*;
 import static se.havochvatten.symphonyconfig.setup.SymphonySetupOptionBuilder.newOption;
 import static se.havochvatten.symphonyconfig.setup.SymphonySetupVersion.*;
@@ -926,8 +928,26 @@ public class SymphonySetup {
             throw new ParseException(String.format("%s raster file not readable: %s", type, path));
         }
 
-        if (!(findFormat(new File(path)) instanceof GeoTiffFormat)) {
+        if (!isGeoTiff(new File(path))) {
             throw new ParseException(String.format("File is not a valid GeoTiff raster: %s", path));
+        }
+    }
+
+    private static boolean isGeoTiff(File file) {
+        try {
+            ImageMetadata metadata = Imaging.getMetadata(file);
+            if (!(metadata instanceof TiffImageMetadata)) {
+                return false;
+            }
+
+            // Requirement 1.2 in the official GeoTIFF specification demands that
+            // the GeoKeyDirectoryTag (34735) be present
+            // https://docs.ogc.org/is/19-008r4/19-008r4.html
+            return ((TiffImageMetadata) metadata)
+                .findField(GeoTiffTagConstants.EXIF_TAG_GEO_KEY_DIRECTORY_TAG) != null;
+
+        } catch (Exception e) {
+            return false;
         }
     }
 
