@@ -192,6 +192,7 @@
             </inlineDescriptor>
           </inlineDescriptors>
           <appendAssemblyId>false</appendAssemblyId>
+          <finalName>dist/${project.build.finalName}</finalName>
           <attach>false</attach>
         </configuration>
       </plugin>
