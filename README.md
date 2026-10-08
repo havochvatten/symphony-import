@@ -27,11 +27,11 @@ Below is the output of invoking the tool with the `-h` (usage) option, reflowed 
 
 ```
 usage:  symphony-setup-tool [-bv <arg>] [-bvD <arg>] [-bvL <arg>] [-bvN <arg>] [-bvpE <arg>]
-[-bvpP <arg>] [-bvT <arg>] [-bvV <arg>] [-caD <arg>] [-caDA] [-caF <arg>] [-caP <arg>]
-[-csvN <arg>] [-csvS <arg>] [-db <arg>] [-dbH <arg>] [-dbP <arg>] [-dbPt <arg>] [-dbS <arg>]
-[-dbU <arg>] [-envDb <arg>] [-envDbH <arg>] [-envDbP <arg>] [-envDbU <arg>] [-f <arg>] [-h]
-[-md <arg>] [-mdL <arg>] [-mx <arg>] [-mxL <arg>] [-mxN <arg>] [-n] [-na <arg>] [-naC <arg>]
-[-naP <arg>] [-s] [-u <arg>] [-v]
+[-bvpP <arg>] [-bvT <arg>] [-bvV <arg>] [-caD <arg>] [-caDA] [-caDec <arg>] [-caF <arg>]
+[-caP <arg>] [-csvN <arg>] [-csvS <arg>] [-db <arg>] [-dbH <arg>] [-dbP <arg>] [-dbPt <arg>]
+[-dbS <arg>] [-dbU <arg>] [-envDb <arg>] [-envDbH <arg>] [-envDbP <arg>] [-envDbU <arg>]
+[-f <arg>] [-h] [-md <arg>] [-mdL <arg>] [-mx <arg>] [-mxL <arg>] [-mxN <arg>] [-n]
+[-na <arg>] [-naC <arg>] [-naP <arg>] [-s] [-u <arg>] [-v]
 
 Command-line utility to manage baseline data for instances of the software
 package MSP-Symphony
@@ -154,6 +154,9 @@ package MSP-Symphony
                                                     in the GeoPackage file slated for import by the  
                                                     '-caF' option as default for the target 
                                                     baseline.  
+-caDec, --calcAreaDecimals <arg>         v1.1       Decimals to keep on the coordinates of
+                                                    calculation area polygons, from 1 to 15.
+                                                    The default is 7 (about 1 cm).
 -csvS, --delimiter <arg>                 v1.0       Column delimiter character for CSV files.
                                                     Defaults to ';', the Symphony convention.
 -csvN, --newline <arg>                   v1.0       Row delimiter for CSV files. Set to
@@ -204,6 +207,7 @@ Metadata files can be provided as CSV or XLSX (Microsoft Excel).
 Rows should correspond to specific bands in the GeoTIFF raster files. 
 One language is expected per file (specified by the `-mdL`/`--metadataLang` input parameter).  
 Any key value (column header) may be supplied, as long as it conforms to the regular expression `^[a-zA-Z_][a-zA-Z0-9_]*$` in order to be reliably serializable.  
+An empty cell means "no value" for that band: nothing is stored for it. The exception is **symphonytheme**: when that column is present, a band with an empty cell fails the import. Note that in CSV files a backslash is an escape character (`\n` becomes a line break); write `\\` for a literal backslash.  
 
 The following columns are mandatory for the procedure and MUST be present in the input table:  
 **bandnumber**  
@@ -243,10 +247,15 @@ A valid sensitivity score must be present in each cell in the table body as a re
 ### Calculation areas
 Calculation areas should be provided as a [GeoPackage](www.geopackage.org) file containing the area polygons that are to be coupled to the baseline. All polygons should define two attributes, a 'name' attribute (either indicated by the `-caP`/`--calcAreaNameProperty` or defaulting to "name") and the 'matrixName' which will be used to determine (by 'name' - ie value of `sensitivitymatrix.sensm_name` column) which sensitivity matrix that calculations for spatial extents inside the specified area polygon will apply, by default.
 
-Additionally, calculation area polygons may define two optional properties: 'areaType' and 'addMatrices'. If given, 'areaType' must be an integer value specifying a corresponding "area type" id (`areatype.atype_id` in the database) for the calculation area.  
+Additionally, calculation area polygons may define three optional properties: 'areaType', 'addMatrices' and 'maxValue'. If given, 'areaType' must be an integer value specifying a corresponding "area type" id (`areatype.atype_id` in the database) for the calculation area.  
 Please note that "area types" _can not_ presently be imported using this tool (see [Limitations](#limitations)).
 
 The attribute 'addMatrices' is expected to specify one or more comma separated sensitivity matrix names. These will be coupled and available for use with calculations contained in the corresponding polygon.
+
+The attribute 'maxValue' sets the area's calibration value (`calculationarea.carea_maxvalue`), the constant MSP-Symphony uses for "domain" normalization of calculation results. It must be a number greater than 0, with '.' as decimal separator. Any other value fails the calculation area import, naming the offending areas, before any area is written. Areas without the attribute (or with a NULL value) are imported without a calibration value.  
+The value is normally obtained by calibrating an installed baseline version, so the attribute is mostly useful when re-importing areas or installing a baseline whose calibration value is already known.
+
+Calculation area coordinates are stored with 7 decimals by default, about 1 cm, which is well below the cell size of a baseline raster. Use `-caDec`/`--calcAreaDecimals` (or `decimals` in a configuration file) to keep from 1 to 15 decimals instead. Fewer decimals give smaller polygons for the GUI to load. National area polygons are stored exactly as given.
 
 
 ### National areas / Boundary polygon

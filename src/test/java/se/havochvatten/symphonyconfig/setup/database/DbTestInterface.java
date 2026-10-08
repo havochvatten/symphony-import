@@ -1,5 +1,6 @@
 package se.havochvatten.symphonyconfig.setup.database;
 
+import org.apache.commons.dbutils.handlers.ArrayListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.io.IOUtils;
 
@@ -10,6 +11,9 @@ import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static se.havochvatten.symphonyconfig.TestBase.*;
@@ -301,6 +305,97 @@ public class DbTestInterface extends DbInterface {
                 + "WHERE m.sensm_bver_id = ? AND ca.carea_name = ?", schema),
             new ScalarHandler<Boolean>(), bvId, careaName);
         return Boolean.TRUE.equals(isDefault);
+    }
+
+    /**
+     * Counts polygons of the calculation areas on the given baseline's matrices whose pg_polygon is
+     * missing, has the wrong SRID, or does not describe the same shape as the cap_polygon GeoJSON.
+     * MSP-Symphony intersects scenario areas against pg_polygon, so any such polygon is invisible to it.
+     */
+    public int countCalculationAreaPolygonsWithoutGeometry(int bvId) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %1$s.capolygon cap "
+                + "JOIN %1$s.calculationarea ca ON ca.carea_id = cap.cap_carea_id "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE m.sensm_bver_id = ? AND (cap.pg_polygon IS NULL "
+                + "OR public.ST_SRID(cap.pg_polygon) <> 4326 "
+                + "OR NOT public.ST_Equals(cap.pg_polygon, "
+                + "public.ST_Multi(public.ST_GeomFromGeoJSON(cap.cap_polygon))))", schema),
+            longHandler, bvId);
+        return n == null ? 0 : n.intValue();
+    }
+
+    /**
+     * Largest distance, in degrees, between the given WKT geometry and the stored polygon of the named
+     * calculation area on the given baseline's matrices, taking the worse of cap_polygon and pg_polygon.
+     */
+    public double calculationAreaDistanceFromSource(int bvId, String careaName, String wkt) throws SQLException {
+        Double distance = query(String.format(
+            "SELECT greatest("
+                + "public.ST_HausdorffDistance(public.ST_GeomFromGeoJSON(cap.cap_polygon), source.geom), "
+                + "public.ST_HausdorffDistance(cap.pg_polygon, source.geom)) "
+                + "FROM %1$s.capolygon cap "
+                + "JOIN %1$s.calculationarea ca ON ca.carea_id = cap.cap_carea_id "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "CROSS JOIN (SELECT public.ST_GeomFromText(?, 4326) AS geom) source "
+                + "WHERE m.sensm_bver_id = ? AND ca.carea_name = ?", schema),
+            new ScalarHandler<Double>(), wkt, bvId, careaName);
+
+        if (distance == null) {
+            throw new IllegalStateException("No stored polygon for calculation area '" + careaName + "'");
+        }
+        return distance;
+    }
+
+    /** Most decimals on any coordinate of the stored cap_polygon GeoJSON of the named calculation area. */
+    public int calculationAreaPolygonDecimals(int bvId, String careaName) throws SQLException {
+        String geoJson = query(String.format(
+            "SELECT cap.cap_polygon FROM %1$s.capolygon cap "
+                + "JOIN %1$s.calculationarea ca ON ca.carea_id = cap.cap_carea_id "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE m.sensm_bver_id = ? AND ca.carea_name = ?", schema),
+            new ScalarHandler<String>(), bvId, careaName);
+
+        if (geoJson == null) {
+            throw new IllegalStateException("No stored polygon for calculation area '" + careaName + "'");
+        }
+        Matcher decimals = Pattern.compile("\\d\\.(\\d+)").matcher(geoJson);
+        int most = 0;
+        while (decimals.find()) {
+            most = Math.max(most, decimals.group(1).length());
+        }
+        return most;
+    }
+
+    /** Stored meta values for one field of one band; bandNumber is 1-based, as in the input files. */
+    public int countBandMetaValues(int bvId, String category, int bandNumber, String field) throws SQLException {
+        Long n = query(String.format(
+            "SELECT count(*) FROM %1$s.meta_values mv "
+                + "JOIN %1$s.meta_bands mb ON mb.metaband_id = mv.metaval_band_id "
+                + "WHERE mb.metaband_bver_id = ? AND mb.metaband_category = ? "
+                + "AND mb.metaband_number = ? AND mv.metaval_field = ?", schema),
+            longHandler, bvId, category, bandNumber - 1, field);
+        return n == null ? 0 : n.intValue();
+    }
+
+    /**
+     * carea_maxvalue of the named calculation area on the given baseline's matrices. Throws when the
+     * area does not exist exactly once, so a null return always means "stored as NULL".
+     */
+    public Double getCalculationAreaMaxValue(int bvId, String careaName) throws SQLException {
+        List<Object[]> rows = query(String.format(
+            "SELECT ca.carea_maxvalue FROM %1$s.calculationarea ca "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE m.sensm_bver_id = ? AND ca.carea_name = ?", schema),
+            new ArrayListHandler(), bvId, careaName);
+
+        if (rows.size() != 1) {
+            throw new IllegalStateException(String.format(
+                "Expected one calculation area named '%s' on baseline version %d, found %d",
+                careaName, bvId, rows.size()));
+        }
+
+        return (Double) rows.get(0)[0];
     }
 
     public void cleanCalculationAreas(int bvId) {

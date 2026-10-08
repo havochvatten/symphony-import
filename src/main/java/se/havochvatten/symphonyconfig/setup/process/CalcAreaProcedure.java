@@ -20,6 +20,7 @@ public class CalcAreaProcedure extends ImportProcedure<CalcAreaImportSettings> {
     private static final String DEFAULT_MX_PROPERTY = "matrixName";
     private static final String ADDITIONAL_MX_PROPERTY = "addMatrices";
     private static final String AREA_TYPE_PROPERTY = "areaType";
+    private static final String MAX_VALUE_PROPERTY = "maxValue";
 
     public record AreaMatrixTuple(CalculationArea area, List<Integer> matrixIds){}
 
@@ -52,6 +53,7 @@ public class CalcAreaProcedure extends ImportProcedure<CalcAreaImportSettings> {
     public boolean collect() {
         Set<Integer> invalidAreaTypes = new HashSet<>();
         Set<String> invalidMatrixNames = new HashSet<>();
+        List<String> invalidMaxValues = new ArrayList<>();
         List<AreaMatrixTuple> calcAreasList = new ArrayList<>();
 
         try (GeoPackage geoPackage = new GeoPackage(new File(settings.inputFilePath))) {
@@ -112,6 +114,20 @@ public class CalcAreaProcedure extends ImportProcedure<CalcAreaImportSettings> {
                         }
                     }
 
+                    Property maxValueProperty = feature.getProperty(MAX_VALUE_PROPERTY);
+
+                    if (maxValueProperty != null && maxValueProperty.getValue() != null) {
+                        String rawMaxValue = maxValueProperty.getValue().toString();
+                        Double maxValue = parseMaxValue(rawMaxValue);
+
+                        if (maxValue != null) {
+                            calculationArea.setMaxValue(maxValue);
+                        } else {
+                            invalidMaxValues.add(
+                                String.format("%s ('%s')", calculationArea.getAreaName(), rawMaxValue));
+                        }
+                    }
+
                     calcAreasList.add(new AreaMatrixTuple(calculationArea, additionalMatrixIds));
                 }
 
@@ -131,6 +147,13 @@ public class CalcAreaProcedure extends ImportProcedure<CalcAreaImportSettings> {
                 String.join(", ", invalidAreaTypes.stream().map(String::valueOf).toList())));
         }
 
+        if (!invalidMaxValues.isEmpty()) {
+            validationErrors.add(String.format(
+                "Unusable '%s' on calculation area(s): %s. The value must be a number greater than 0, " +
+                "with '.' as decimal separator. Set the attribute to NULL for an area without a calibration value.",
+                MAX_VALUE_PROPERTY, String.join(", ", invalidMaxValues)));
+        }
+
         return validationErrors.isEmpty();
     }
 
@@ -145,5 +168,20 @@ public class CalcAreaProcedure extends ImportProcedure<CalcAreaImportSettings> {
                 "";
 
         return confirmPendingImport(notice.isEmpty() ? null : notice);
+    }
+
+    /**
+     * Parses a calibration value. MSP-Symphony treats a missing value as 0, so only a finite number
+     * above 0 is a usable calibration.
+     *
+     * @return the value, or null when the input is not a finite number greater than 0
+     */
+    private static Double parseMaxValue(String raw) {
+        try {
+            double value = Double.parseDouble(raw.trim());
+            return Double.isFinite(value) && value > 0 ? value : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }

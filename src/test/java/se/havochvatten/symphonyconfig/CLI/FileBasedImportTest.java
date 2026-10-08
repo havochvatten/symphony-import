@@ -22,9 +22,29 @@ public class FileBasedImportTest extends CliTestBase {
 
     private static final String MINIMAL_CONFIG_PATH = "src/test/resources/import/baseline-minimal.yaml";
     private static final String NATIONAL_AREAS_CONFIG_PATH = "src/test/resources/import/national-areas-import.yaml";
+    private static final String MAXVALUE_CONFIG_PATH = "src/test/resources/import/baseline-import-maxvalue.yaml";
 
     public FileBasedImportTest() {
         super(false);
+    }
+
+    @Test
+    void importNewBaselineWithCalibratedCalculationArea() throws Exception {
+        String[] args = testCaseArgs("-f", MAXVALUE_CONFIG_PATH);
+
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(args);
+            assertFalse(setup.hasFailed(), displaceErr.toString());
+        }, "y", "y", "y", "y", "y");  // 5 confirmations: baseline, 2 metadata, matrix, calc areas
+
+        Integer bvId = getDbInterface().baselineVersionIdByName(TEST_BASELINE_NAME);
+        assertNotNull(bvId, "Baseline version should be created");
+        this.bvId = bvId;  // lets TestBase.tearDown remove the baseline and its areas
+
+        assertEquals(3098.8, getDbInterface().getCalculationAreaMaxValue(bvId, "test-calc-area-calibrated"));
+        assertNull(getDbInterface().getCalculationAreaMaxValue(bvId, "test-calc-area-uncalibrated"));
+        assertTrue(getDbInterface().isCalculationAreaDefault(bvId, "test-calc-area-calibrated"));
+        assertEquals(0, getDbInterface().countCalculationAreaPolygonsWithoutGeometry(bvId));
     }
 
     @Test

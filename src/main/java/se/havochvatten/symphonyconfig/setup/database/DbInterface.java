@@ -47,8 +47,6 @@ public class DbInterface {
     // assuming integer id is present in first column
     public static final ColumnListHandler<Integer> idListHandler = new ColumnListHandler<>();
 
-    static final GeometryJSON json = new GeometryJSON();
-
     protected Connection getConnection() throws SQLException {
         if (activeConnection == null || activeConnection.isClosed()) {
             String connectionString = "jdbc:postgresql://" + host + ":" + port + "/" + database;
@@ -641,7 +639,10 @@ public class DbInterface {
     }
 
     public void importCalculationAreas(CalcAreaProcedure.AreaMatrixTuple[] calcAreaMatrixTuples,
-                                       int bvId, boolean clear) throws SQLException, ParseException {
+                                       int bvId, boolean clear, int decimals) throws SQLException, ParseException {
+        // GeometryJSON rounds every coordinate to this many decimals
+        GeometryJSON json = new GeometryJSON(decimals);
+
         // The loop below throws when an area names a matrix that does not exist on this
         // baseline, which is reachable with entirely valid input, so the clear that precedes
         // it must be undone rather than left committed.
@@ -665,7 +666,7 @@ public class DbInterface {
 
                 Integer lastPolyId = qr.insert(conn,
                     CalculationArea.calcAreaInsert(schema, json.toString(ca.getPolygon())), idHandler,
-                        ca.getAreaName(), matrixId, ca.isDefault(), ca.getAreaType());
+                        ca.getAreaName(), matrixId, ca.isDefault(), ca.getAreaType(), ca.getMaxValue());
 
                 // 'extra' 'round trip' to get the area ID, seems unavoidable
                 Integer areaId = qr.query(conn,

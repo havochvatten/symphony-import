@@ -6,6 +6,9 @@ import java.util.Set;
 
 public class CalcAreaImportSettings extends SettingsBase {
 
+    /** Decimals kept on polygon coordinates. 7 is about 1 cm, well below a baseline raster cell. */
+    public static final int DEFAULT_DECIMALS = 7, MIN_DECIMALS = 1, MAX_DECIMALS = 15;
+
     public final boolean noDefaultArea() {
         return !allDefault && defaultAreaNames.isEmpty();
     }

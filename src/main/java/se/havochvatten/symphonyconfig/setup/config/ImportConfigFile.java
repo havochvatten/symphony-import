@@ -139,6 +139,7 @@ public class ImportConfigFile {
         private String nameProperty;
         private Boolean allDefault;
         private List<String> defaultAreas;
+        private Integer decimals;
 
         public String getFile() { return file; }
         public void setFile(String file) { this.file = file; }
@@ -151,6 +152,9 @@ public class ImportConfigFile {
 
         public List<String> getDefaultAreas() { return defaultAreas; }
         public void setDefaultAreas(List<String> defaultAreas) { this.defaultAreas = defaultAreas; }
+
+        public Integer getDecimals() { return decimals; }
+        public void setDecimals(Integer decimals) { this.decimals = decimals; }
     }
 
     public static class NationalAreaConfig {
@@ -352,6 +356,14 @@ public class ImportConfigFile {
                 throw new ParseException(
                     "'calculationAreas.allDefault' and 'calculationAreas.defaultAreas' are "
                         + "mutually exclusive. Provide one or the other.");
+            }
+
+            Integer decimals = calculationAreas.getDecimals();
+            if (decimals != null && (decimals < CalcAreaImportSettings.MIN_DECIMALS
+                                     || decimals > CalcAreaImportSettings.MAX_DECIMALS)) {
+                throw new ParseException(String.format(
+                    "'calculationAreas.decimals' must be a whole number from %d to %d.",
+                    CalcAreaImportSettings.MIN_DECIMALS, CalcAreaImportSettings.MAX_DECIMALS));
             }
         }
     }

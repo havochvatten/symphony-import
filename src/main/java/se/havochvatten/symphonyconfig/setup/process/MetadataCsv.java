@@ -4,7 +4,6 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.csv.CSVRecord;
 import se.havochvatten.symphonyconfig.setup.config.CSVSettings;
 import se.havochvatten.symphonyconfig.setup.config.MetadataImportSettings;
-import se.havochvatten.symphonyconfig.setup.model.MetaValue;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyBand;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyCategory;
 
@@ -63,8 +62,10 @@ public class MetadataCsv extends MetadataBase {
                             field.equals(DEFAULT_SELECTED) ||
                             field.equals(SYMPHONY_CATEGORY)) continue;
 
-                        band.setMetaValue(settings.language,
-                             new MetaValue(field, csvBand.get(field), settings.language));
+                        setMetaValueUnlessEmpty(band, field, csvBand.get(field));
+                    }
+                    if (allFields.contains(SYMPHONY_THEME)) {
+                        checkTheme(c, bandNumber, csvBand.get(SYMPHONY_THEME));
                     }
 
                     bands.get(c).add(band);
@@ -75,6 +76,6 @@ public class MetadataCsv extends MetadataBase {
             validationErrors.add("Error reading input metadata file: " + this.settings.inputFilePath);
             return false;
         }
-        return true;
+        return validateThemes();
     }
 }

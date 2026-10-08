@@ -190,6 +190,11 @@ public class SymphonySetup {
                calcAreaAllDefaultOption     = newOption("caDA", "calcAreaAllDefault", false,
                    "Specify to set all calculation areas present in the GeoPackage file slated for import by the "+
                            "'-caF' option as default for the target baseline.", v1_0),
+               calcAreaDecimalsOption       = newOption("caDec", "calcAreaDecimals", true,
+                   String.format("Decimals to keep on the coordinates of calculation area polygons, from %d to %d.\n" +
+                           "The default is %d (about 1 cm).",
+                       CalcAreaImportSettings.MIN_DECIMALS, CalcAreaImportSettings.MAX_DECIMALS,
+                       CalcAreaImportSettings.DEFAULT_DECIMALS), v1_1),
 
                csvDelimOption    = newOption("csvS", "delimiter", true, "Column delimiter character for CSV files. Defaults to ';', the Symphony convention.", v1_0),
                csvNewLineOption  = newOption("csvN", "newline", true, "Row delimiter for CSV files. Set to 'windows' for CRLF input; omitted or any other value means LF.", v1_0),
@@ -252,6 +257,7 @@ public class SymphonySetup {
 
         options.addOption(calcAreaPackageOption); options.addOption(calcAreaNamePropertyOption);
         options.addOption(calcAreaDefaultOption); options.addOption(calcAreaAllDefaultOption);
+        options.addOption(calcAreaDecimalsOption);
 
         options.addOption(csvDelimOption); options.addOption(csvNewLineOption);
 
@@ -283,6 +289,22 @@ public class SymphonySetup {
     }
 
     public UpdateMode updateMode = UpdateMode.UPDATE;
+    private int calcAreaDecimals = CalcAreaImportSettings.DEFAULT_DECIMALS;
+
+    private int parseCalcAreaDecimals() throws ParseException {
+        if (!setupCmd.hasOption("caDec")) {
+            return CalcAreaImportSettings.DEFAULT_DECIMALS;
+        }
+        String value = setupCmd.getOptionValue("caDec");
+        Integer decimals = Util.tryParseInt(value);
+        if (decimals == null
+            || decimals < CalcAreaImportSettings.MIN_DECIMALS || decimals > CalcAreaImportSettings.MAX_DECIMALS) {
+            throw new ParseException(String.format(
+                "--calcAreaDecimals (-caDec) must be a whole number from %d to %d, not '%s'.",
+                CalcAreaImportSettings.MIN_DECIMALS, CalcAreaImportSettings.MAX_DECIMALS, value));
+        }
+        return decimals;
+    }
     public boolean clear() { return updateMode == UpdateMode.REPLACE; }
 
     public boolean metadataImportInvoked() {
@@ -453,6 +475,9 @@ public class SymphonySetup {
                         "Either 'u' or 'n' options can be used, " +
                         "but not both.");
                 }
+
+                // Before anything is written, so that a bad value does not leave a partial import
+                calcAreaDecimals = parseCalcAreaDecimals();
 
                 if (setupCmd.hasOption("u")) {
                     setBaselineVersion();
@@ -868,6 +893,8 @@ public class SymphonySetup {
         boolean allDefault = caConfig.getAllDefault() != null && caConfig.getAllDefault();
         String[] defaultAreas = caConfig.getDefaultAreas() != null ?
             caConfig.getDefaultAreas().toArray(new String[0]) : null;
+        int decimals = caConfig.getDecimals() != null ?
+            caConfig.getDecimals() : CalcAreaImportSettings.DEFAULT_DECIMALS;
 
         CalcAreaProcedure calcAreaProcedure = new CalcAreaProcedure(
             new CalcAreaImportSettings(
@@ -882,7 +909,7 @@ public class SymphonySetup {
         );
 
         if (calcAreaProcedure.confirmImport()) {
-            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId(), clear());
+            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId(), clear(), decimals);
         } else {
             throw new ParseException("Calculation area import aborted interactively.");
         }
@@ -1125,7 +1152,8 @@ public class SymphonySetup {
             );
 
         if (calcAreaProcedure.confirmImport()) {
-            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId(), clear());
+            db.importCalculationAreas(calcAreaProcedure.areaTuples, selectedBaselineVersion.getId(), clear(),
+                calcAreaDecimals);
         } else {
             throw new ParseException("Calculation area import aborted interactively.");
         }

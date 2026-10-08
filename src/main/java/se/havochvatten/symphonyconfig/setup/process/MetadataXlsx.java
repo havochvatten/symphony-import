@@ -7,7 +7,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import se.havochvatten.symphonyconfig.setup.config.MetadataImportSettings;
-import se.havochvatten.symphonyconfig.setup.model.MetaValue;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyBand;
 import se.havochvatten.symphonyconfig.setup.model.SymphonyCategory;
 
@@ -100,8 +99,10 @@ public class MetadataXlsx extends MetadataBase {
                         if (field.equals(BANDNUMBER) ||
                             field.equals(DEFAULT_SELECTED) ||
                             field.equals(SYMPHONY_CATEGORY)) continue;
-                        band.setMetaValue(settings.language,
-                                          new MetaValue(field, cellValue(row, field), settings.language));
+                        setMetaValueUnlessEmpty(band, field, cellValue(row, field));
+                    }
+                    if (fieldsToColumns.containsKey(SYMPHONY_THEME)) {
+                        checkTheme(c, bandNumber, cellValue(row, SYMPHONY_THEME));
                     }
 
                     bands.get(c).add(band);
@@ -114,6 +115,6 @@ public class MetadataXlsx extends MetadataBase {
         } catch (Exception e) {
             throw new RuntimeException("Error reading input file.", e);
         }
-        return true;
+        return validateThemes();
     }
 }

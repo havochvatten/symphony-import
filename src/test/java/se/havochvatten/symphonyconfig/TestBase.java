@@ -23,12 +23,17 @@ public abstract class TestBase {
     protected static final String csvMetaFilePartialSV    = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.csv";
     protected static final String csvMetaFileCompleteSV   = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.csv";
     protected static final String csvMetaFileCompleteEN   = RESOURCES_PATH + "import/metadata-wellformed-complete-en.csv";
+    protected static final String csvMetaFileEmptyCellsEN = RESOURCES_PATH + "import/metadata-wellformed-empty-cells-en.csv";
+    protected static final String xlsxMetaFileEmptyCellsEN = RESOURCES_PATH + "import/metadata-wellformed-empty-cells-en.xlsx";
 
     protected static final String excelMetaFilePartial        = RESOURCES_PATH + "import/metadata-wellformed-partial-sv.xlsx";
     protected static final String excelMetaFileCompleteSV     = RESOURCES_PATH + "import/metadata-wellformed-complete-sv.xlsx";
 
     protected static final String csvMetaFileFaulty1      = RESOURCES_PATH + "import/metadata-faulty_bandnumber.csv";
     protected static final String xlsxMetaFileFaulty1     = RESOURCES_PATH + "import/metadata-faulty_bandnumber.xlsx";
+    protected static final String csvMetaFileEmptyTheme   = RESOURCES_PATH + "import/metadata-faulty_empty-theme.csv";
+    protected static final String xlsxMetaFileEmptyTheme  = RESOURCES_PATH + "import/metadata-faulty_empty-theme.xlsx";
+    protected static final String csvMetaFileNoThemeEN    = RESOURCES_PATH + "import/metadata-wellformed-no-theme-en.csv";
 
     protected static final String xlsxMetaFilePartialEcoSV =      RESOURCES_PATH + "import/metadata-wellformed-partial-Eco-sv.xlsx";
     protected static final String csvMetaFilePartialPressureSV =  RESOURCES_PATH + "import/metadata-wellformed-partial-Pressure-sv.csv";
@@ -41,6 +46,8 @@ public abstract class TestBase {
     protected static final String nationalAreaSelectable =  RESOURCES_PATH + "import/national-area/test-national-selectable.json";
 
     protected static final String calculationAreaPackage = RESOURCES_PATH + "import/calcarea-package.gpkg";
+    protected static final String calculationAreaPackageMaxValue = RESOURCES_PATH + "import/calcarea-package-maxvalue.gpkg";
+    protected static final String calculationAreaPackageMaxValueFaulty = RESOURCES_PATH + "import/calcarea-package-maxvalue-faulty.gpkg";
 
     public static final String TEST_TIFF_E_PATH = absoluteResourcePath("/baseline/symphony-import-test-BaselineE.tiff");
     public static final String TEST_TIFF_P_PATH = absoluteResourcePath("/baseline/symphony-import-test-BaselineP.tiff");

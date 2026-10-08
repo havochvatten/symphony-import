@@ -7,14 +7,19 @@ import se.havochvatten.symphonyconfig.setup.config.CalcAreaImportSettings;
 import se.havochvatten.symphonyconfig.setup.process.CalcAreaProcedure;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import se.havochvatten.symphonyconfig.setup.database.DbInterface;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static se.havochvatten.symphonyconfig.setup.database.DbInterface.idHandler;
 
@@ -62,6 +67,12 @@ class ImportCalculationAreasTest extends CliTestBase {
                             getCalculationAreaByNameQueryStr(dbSchema), idHandler, areaTuple.area().getAreaName());
                     assertNotNull(carea);
                 }
+
+                assertTrue(getDbInterface().countCalculationAreaPolygons(bvId) > 0,
+                    "The import should have written calculation area polygons");
+                assertEquals(0, getDbInterface().countCalculationAreaPolygonsWithoutGeometry(bvId),
+                    "Every imported polygon needs a pg_polygon matching its GeoJSON: "
+                        + "MSP-Symphony intersects scenario areas against that column");
             }, "y");
         } catch (SQLException sqlx) {
             fail(sqlx.getMessage());
@@ -101,6 +112,105 @@ class ImportCalculationAreasTest extends CliTestBase {
             if (otherBvId != 0) {
                 getDbInterface().cleanBaselineVersion(otherBvId);
             }
+        }
+    }
+
+    @Test
+    void importStoresMaxValueAndLeavesAbsentValueNull() throws Exception {
+        getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+
+        String[] args = testCaseArgs("-u", "-bv", String.valueOf(bvId),
+            "-caF", calculationAreaPackageMaxValue, "-caD", "test-calc-area-calibrated");
+
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(args);
+            assertFalse(setup.hasFailed(), displaceErr.toString());
+        }, "y");
+
+        assertEquals(3098.8, getDbInterface().getCalculationAreaMaxValue(bvId, "test-calc-area-calibrated"));
+        assertNull(getDbInterface().getCalculationAreaMaxValue(bvId, "test-calc-area-uncalibrated"),
+            "An area without the attribute must stay uncalibrated, not get 0 or a neighbour's value");
+        // This fixture is MultiPolygon-typed; testImportDefaultCalculationAreas covers the Polygon-typed package
+        assertEquals(0, getDbInterface().countCalculationAreaPolygonsWithoutGeometry(bvId));
+    }
+
+    @Test
+    void importRejectsUnusableMaxValuesAndWritesNoArea() throws Exception {
+        getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+
+        String[] args = testCaseArgs("-u", "-bv", String.valueOf(bvId),
+            "-caF", calculationAreaPackageMaxValueFaulty, "-caDA");
+
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(args);
+            assertTrue(setup.hasFailed(), "An unusable maxValue must fail the import");
+        }, "y");
+
+        String errorOutput = displaceErr.toString();
+        assertTrue(errorOutput.contains("maxValue"), errorOutput);
+        // Text, decimal comma, zero, negative and blank: each must be named, none silently read
+        for (String area : List.of("test-calc-area-text", "test-calc-area-comma", "test-calc-area-zero",
+                                   "test-calc-area-negative", "test-calc-area-blank")) {
+            assertTrue(errorOutput.contains(area), "The error should name '" + area + "': " + errorOutput);
+        }
+        assertEquals(0, getDbInterface().countCoupledCalculationAreas(bvId),
+            "No calculation area may be written when any maxValue is unusable");
+    }
+
+    @Test
+    void importRoundsPolygonCoordinatesToSevenDecimalsByDefault() throws Exception {
+        assertImportedAtPrecision(7);
+    }
+
+    @Test
+    void calcAreaDecimalsOptionSetsTheCoordinatePrecision() throws Exception {
+        assertImportedAtPrecision(5, "-caDec", "5");
+    }
+
+    private void assertImportedAtPrecision(int decimals, String... extraArgs) throws Exception {
+        getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+
+        List<String> argList = new ArrayList<>(List.of("-u", "-bv", String.valueOf(bvId),
+            "-caF", calculationAreaPackage, "-caDA"));
+        argList.addAll(List.of(extraArgs));
+        String[] args = testCaseArgs(argList.toArray(new String[0]));
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(args);
+            assertFalse(setup.hasFailed(), displaceErr.toString());
+        }, "y");
+
+        CalcAreaProcedure source = new CalcAreaProcedure(
+            new CalcAreaImportSettings(null, calculationAreaPackage, "name", false, null, Set.of(), Map.of()));
+
+        for (CalcAreaProcedure.AreaMatrixTuple tuple : source.areaTuples) {
+            String area = tuple.area().getAreaName();
+            // The fixture's coordinates have 13 decimals, so the stored ones are cut to exactly this many
+            assertEquals(decimals, getDbInterface().calculationAreaPolygonDecimals(bvId, area));
+            // Rounding moves a vertex by at most half a unit in the last decimal on each axis
+            double distance = getDbInterface()
+                .calculationAreaDistanceFromSource(bvId, area, tuple.area().getPolygon().toText());
+            assertTrue(distance < Math.pow(10, -decimals),
+                area + " is stored " + distance + " degrees away from the GeoPackage polygon");
+        }
+    }
+
+    @Test
+    void calcAreaDecimalsOutsideTheRangeFailTheImport() throws Exception {
+        getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+
+        for (String value : List.of("0", "16", "seven")) {
+            displaceErr.reset();
+            String[] args = testCaseArgs("-u", "-bv", String.valueOf(bvId),
+                "-caF", calculationAreaPackage, "-caDA", "-caDec", value);
+
+            queueInteraction(() -> {
+                SymphonySetup setup = new SymphonySetup(args);
+                assertTrue(setup.hasFailed(), "-caDec " + value + " must fail the import");
+            }, "y");
+
+            assertTrue(displaceErr.toString().contains("calcAreaDecimals"), displaceErr.toString());
+            assertEquals(0, getDbInterface().countCoupledCalculationAreas(bvId),
+                "No calculation area may be written with -caDec " + value);
         }
     }
 
