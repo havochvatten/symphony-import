@@ -1,5 +1,6 @@
 package se.havochvatten.symphonyconfig.setup.config;
 
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.imaging.ImageInfo;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.common.ImageMetadata;
@@ -30,7 +31,7 @@ public abstract class BandsBasedSettingsBase extends TextualSettingsBase {
         pressureBandsCount = countBands(baselineVersion.getPressureFilePath());
     }
 
-    public static int countBands(String path) {
+    public static int countBands(String path) throws ParseException {
             try {
                 File tiffFile = Path.of(path).toFile();
                 ImageMetadata metadata = Imaging.getMetadata(tiffFile);
@@ -42,10 +43,10 @@ public abstract class BandsBasedSettingsBase extends TextualSettingsBase {
                         return samplesPerPixelField.getIntValue();
                     }
                 }
-
-                throw new RuntimeException("Invalid GeoTIFF metadata");
+                throw new ParseException("Invalid GeoTIFF metadata");
             } catch (IOException e) {
-                throw new RuntimeException("Fatal error: failed to read tiff file");
+                // Logically unreachable
+                throw new ParseException("Fatal error: failed to read GeoTIFF file");
             }
     }
 }

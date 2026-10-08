@@ -35,7 +35,7 @@ public class Baseline {
     }
 
     // WIP
-    public void collectComponents(SymphonyBand[] ecoBands, SymphonyBand[] pressureBands) {
+    public void collectComponents(SymphonyBand[] ecoBands, SymphonyBand[] pressureBands) throws ParseException {
         SymphonyBand[][] bands = new SymphonyBand[][]{ ecoBands, pressureBands };
 
         for (Map.Entry<SymphonyCategory, String> pathEntry : version.tiffFilePaths().entrySet()) {
