@@ -1,0 +1,1131 @@
+[
+{
+  "name":"Boolean"
+},
+{
+  "name":"Object"
+},
+{
+  "name":"[Ljava.lang.Object;"
+},
+{
+  "name":"[Ljava.lang.String;"
+},
+{
+  "name":"[Lorg.geotools.util.WeakHashSet$Entry;"
+},
+{
+  "name":"[Lorg.geotools.util.WeakValueHashMap$Entry;"
+},
+{
+  "name":"[Lorg.geotools.util.logging.Logging;"
+},
+{
+  "name":"[Lorg.hsqldb.Constraint;"
+},
+{
+  "name":"[Lorg.hsqldb.Expression;"
+},
+{
+  "name":"[Lorg.hsqldb.HsqlNameManager$HsqlName;"
+},
+{
+  "name":"[Lorg.hsqldb.RangeGroup;"
+},
+{
+  "name":"[Lorg.hsqldb.Routine;"
+},
+{
+  "name":"[Lorg.hsqldb.index.Index;"
+},
+{
+  "name":"com.fasterxml.jackson.core.JsonParser"
+},
+{
+  "name":"com.fasterxml.jackson.databind.JsonNode"
+},
+{
+  "name":"com.fasterxml.jackson.databind.ObjectMapper"
+},
+{
+  "name":"com.fasterxml.jackson.databind.ext.Java7SupportImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.fasterxml.jackson.dataformat.yaml.YAMLFactory"
+},
+{
+  "name":"com.sun.crypto.provider.HmacCore$HmacSHA256",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.PBKDF2Core$HmacSHA1",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.PBKDF2Core$HmacSHA224",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.PBKDF2Core$HmacSHA256",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.PBKDF2Core$HmacSHA384",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.PBKDF2Core$HmacSHA512",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.jndi.url.java.javaURLContextFactory"
+},
+{
+  "name":"jakarta.servlet.Servlet"
+},
+{
+  "name":"java.beans.PropertyVetoException"
+},
+{
+  "name":"java.io.File",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.Boolean",
+  "fields":[{"name":"TYPE"}]
+},
+{
+  "name":"java.lang.Integer",
+  "fields":[{"name":"TYPE"}]
+},
+{
+  "name":"java.lang.Object",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"java.lang.ObjectBeanInfo"
+},
+{
+  "name":"java.lang.ObjectCustomizer"
+},
+{
+  "name":"java.lang.SecurityManager",
+  "methods":[{"name":"checkPermission","parameterTypes":["java.security.Permission"] }]
+},
+{
+  "name":"java.lang.System",
+  "methods":[{"name":"getSecurityManager","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.Thread",
+  "fields":[{"name":"threadLocalRandomProbe"}]
+},
+{
+  "name":"java.security.AccessController",
+  "methods":[{"name":"doPrivileged","parameterTypes":["java.security.PrivilegedExceptionAction"] }]
+},
+{
+  "name":"java.security.SecureRandomParameters"
+},
+{
+  "name":"java.sql.Date"
+},
+{
+  "name":"java.sql.Timestamp"
+},
+{
+  "name":"java.util.ResourceBundle",
+  "methods":[{"name":"getBundle","parameterTypes":["java.lang.String","java.util.Locale","java.lang.ClassLoader"] }]
+},
+{
+  "name":"java.util.concurrent.atomic.AtomicBoolean",
+  "fields":[{"name":"value"}]
+},
+{
+  "name":"java.util.concurrent.atomic.AtomicReference",
+  "fields":[{"name":"value"}]
+},
+{
+  "name":"java.util.concurrent.atomic.Striped64",
+  "fields":[{"name":"base"}, {"name":"cellsBusy"}]
+},
+{
+  "name":"javax.imageio.spi.RegisterableService"
+},
+{
+  "name":"javax.media.jai.JAI"
+},
+{
+  "name":"javax.servlet.Servlet"
+},
+{
+  "name":"org.apache.logging.log4j.Level",
+  "methods":[{"name":"toLevel","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.apache.logging.log4j.LogManager",
+  "methods":[{"name":"getLogger","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.apache.logging.log4j.Logger",
+  "methods":[{"name":"log","parameterTypes":["org.apache.logging.log4j.Level","java.lang.Object","java.lang.Throwable"] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.AppenderSet"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.AsyncAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.ConsoleAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.CountingNoOpAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.FailoverAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.FailoversPlugin"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.FileAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.HttpAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.MemoryMappedFileAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.NullAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.OutputStreamAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.RandomAccessFileAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.RollingFileAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.RollingRandomAccessFileAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.ScriptAppenderSelector"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.SmtpAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.SocketAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.SyslogAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.WriterAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.db.ColumnMapping"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.db.jdbc.ColumnConfig"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.db.jdbc.DataSourceConnectionSource"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.db.jdbc.DriverManagerConnectionSource"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.db.jdbc.FactoryMethodConnectionSource"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.db.jdbc.JdbcAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.mom.JmsAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.mom.jeromq.JeroMqAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.mom.kafka.KafkaAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.nosql.NoSqlAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rewrite.LoggerNameLevelRewritePolicy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rewrite.MapRewritePolicy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rewrite.PropertiesRewritePolicy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rewrite.RewriteAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.CompositeTriggeringPolicy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.CronTriggeringPolicy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.DirectWriteRolloverStrategy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.NoOpTriggeringPolicy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.OnStartupTriggeringPolicy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.TimeBasedTriggeringPolicy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.DeleteAction"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.IfAccumulatedFileCount"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.IfAccumulatedFileSize"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.IfAll"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.IfAny"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.IfFileName"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.IfLastModified"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.IfNot"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.PathSortByModificationTime"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.PosixViewAttributeAction"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.rolling.action.ScriptCondition"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.routing.IdlePurgePolicy"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.routing.Route"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.routing.Routes"
+},
+{
+  "name":"org.apache.logging.log4j.core.appender.routing.RoutingAppender"
+},
+{
+  "name":"org.apache.logging.log4j.core.async.ArrayBlockingQueueFactory"
+},
+{
+  "name":"org.apache.logging.log4j.core.async.AsyncLoggerConfig"
+},
+{
+  "name":"org.apache.logging.log4j.core.async.AsyncLoggerConfig$RootLogger"
+},
+{
+  "name":"org.apache.logging.log4j.core.async.AsyncWaitStrategyFactoryConfig"
+},
+{
+  "name":"org.apache.logging.log4j.core.async.DisruptorBlockingQueueFactory"
+},
+{
+  "name":"org.apache.logging.log4j.core.async.JCToolsBlockingQueueFactory"
+},
+{
+  "name":"org.apache.logging.log4j.core.async.LinkedTransferQueueFactory"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.AppenderControlArraySet",
+  "fields":[{"name":"appenderArray"}]
+},
+{
+  "name":"org.apache.logging.log4j.core.config.AppenderRef"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.AppendersPlugin"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.CustomLevelConfig"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.CustomLevels"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.DefaultAdvertiser"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.HttpWatcher"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.LoggerConfig"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.LoggerConfig$RootLogger"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.LoggersPlugin"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.MonitorResource"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.MonitorResources"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.PropertiesPlugin"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.Property"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.ScriptsPlugin"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.arbiters.ClassArbiter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.arbiters.DefaultArbiter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.arbiters.EnvironmentArbiter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.arbiters.ScriptArbiter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.arbiters.SelectArbiter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.arbiters.SystemPropertyArbiter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.json.JsonConfigurationFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$BigDecimalConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$BigIntegerConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$BooleanConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$ByteArrayConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$ByteConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$CharArrayConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$CharacterConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$CharsetConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$ClassConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$CronExpressionConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$DoubleConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$DurationConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$FileConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$FloatConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$InetAddressConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$IntegerConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$LevelConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$LongConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$PathConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$PatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$SecurityProviderConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$ShortConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$StringConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$UriConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$UrlConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$UuidConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.config.properties.PropertiesConfigurationFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.config.xml.XmlConfigurationFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.config.yaml.YamlConfigurationFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.BurstFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.CompositeFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.DenyAllFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.DynamicThresholdFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.LevelMatchFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.LevelRangeFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.MapFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.MarkerFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.MutableThreadContextMapFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.NoMarkerFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.RegexFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.ScriptFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.StringMatchFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.StructuredDataFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.ThreadContextMapFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.ThresholdFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.filter.TimeFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.CsvLogEventLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.CsvParameterLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.GelfLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.HtmlLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.JsonLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.LevelPatternSelector"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.LoggerFields"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.MarkerPatternSelector"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.MessageLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.PatternLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.PatternMatch"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.Rfc5424Layout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.ScriptPatternSelector"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.SerializedLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.SyslogLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.XmlLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.layout.YamlLayout"
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.ContextMapLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.DateLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.EnvironmentLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.EventLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.JavaLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.JmxRuntimeInputArgumentsLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.JndiLookup"
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.Log4jLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.LowerLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.MainMapLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.MapLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.MarkerLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.ResourceBundleLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.StructuredDataLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.SystemPropertiesLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.lookup.UpperLookup",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.net.MulticastDnsAdvertiser"
+},
+{
+  "name":"org.apache.logging.log4j.core.net.SocketAddress"
+},
+{
+  "name":"org.apache.logging.log4j.core.net.SocketOptions"
+},
+{
+  "name":"org.apache.logging.log4j.core.net.SocketPerformancePreferences"
+},
+{
+  "name":"org.apache.logging.log4j.core.net.ssl.KeyStoreConfiguration"
+},
+{
+  "name":"org.apache.logging.log4j.core.net.ssl.SslConfiguration"
+},
+{
+  "name":"org.apache.logging.log4j.core.net.ssl.TrustStoreConfiguration"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Black"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Blue"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Cyan"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Green"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Magenta"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Red"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$White"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Yellow"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.ClassNamePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.DatePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.EncodingPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.EndOfBatchPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.EqualsIgnoreCaseReplacementConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.EqualsReplacementConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.ExtendedThrowablePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.FileDatePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.FileLocationPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.FullLocationPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.HighlightConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.IntegerPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.LevelPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.LineLocationPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.LineSeparatorPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.LoggerFqcnPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.LoggerPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.MapPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.MarkerPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.MarkerSimpleNamePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.MaxLengthConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.MdcPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.MessagePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.MethodLocationPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.NanoTimePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.NdcPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.ProcessIdPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.RegexReplacement"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.RegexReplacementConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.RelativeTimePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.RepeatPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.RootThrowablePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.SequenceNumberPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.StyleConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.ThreadIdPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.ThreadNamePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.ThreadPriorityPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.ThrowablePatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.UuidPatternConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.pattern.VariablesNotEmptyReplacementConverter"
+},
+{
+  "name":"org.apache.logging.log4j.core.script.Script"
+},
+{
+  "name":"org.apache.logging.log4j.core.script.ScriptFile"
+},
+{
+  "name":"org.apache.logging.log4j.core.script.ScriptRef"
+},
+{
+  "name":"org.apache.logging.log4j.core.util.KeyValuePair"
+},
+{
+  "name":"org.geotools.api.feature.FeatureFactory"
+},
+{
+  "name":"org.geotools.api.feature.type.FeatureTypeFactory"
+},
+{
+  "name":"org.geotools.api.filter.FilterFactory"
+},
+{
+  "name":"org.geotools.api.metadata.Identifier",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"getAuthority","parameterTypes":[] }, {"name":"getCode","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.metadata.citation.Citation",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"getAlternateTitles","parameterTypes":[] }, {"name":"getCitedResponsibleParties","parameterTypes":[] }, {"name":"getCollectiveTitle","parameterTypes":[] }, {"name":"getEdition","parameterTypes":[] }, {"name":"getEditionDate","parameterTypes":[] }, {"name":"getISBN","parameterTypes":[] }, {"name":"getISSN","parameterTypes":[] }, {"name":"getIdentifiers","parameterTypes":[] }, {"name":"getOtherCitationDetails","parameterTypes":[] }, {"name":"getPresentationForm","parameterTypes":[] }, {"name":"getTitle","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.metadata.citation.Contact",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"getAddress","parameterTypes":[] }, {"name":"getContactInstructions","parameterTypes":[] }, {"name":"getHoursOfService","parameterTypes":[] }, {"name":"getOnLineResource","parameterTypes":[] }, {"name":"getPhone","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.metadata.citation.OnLineResource",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"getApplicationProfile","parameterTypes":[] }, {"name":"getDescription","parameterTypes":[] }, {"name":"getFunction","parameterTypes":[] }, {"name":"getLinkage","parameterTypes":[] }, {"name":"getName","parameterTypes":[] }, {"name":"getProtocol","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.metadata.citation.ResponsibleParty",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"getContactInfo","parameterTypes":[] }, {"name":"getIndividualName","parameterTypes":[] }, {"name":"getOrganisationName","parameterTypes":[] }, {"name":"getPositionName","parameterTypes":[] }, {"name":"getRole","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.metadata.extent.Extent",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"getDescription","parameterTypes":[] }, {"name":"getGeographicElements","parameterTypes":[] }, {"name":"getTemporalElements","parameterTypes":[] }, {"name":"getVerticalElements","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.metadata.extent.GeographicBoundingBox",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"getEastBoundLongitude","parameterTypes":[] }, {"name":"getNorthBoundLatitude","parameterTypes":[] }, {"name":"getSouthBoundLatitude","parameterTypes":[] }, {"name":"getWestBoundLongitude","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.metadata.extent.GeographicExtent",
+  "methods":[{"name":"getInclusion","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.referencing.crs.CRSAuthorityFactory"
+},
+{
+  "name":"org.geotools.api.referencing.crs.CRSFactory"
+},
+{
+  "name":"org.geotools.api.referencing.cs.CSAuthorityFactory"
+},
+{
+  "name":"org.geotools.api.referencing.cs.CSFactory"
+},
+{
+  "name":"org.geotools.api.referencing.datum.DatumAuthorityFactory"
+},
+{
+  "name":"org.geotools.api.referencing.datum.DatumFactory"
+},
+{
+  "name":"org.geotools.api.referencing.operation.CoordinateOperationAuthorityFactory"
+},
+{
+  "name":"org.geotools.api.referencing.operation.MathTransformFactory"
+},
+{
+  "name":"org.geotools.metadata.iso.IdentifierImpl",
+  "methods":[{"name":"setAuthority","parameterTypes":["org.geotools.api.metadata.citation.Citation"] }, {"name":"setCode","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.geotools.metadata.iso.citation.CitationImpl",
+  "methods":[{"name":"setAlternateTitles","parameterTypes":["java.util.Collection"] }, {"name":"setCitedResponsibleParties","parameterTypes":["java.util.Collection"] }, {"name":"setCollectiveTitle","parameterTypes":["org.geotools.api.util.InternationalString"] }, {"name":"setEdition","parameterTypes":["org.geotools.api.util.InternationalString"] }, {"name":"setEditionDate","parameterTypes":["java.util.Date"] }, {"name":"setISBN","parameterTypes":["java.lang.String"] }, {"name":"setISSN","parameterTypes":["java.lang.String"] }, {"name":"setIdentifiers","parameterTypes":["java.util.Collection"] }, {"name":"setOtherCitationDetails","parameterTypes":["org.geotools.api.util.InternationalString"] }, {"name":"setPresentationForm","parameterTypes":["java.util.Collection"] }, {"name":"setTitle","parameterTypes":["org.geotools.api.util.InternationalString"] }]
+},
+{
+  "name":"org.geotools.metadata.iso.citation.ContactImpl",
+  "methods":[{"name":"setAddress","parameterTypes":["org.geotools.api.metadata.citation.Address"] }, {"name":"setContactInstructions","parameterTypes":["org.geotools.api.util.InternationalString"] }, {"name":"setHoursOfService","parameterTypes":["org.geotools.api.util.InternationalString"] }, {"name":"setOnLineResource","parameterTypes":["org.geotools.api.metadata.citation.OnLineResource"] }, {"name":"setPhone","parameterTypes":["org.geotools.api.metadata.citation.Telephone"] }]
+},
+{
+  "name":"org.geotools.metadata.iso.citation.OnLineResourceImpl",
+  "methods":[{"name":"getProtocol","parameterTypes":[] }, {"name":"setApplicationProfile","parameterTypes":["java.lang.String"] }, {"name":"setDescription","parameterTypes":["org.geotools.api.util.InternationalString"] }, {"name":"setFunction","parameterTypes":["org.geotools.api.metadata.citation.OnLineFunction"] }, {"name":"setLinkage","parameterTypes":["java.net.URI"] }, {"name":"setName","parameterTypes":["java.lang.String"] }, {"name":"setProtocol","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.geotools.metadata.iso.citation.ResponsiblePartyImpl",
+  "methods":[{"name":"setContactInfo","parameterTypes":["org.geotools.api.metadata.citation.Contact"] }, {"name":"setIndividualName","parameterTypes":["java.lang.String"] }, {"name":"setOrganisationName","parameterTypes":["org.geotools.api.util.InternationalString"] }, {"name":"setPositionName","parameterTypes":["org.geotools.api.util.InternationalString"] }, {"name":"setRole","parameterTypes":["org.geotools.api.metadata.citation.Role"] }]
+},
+{
+  "name":"org.geotools.metadata.iso.extent.ExtentImpl",
+  "methods":[{"name":"setDescription","parameterTypes":["org.geotools.api.util.InternationalString"] }, {"name":"setGeographicElements","parameterTypes":["java.util.Collection"] }, {"name":"setTemporalElements","parameterTypes":["java.util.Collection"] }, {"name":"setVerticalElements","parameterTypes":["java.util.Collection"] }]
+},
+{
+  "name":"org.geotools.metadata.iso.extent.GeographicBoundingBoxImpl",
+  "methods":[{"name":"setEastBoundLongitude","parameterTypes":["double"] }, {"name":"setNorthBoundLatitude","parameterTypes":["double"] }, {"name":"setSouthBoundLatitude","parameterTypes":["double"] }, {"name":"setWestBoundLongitude","parameterTypes":["double"] }]
+},
+{
+  "name":"org.geotools.metadata.iso.extent.GeographicExtentImpl",
+  "methods":[{"name":"setInclusion","parameterTypes":["java.lang.Boolean"] }]
+},
+{
+  "name":"org.geotools.referencing.factory.FallbackAuthorityFactory",
+  "methods":[{"name":"toBackingFactoryCode","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.geotools.referencing.factory.FallbackAuthorityFactory$All",
+  "methods":[{"name":"toBackingFactoryCode","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.hsqldb.dbinfo.DatabaseInformationFull",
+  "methods":[{"name":"<init>","parameterTypes":["org.hsqldb.Database"] }]
+},
+{
+  "name":"org.hsqldb.jdbc.JDBCDriver"
+},
+{
+  "name":"org.osgi.framework.FrameworkUtil"
+},
+{
+  "name":"org.postgresql.Driver"
+},
+{
+  "name":"org.postgresql.core.QueryExecutorCloseAction",
+  "fields":[{"name":"pgStream"}]
+},
+{
+  "name":"org.postgresql.jdbc.PgStatement",
+  "fields":[{"name":"cancelTimerTask"}, {"name":"isClosed"}, {"name":"statementState"}]
+},
+{
+  "name":"org.sqlite.JDBC"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.SymphonySetup$UpdateMode",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setBaseline","parameterTypes":["se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$BaselineConfig"] }, {"name":"setCalculationAreas","parameterTypes":["se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$CalculationAreasConfig"] }, {"name":"setMatrices","parameterTypes":["java.util.List"] }, {"name":"setMetadata","parameterTypes":["java.util.List"] }, {"name":"setOperation","parameterTypes":["se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$Operation"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$BaselineConfig",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setDescription","parameterTypes":["java.lang.String"] }, {"name":"setEcoPath","parameterTypes":["java.lang.String"] }, {"name":"setLocale","parameterTypes":["java.lang.String"] }, {"name":"setName","parameterTypes":["java.lang.String"] }, {"name":"setPressurePath","parameterTypes":["java.lang.String"] }, {"name":"setTitle","parameterTypes":["java.lang.String"] }, {"name":"setValidFrom","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$CalculationAreasConfig",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setAllDefault","parameterTypes":["java.lang.Boolean"] }, {"name":"setFile","parameterTypes":["java.lang.String"] }, {"name":"setNameProperty","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$CsvSettingsConfig",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$MatrixConfig",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setFile","parameterTypes":["java.lang.String"] }, {"name":"setLanguage","parameterTypes":["java.lang.String"] }, {"name":"setName","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$MetadataConfig",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setFile","parameterTypes":["java.lang.String"] }, {"name":"setLanguage","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$NationalAreaConfig",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$Operation",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.BaselineVersion",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setDescription","parameterTypes":["java.lang.String"] }, {"name":"setEcoFilePath","parameterTypes":["java.lang.String"] }, {"name":"setId","parameterTypes":["int"] }, {"name":"setLocale","parameterTypes":["java.lang.String"] }, {"name":"setName","parameterTypes":["java.lang.String"] }, {"name":"setPressureFilePath","parameterTypes":["java.lang.String"] }, {"name":"setTitle","parameterTypes":["java.lang.String"] }, {"name":"setValidFrom","parameterTypes":["java.time.LocalDate"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.BaselineVersionBeanInfo"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.BaselineVersionCustomizer"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.DbMatrix",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setId","parameterTypes":["int"] }, {"name":"setName","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.DbMatrixBeanInfo"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.DbMatrixCustomizer"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.MetaValue",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setBandId","parameterTypes":["int"] }, {"name":"setField","parameterTypes":["java.lang.String"] }, {"name":"setLanguage","parameterTypes":["java.lang.String"] }, {"name":"setValue","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.MetaValueBeanInfo"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.MetaValueCustomizer"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.SymphonyBand",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setBandNumber","parameterTypes":["int"] }, {"name":"setDefaultSelected","parameterTypes":["boolean"] }, {"name":"setId","parameterTypes":["int"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.SymphonyBandBeanInfo"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.SymphonyBandCustomizer"
+},
+{
+  "name":"sun.reflect.Reflection"
+},
+{
+  "name":"sun.security.provider.DRBG",
+  "methods":[{"name":"<init>","parameterTypes":["java.security.SecureRandomParameters"] }]
+},
+{
+  "name":"sun.security.provider.MD5",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA2$SHA224",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA2$SHA256",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA5$SHA384",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA5$SHA512",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+}
+]
