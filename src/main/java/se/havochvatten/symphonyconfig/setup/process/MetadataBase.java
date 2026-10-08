@@ -27,6 +27,7 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
         Map.of( SymphonyCategory.ECOSYSTEM, new ArrayList<>(),
                 SymphonyCategory.PRESSURE,  new ArrayList<>());
     protected final Map<String, Integer> fieldsToColumns = new HashMap<>();
+    private final List<String> bandsWithEmptyTheme = new ArrayList<>();
 
     protected SymphonyCategory getCategory(String _category) {
         try {
@@ -38,14 +39,31 @@ public abstract class MetadataBase extends ImportProcedure<MetadataImportSetting
 
     public MetadataBase(MetadataImportSettings settings) { super(settings); }
 
-    /**
-     * Records a cell's value on the band unless the cell is empty. An empty cell means "no value":
-     * stored as '' it would, for symphonytheme, put the band in a theme without a name in the GUI.
-     */
+    /** Records a cell's value on the band unless the cell is empty: an empty cell means "no value". */
     protected void setMetaValueUnlessEmpty(SymphonyBand band, String field, String value) {
         if (value != null && !value.isBlank()) {
             band.setMetaValue(settings.language, new MetaValue(field, value, settings.language));
         }
+    }
+
+    /**
+     * Notes a band whose symphonytheme cell is empty. Leaving the whole column out is allowed (see
+     * validateFieldSet), but a present column with gaps makes the file malformed.
+     */
+    protected void checkTheme(SymphonyCategory c, int bandNumber, String theme) {
+        if (theme == null || theme.isBlank()) {
+            bandsWithEmptyTheme.add(c.getDbVal() + " " + bandNumber);
+        }
+    }
+
+    protected boolean validateThemes() {
+        if (bandsWithEmptyTheme.isEmpty()) {
+            return true;
+        }
+        validationErrors.add(String.format("Empty '%s' on band(s): %s\n" +
+                "Every band needs a theme when the column is present; bands without one won't render in the default UI.",
+            SYMPHONY_THEME, String.join(", ", bandsWithEmptyTheme)));
+        return false;
     }
 
     @Override

@@ -8,6 +8,7 @@ import se.havochvatten.symphonyconfig.setup.model.SymphonyCategory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.junit.jupiter.api.Assertions.*;
@@ -250,13 +251,58 @@ class UpdateMetadataTest extends CliTestBase {
             assertFalse(setup.hasFailed(), displaceErr.toString());
         }, "y");
 
-        // An empty symphonytheme stored as '' would put the band in a theme without a name in the GUI
-        assertEquals(0, getDbInterface().countBandMetaValues(bvId, "Ecosystem", 2, "symphonytheme"));
+        assertEquals(0, getDbInterface().countBandMetaValues(bvId, "Ecosystem", 2, "summary"));
         assertEquals(0, getDbInterface().countBandMetaValues(bvId, "Pressure", 1, "summary"));
         // The filled cells around them are still stored
-        assertEquals(1, getDbInterface().countBandMetaValues(bvId, "Ecosystem", 1, "symphonytheme"));
-        assertEquals(1, getDbInterface().countBandMetaValues(bvId, "Ecosystem", 2, "title"));
+        assertEquals(1, getDbInterface().countBandMetaValues(bvId, "Ecosystem", 1, "summary"));
+        assertEquals(1, getDbInterface().countBandMetaValues(bvId, "Ecosystem", 2, "symphonytheme"));
         assertEquals(1, getDbInterface().countBandMetaValues(bvId, "Pressure", 1, "symphonytheme"));
+    }
+
+    @Test
+    void emptyCsvThemeCellsFailTheImport() throws Exception {
+        assertEmptyThemeCellsFailTheImport(csvMetaFileEmptyTheme);
+    }
+
+    @Test
+    void emptyExcelThemeCellsFailTheImport() throws Exception {
+        assertEmptyThemeCellsFailTheImport(xlsxMetaFileEmptyTheme);
+    }
+
+    private void assertEmptyThemeCellsFailTheImport(String metadataFile) throws Exception {
+        String[] args = testCaseArgs("-u", "-md", metadataFile, "-mdL", "en", "-bv", String.valueOf(bvId));
+
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(args);
+            assertTrue(setup.hasFailed(), "An empty symphonytheme must fail the import");
+        }, "y");
+
+        String errorOutput = displaceErr.toString();
+        assertTrue(errorOutput.contains("symphonytheme"), errorOutput);
+        for (String band : List.of("Ecosystem 2", "Pressure 3")) {
+            assertTrue(errorOutput.contains(band), "The error should name " + band + ": " + errorOutput);
+        }
+
+        Baseline bl = getDbInterface().getBaseline(bvId);
+        assertEquals(0, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.size(),
+            "No metadata may be written when a symphonytheme cell is empty");
+        assertEquals(0, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.size());
+    }
+
+    @Test
+    void fileWithoutThemeColumnStillImports() throws Exception {
+        String[] args = testCaseArgs("-u", "-md", csvMetaFileNoThemeEN, "-mdL", "en", "-bv", String.valueOf(bvId));
+
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(args);
+            assertFalse(setup.hasFailed(), displaceErr.toString());
+        }, "y");
+
+        // Leaving the column out is allowed (with a notice): only empty cells in a present column fail
+        Baseline bl = getDbInterface().getBaseline(bvId);
+        assertEquals(4, bl.getComponents().get(SymphonyCategory.ECOSYSTEM).bands.size());
+        assertEquals(4, bl.getComponents().get(SymphonyCategory.PRESSURE).bands.size());
+        assertEquals(0, getDbInterface().countBandMetaValues(bvId, "Ecosystem", 1, "symphonytheme"));
     }
 
     @Test

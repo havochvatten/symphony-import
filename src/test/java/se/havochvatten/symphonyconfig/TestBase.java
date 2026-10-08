@@ -31,6 +31,9 @@ public abstract class TestBase {
 
     protected static final String csvMetaFileFaulty1      = RESOURCES_PATH + "import/metadata-faulty_bandnumber.csv";
     protected static final String xlsxMetaFileFaulty1     = RESOURCES_PATH + "import/metadata-faulty_bandnumber.xlsx";
+    protected static final String csvMetaFileEmptyTheme   = RESOURCES_PATH + "import/metadata-faulty_empty-theme.csv";
+    protected static final String xlsxMetaFileEmptyTheme  = RESOURCES_PATH + "import/metadata-faulty_empty-theme.xlsx";
+    protected static final String csvMetaFileNoThemeEN    = RESOURCES_PATH + "import/metadata-wellformed-no-theme-en.csv";
 
     protected static final String xlsxMetaFilePartialEcoSV =      RESOURCES_PATH + "import/metadata-wellformed-partial-Eco-sv.xlsx";
     protected static final String csvMetaFilePartialPressureSV =  RESOURCES_PATH + "import/metadata-wellformed-partial-Pressure-sv.csv";

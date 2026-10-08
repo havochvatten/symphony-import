@@ -64,6 +64,9 @@ public class MetadataCsv extends MetadataBase {
 
                         setMetaValueUnlessEmpty(band, field, csvBand.get(field));
                     }
+                    if (allFields.contains(SYMPHONY_THEME)) {
+                        checkTheme(c, bandNumber, csvBand.get(SYMPHONY_THEME));
+                    }
 
                     bands.get(c).add(band);
                 }
@@ -73,6 +76,6 @@ public class MetadataCsv extends MetadataBase {
             validationErrors.add("Error reading input metadata file: " + this.settings.inputFilePath);
             return false;
         }
-        return true;
+        return validateThemes();
     }
 }

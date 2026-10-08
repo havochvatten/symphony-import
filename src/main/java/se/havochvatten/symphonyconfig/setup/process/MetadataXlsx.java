@@ -101,6 +101,9 @@ public class MetadataXlsx extends MetadataBase {
                             field.equals(SYMPHONY_CATEGORY)) continue;
                         setMetaValueUnlessEmpty(band, field, cellValue(row, field));
                     }
+                    if (fieldsToColumns.containsKey(SYMPHONY_THEME)) {
+                        checkTheme(c, bandNumber, cellValue(row, SYMPHONY_THEME));
+                    }
 
                     bands.get(c).add(band);
 
@@ -112,6 +115,6 @@ public class MetadataXlsx extends MetadataBase {
         } catch (Exception e) {
             throw new RuntimeException("Error reading input file.", e);
         }
-        return true;
+        return validateThemes();
     }
 }

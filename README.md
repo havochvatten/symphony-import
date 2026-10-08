@@ -204,7 +204,7 @@ Metadata files can be provided as CSV or XLSX (Microsoft Excel).
 Rows should correspond to specific bands in the GeoTIFF raster files. 
 One language is expected per file (specified by the `-mdL`/`--metadataLang` input parameter).  
 Any key value (column header) may be supplied, as long as it conforms to the regular expression `^[a-zA-Z_][a-zA-Z0-9_]*$` in order to be reliably serializable.  
-An empty cell means "no value" for that band: nothing is stored for it. Note that in CSV files a backslash is an escape character (`\n` becomes a line break); write `\\` for a literal backslash.  
+An empty cell means "no value" for that band: nothing is stored for it. The exception is **symphonytheme**: when that column is present, a band with an empty cell fails the import. Note that in CSV files a backslash is an escape character (`\n` becomes a line break); write `\\` for a literal backslash.  
 
 The following columns are mandatory for the procedure and MUST be present in the input table:  
 **bandnumber**  
