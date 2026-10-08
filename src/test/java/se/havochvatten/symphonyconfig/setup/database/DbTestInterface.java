@@ -12,6 +12,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import static se.havochvatten.symphonyconfig.TestBase.*;
@@ -343,6 +345,26 @@ public class DbTestInterface extends DbInterface {
             throw new IllegalStateException("No stored polygon for calculation area '" + careaName + "'");
         }
         return distance;
+    }
+
+    /** Most decimals on any coordinate of the stored cap_polygon GeoJSON of the named calculation area. */
+    public int calculationAreaPolygonDecimals(int bvId, String careaName) throws SQLException {
+        String geoJson = query(String.format(
+            "SELECT cap.cap_polygon FROM %1$s.capolygon cap "
+                + "JOIN %1$s.calculationarea ca ON ca.carea_id = cap.cap_carea_id "
+                + "JOIN %1$s.sensitivitymatrix m ON m.sensm_id = ca.carea_default_sensm_id "
+                + "WHERE m.sensm_bver_id = ? AND ca.carea_name = ?", schema),
+            new ScalarHandler<String>(), bvId, careaName);
+
+        if (geoJson == null) {
+            throw new IllegalStateException("No stored polygon for calculation area '" + careaName + "'");
+        }
+        Matcher decimals = Pattern.compile("\\d\\.(\\d+)").matcher(geoJson);
+        int most = 0;
+        while (decimals.find()) {
+            most = Math.max(most, decimals.group(1).length());
+        }
+        return most;
     }
 
     /** Stored meta values for one field of one band; bandNumber is 1-based, as in the input files. */

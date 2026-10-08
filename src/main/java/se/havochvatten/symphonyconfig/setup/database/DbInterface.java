@@ -47,9 +47,6 @@ public class DbInterface {
     // assuming integer id is present in first column
     public static final ColumnListHandler<Integer> idListHandler = new ColumnListHandler<>();
 
-    // 10 decimals (about 0.01 mm) keep the source coordinates; the default of 4 rounds them to about 11 m
-    static final GeometryJSON json = new GeometryJSON(10);
-
     protected Connection getConnection() throws SQLException {
         if (activeConnection == null || activeConnection.isClosed()) {
             String connectionString = "jdbc:postgresql://" + host + ":" + port + "/" + database;
@@ -642,7 +639,10 @@ public class DbInterface {
     }
 
     public void importCalculationAreas(CalcAreaProcedure.AreaMatrixTuple[] calcAreaMatrixTuples,
-                                       int bvId, boolean clear) throws SQLException, ParseException {
+                                       int bvId, boolean clear, int decimals) throws SQLException, ParseException {
+        // GeometryJSON rounds every coordinate to this many decimals
+        GeometryJSON json = new GeometryJSON(decimals);
+
         // The loop below throws when an area names a matrix that does not exist on this
         // baseline, which is reachable with entirely valid input, so the clear that precedes
         // it must be undone rather than left committed.

@@ -7,6 +7,7 @@ import se.havochvatten.symphonyconfig.setup.config.CalcAreaImportSettings;
 import se.havochvatten.symphonyconfig.setup.process.CalcAreaProcedure;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -157,11 +158,22 @@ class ImportCalculationAreasTest extends CliTestBase {
     }
 
     @Test
-    void importKeepsPolygonCoordinatesAtSourcePrecision() throws Exception {
+    void importRoundsPolygonCoordinatesToSevenDecimalsByDefault() throws Exception {
+        assertImportedAtPrecision(7);
+    }
+
+    @Test
+    void calcAreaDecimalsOptionSetsTheCoordinatePrecision() throws Exception {
+        assertImportedAtPrecision(5, "-caDec", "5");
+    }
+
+    private void assertImportedAtPrecision(int decimals, String... extraArgs) throws Exception {
         getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
 
-        String[] args = testCaseArgs("-u", "-bv", String.valueOf(bvId),
-            "-caF", calculationAreaPackage, "-caDA");
+        List<String> argList = new ArrayList<>(List.of("-u", "-bv", String.valueOf(bvId),
+            "-caF", calculationAreaPackage, "-caDA"));
+        argList.addAll(List.of(extraArgs));
+        String[] args = testCaseArgs(argList.toArray(new String[0]));
         queueInteraction(() -> {
             SymphonySetup setup = new SymphonySetup(args);
             assertFalse(setup.hasFailed(), displaceErr.toString());
@@ -172,11 +184,33 @@ class ImportCalculationAreasTest extends CliTestBase {
 
         for (CalcAreaProcedure.AreaMatrixTuple tuple : source.areaTuples) {
             String area = tuple.area().getAreaName();
+            // The fixture's coordinates have 13 decimals, so the stored ones are cut to exactly this many
+            assertEquals(decimals, getDbInterface().calculationAreaPolygonDecimals(bvId, area));
+            // Rounding moves a vertex by at most half a unit in the last decimal on each axis
             double distance = getDbInterface()
                 .calculationAreaDistanceFromSource(bvId, area, tuple.area().getPolygon().toText());
-            // The fixture's coordinates have 13 decimals; 1e-9 degrees is about 0.1 mm
-            assertTrue(distance < 1e-9,
+            assertTrue(distance < Math.pow(10, -decimals),
                 area + " is stored " + distance + " degrees away from the GeoPackage polygon");
+        }
+    }
+
+    @Test
+    void calcAreaDecimalsOutsideTheRangeFailTheImport() throws Exception {
+        getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+
+        for (String value : List.of("0", "16", "seven")) {
+            displaceErr.reset();
+            String[] args = testCaseArgs("-u", "-bv", String.valueOf(bvId),
+                "-caF", calculationAreaPackage, "-caDA", "-caDec", value);
+
+            queueInteraction(() -> {
+                SymphonySetup setup = new SymphonySetup(args);
+                assertTrue(setup.hasFailed(), "-caDec " + value + " must fail the import");
+            }, "y");
+
+            assertTrue(displaceErr.toString().contains("calcAreaDecimals"), displaceErr.toString());
+            assertEquals(0, getDbInterface().countCoupledCalculationAreas(bvId),
+                "No calculation area may be written with -caDec " + value);
         }
     }
 

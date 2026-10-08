@@ -114,6 +114,22 @@ public class FileBasedConfigValidationTest extends CliTestBase {
     }
 
     @Test
+    void calculationAreaDecimalsOutsideTheRangeAreRejected() {
+        for (int decimals : new int[] { 0, 16 }) {
+            String cfg = writeConfig("areas-decimals-" + decimals + ".yaml",
+                "operation: update",
+                "baseline:",
+                "  id: 1",
+                "calculationAreas:",
+                "  file: " + absoluteResourcePath("/import/calcarea-package.gpkg"),
+                "  allDefault: true",
+                "  decimals: " + decimals);
+
+            assertRejected(cfg, "'calculationAreas.decimals'");
+        }
+    }
+
+    @Test
     void allDefaultCombinedWithDefaultAreasIsRejected() {
         String cfg = writeConfig("areas-both-default.yaml",
             "operation: update",

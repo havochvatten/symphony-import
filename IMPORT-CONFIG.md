@@ -80,6 +80,7 @@ calculationAreas:
                                   # 'maxValue' (the calibration value) are read when present. See the
                                   # README section on calculation areas for the full attribute list.
   nameProperty: name              # Optional. GeoPackage Feature attribute for area "name". Defaults to 'name'.
+  decimals: 7                     # Optional. Decimals kept on polygon coordinates, 1 to 15. Defaults to 7 (about 1 cm).
   defaultAreas:                   # Name the areas to set as default.
     - Area_1
     - Area_3

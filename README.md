@@ -27,11 +27,11 @@ Below is the output of invoking the tool with the `-h` (usage) option, reflowed 
 
 ```
 usage:  symphony-setup-tool [-bv <arg>] [-bvD <arg>] [-bvL <arg>] [-bvN <arg>] [-bvpE <arg>]
-[-bvpP <arg>] [-bvT <arg>] [-bvV <arg>] [-caD <arg>] [-caDA] [-caF <arg>] [-caP <arg>]
-[-csvN <arg>] [-csvS <arg>] [-db <arg>] [-dbH <arg>] [-dbP <arg>] [-dbPt <arg>] [-dbS <arg>]
-[-dbU <arg>] [-envDb <arg>] [-envDbH <arg>] [-envDbP <arg>] [-envDbU <arg>] [-f <arg>] [-h]
-[-md <arg>] [-mdL <arg>] [-mx <arg>] [-mxL <arg>] [-mxN <arg>] [-n] [-na <arg>] [-naC <arg>]
-[-naP <arg>] [-s] [-u <arg>] [-v]
+[-bvpP <arg>] [-bvT <arg>] [-bvV <arg>] [-caD <arg>] [-caDA] [-caDec <arg>] [-caF <arg>]
+[-caP <arg>] [-csvN <arg>] [-csvS <arg>] [-db <arg>] [-dbH <arg>] [-dbP <arg>] [-dbPt <arg>]
+[-dbS <arg>] [-dbU <arg>] [-envDb <arg>] [-envDbH <arg>] [-envDbP <arg>] [-envDbU <arg>]
+[-f <arg>] [-h] [-md <arg>] [-mdL <arg>] [-mx <arg>] [-mxL <arg>] [-mxN <arg>] [-n]
+[-na <arg>] [-naC <arg>] [-naP <arg>] [-s] [-u <arg>] [-v]
 
 Command-line utility to manage baseline data for instances of the software
 package MSP-Symphony
@@ -154,6 +154,9 @@ package MSP-Symphony
                                                     in the GeoPackage file slated for import by the  
                                                     '-caF' option as default for the target 
                                                     baseline.  
+-caDec, --calcAreaDecimals <arg>         v1.1       Decimals to keep on the coordinates of
+                                                    calculation area polygons, from 1 to 15.
+                                                    The default is 7 (about 1 cm).
 -csvS, --delimiter <arg>                 v1.0       Column delimiter character for CSV files.
                                                     Defaults to ';', the Symphony convention.
 -csvN, --newline <arg>                   v1.0       Row delimiter for CSV files. Set to
@@ -251,6 +254,8 @@ The attribute 'addMatrices' is expected to specify one or more comma separated s
 
 The attribute 'maxValue' sets the area's calibration value (`calculationarea.carea_maxvalue`), the constant MSP-Symphony uses for "domain" normalization of calculation results. It must be a number greater than 0, with '.' as decimal separator. Any other value fails the calculation area import, naming the offending areas, before any area is written. Areas without the attribute (or with a NULL value) are imported without a calibration value.  
 The value is normally obtained by calibrating an installed baseline version, so the attribute is mostly useful when re-importing areas or installing a baseline whose calibration value is already known.
+
+Calculation area coordinates are stored with 7 decimals by default, about 1 cm, which is well below the cell size of a baseline raster. Use `-caDec`/`--calcAreaDecimals` (or `decimals` in a configuration file) to keep from 1 to 15 decimals instead. Fewer decimals give smaller polygons for the GUI to load. National area polygons are stored exactly as given.
 
 
 ### National areas / Boundary polygon

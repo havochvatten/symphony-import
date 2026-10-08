@@ -389,6 +389,28 @@ public class FileBasedUpdateTest extends CliTestBase {
     }
 
     @Test
+    void calculationAreaDecimalsSetTheCoordinatePrecision() throws Exception {
+        getDbInterface().provideDummySensitivityMatrixForCalcArea(bvId, csvMatrixCompleteName);
+
+        String cfg = writeConfig("areas-decimals.yaml",
+            "operation: update",
+            "baseline:",
+            "  id: " + bvId,
+            "calculationAreas:",
+            "  file: " + absoluteResourcePath("/import/calcarea-package.gpkg"),
+            "  allDefault: true",
+            "  decimals: 5");
+
+        queueInteraction(() -> {
+            SymphonySetup setup = new SymphonySetup(testCaseArgs("-f", cfg));
+            assertFalse(setup.hasFailed(), displaceErr.toString());
+        }, "y");
+
+        // The fixture's coordinates have 13 decimals
+        assertEquals(5, getDbInterface().calculationAreaPolygonDecimals(bvId, "test-calc-area-1"));
+    }
+
+    @Test
     void csvSettingsOverrideTheDelimiter() throws Exception {
         assertNotNull(bvId);
 
