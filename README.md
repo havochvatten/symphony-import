@@ -369,6 +369,18 @@ The command syntax to exclude the tests that clear the national area table is
 mvn test -Dtest='!ImportNationalAreasTest,!FileBasedImportTest,!FileBasedConfigValidationTest'
 ```
 
+### Updating GraalVM native-image metadata
+
+The files under `src/main/resources/META-INF/native-image/` contain metadata that GraalVM requires at compile time. They are produced by running the test suite under GraalVM's [Tracing Agent](https://www.graalvm.org/jdk21/reference-manual/native-image/metadata/AutomaticMetadataCollection/), which observes all dynamic Java features exercised during the run and merges the results into those files.
+
+This implies that maintenance of adequate test coverage matters beyond proving correctness, for example when new dependencies are added.
+
+To regenerate the metadata during tests, activate the `graal-metadata` profile, which passes the agent flag to the JVM that runs the test suite:
+
+```
+mvn test -Pgraal-metadata
+```
+
 ## Limitations
 
 The import tool presently (as of v1.1) doesn't provide functionality to insert or update 'area types' (used to differentiate matrix couplings and indicate 'coastal areas').  
