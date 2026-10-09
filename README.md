@@ -377,6 +377,22 @@ This implies that maintenance of adequate test coverage matters beyond proving c
 
 To regenerate the metadata during tests, activate the `graal-metadata` profile, which passes the agent flag to the JVM that runs the test suite:
 
+> [!IMPORTANT]
+> The Tracing Agent is a feature built into the **GraalVM JDK** meaning the `graal-metadata` profile won't work with a standard JDK. Before running the command below, ensure `JAVA_HOME` points to a GraalVM 21 installation:
+>
+> **Linux/macOS:**
+> ```sh
+> export JAVA_HOME=/path/to/graalvm-jdk-21
+> ```
+> **Windows (Command Prompt):**
+> ```cmd
+> set JAVA_HOME=C:\path\to\graalvm-jdk-21
+> ```
+> **Windows (PowerShell):**
+> ```powershell
+> $env:JAVA_HOME = "C:\path\to\graalvm-jdk-21"
+> ```
+
 ```
 mvn test -Pgraal-metadata
 ```
