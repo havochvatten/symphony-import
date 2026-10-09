@@ -1,0 +1,148 @@
+{
+  "resources":{
+  "includes":[{
+    "pattern":"\\QMETA-INF/log4j-provider.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/maven/org.xerial/sqlite-jdbc/pom.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.net.spi.InetAddressResolverProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.net.spi.URLStreamHandlerProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.sql.Driver\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.util.spi.ResourceBundleControlProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.commons.dbutils.ColumnHandler\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.commons.dbutils.PropertyHandler\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.logging.log4j.core.util.ContextDataProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.logging.log4j.core.util.WatchEventService\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.logging.log4j.spi.Provider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.logging.log4j.util.PropertySource\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.feature.FeatureFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.feature.type.FeatureTypeFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.filter.FilterFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.referencing.crs.CRSAuthorityFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.referencing.crs.CRSFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.referencing.cs.CSFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.referencing.datum.DatumFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.referencing.operation.MathTransformFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.geopkg.GeoPkgExtensionFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.referencing.factory.ReferencingFactoryContainer\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/tech.units.indriya.spi.NumberSystem\\E"
+  }, {
+    "pattern":"\\Qjndi.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.jsn\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.json\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.xml\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.yaml\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.yml\\E"
+  }, {
+    "pattern":"\\Qlog4j2-testDefault.jsn\\E"
+  }, {
+    "pattern":"\\Qlog4j2-testDefault.json\\E"
+  }, {
+    "pattern":"\\Qlog4j2-testDefault.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2-testDefault.xml\\E"
+  }, {
+    "pattern":"\\Qlog4j2-testDefault.yaml\\E"
+  }, {
+    "pattern":"\\Qlog4j2-testDefault.yml\\E"
+  }, {
+    "pattern":"\\Qlog4j2.StatusLogger.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2.component.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2.jsn\\E"
+  }, {
+    "pattern":"\\Qlog4j2.json\\E"
+  }, {
+    "pattern":"\\Qlog4j2.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2.system.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2.xml\\E"
+  }, {
+    "pattern":"\\Qlog4j2.yaml\\E"
+  }, {
+    "pattern":"\\Qlog4j2.yml\\E"
+  }, {
+    "pattern":"\\Qlog4j2Default.jsn\\E"
+  }, {
+    "pattern":"\\Qlog4j2Default.json\\E"
+  }, {
+    "pattern":"\\Qlog4j2Default.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2Default.xml\\E"
+  }, {
+    "pattern":"\\Qlog4j2Default.yaml\\E"
+  }, {
+    "pattern":"\\Qlog4j2Default.yml\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/metadata/i18n/Loggings.utf\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/metadata/i18n/Loggings_en.utf\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/metadata/i18n/Vocabulary.utf\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/metadata/i18n/Vocabulary_en.utf\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/referencing/factory/DatumAliasesTable.txt\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/referencing/factory/epsg/epsg.properties\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/util/factory/GeoTools.properties\\E"
+  }, {
+    "pattern":"\\Qorg/hsqldb/resources/information-schema.sql\\E"
+  }, {
+    "pattern":"\\Qorg/hsqldb/resources/lob-schema.sql\\E"
+  }, {
+    "pattern":"\\Qorg/postgresql/driverconfig.properties\\E"
+  }, {
+    "pattern":"\\Qorg/sqlite/native/Windows/x86_64/sqlitejdbc.dll\\E"
+  }, {
+    "pattern":"\\Qsqlite-jdbc.properties\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfkc.nrm\\E"
+  }]},
+  "bundles":[{
+    "name":"org.geotools.metadata.i18n.Loggings",
+    "classNames":["org.geotools.metadata.i18n.Loggings", "org.geotools.metadata.i18n.Loggings_en"]
+  }, {
+    "name":"org.geotools.metadata.i18n.Vocabulary",
+    "classNames":["org.geotools.metadata.i18n.Vocabulary", "org.geotools.metadata.i18n.Vocabulary_en"]
+  }, {
+    "name":"org.hsqldb.resources.sql-state-messages",
+    "locales":[""]
+  }]
+}
