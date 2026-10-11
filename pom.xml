@@ -104,6 +104,11 @@
           <groupId>javax.media</groupId>
           <artifactId>jai_core</artifactId>
         </exclusion>
+        <!-- Only GeoPackage features are read; gt-coverage is for raster tiles and brings the JAI stack -->
+        <exclusion>
+          <groupId>org.geotools</groupId>
+          <artifactId>gt-coverage</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -131,6 +136,11 @@
     <dependency>
       <groupId>jakarta.validation</groupId>
       <artifactId>jakarta.validation-api</artifactId>
+      <version>3.0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
       <version>3.0.2</version>
     </dependency>
     <dependency>
