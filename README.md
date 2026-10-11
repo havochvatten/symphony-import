@@ -331,7 +331,7 @@ Run
 ```
 mvn package -DskipTests
 ```
-to produce a 'self contained' .jar archive (bundles all dependencies) to the ./target directory.  
+to produce a 'self contained' .jar archive (bundles all dependencies) to the ./target/dist directory.  
 The artifact may be executed as expected using java -jar, assuming JVM 21 is installed:
 ```
 java -jar /path/to/symphony-import-tool-{VERSION}.jar [...options, see Usage]
