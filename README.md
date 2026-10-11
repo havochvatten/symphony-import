@@ -380,11 +380,11 @@ mvn test -Dtest='!ImportNationalAreasTest,!FileBasedImportTest,!FileBasedConfigV
 
 ### Updating GraalVM native-image metadata
 
-The files under `src/main/resources/META-INF/native-image/` contain metadata that GraalVM requires at compile time. They are produced by running the test suite under GraalVM's [Tracing Agent](https://www.graalvm.org/jdk21/reference-manual/native-image/metadata/AutomaticMetadataCollection/), which observes all dynamic Java features exercised during the run and merges the results into those files.
+The files under `src/main/resources/META-INF/native-image/` contain metadata that GraalVM requires at compile time. They are produced by running the test suite under GraalVM's [Tracing Agent](https://www.graalvm.org/jdk21/reference-manual/native-image/metadata/AutomaticMetadataCollection/), which observes all dynamic Java features exercised during the run and replaces those files with what it saw. The filters in [`src/test/resources/graal-agent/`](src/test/resources/graal-agent) leave out what only the tests use.
 
-This implies that maintenance of adequate test coverage matters beyond proving correctness, for example when new dependencies are added.
+This implies that maintenance of adequate test coverage matters beyond proving correctness, for example when new dependencies are added: a code path that no test runs is missing from the metadata, and fails in the native executable only.
 
-To regenerate the metadata during tests, activate the `graal-metadata` profile, which passes the agent flag to the JVM that runs the test suite:
+To regenerate the metadata, activate the `graal-metadata` profile, which passes the agent flag to the JVM that runs the test suite. The whole test suite must run and pass (against a test database, see above), and the result is reviewed with `git diff` before it is committed. The agent also writes an empty `agent-extracted-predefined-classes` directory, which can be deleted.
 
 > [!IMPORTANT]
 > The Tracing Agent is a feature built into the **GraalVM JDK** meaning the `graal-metadata` profile won't work with a standard JDK. Before running the command below, ensure `JAVA_HOME` points to a GraalVM 21 installation:
