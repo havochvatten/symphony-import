@@ -217,6 +217,12 @@
           <buildArgs>
             <buildArg>--no-fallback</buildArg>
             <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+            <!-- Only the standard charsets are included by default; POI needs CP1252 for XLSX, and
+                 CSV files can be in any charset -->
+            <buildArg>-H:+AddAllCharsets</buildArg>
+            <!-- Only the build machine's locale is included by default; HSQLDB, which holds GeoTools' EPSG
+                 database, formats dates with Locale.UK whatever the locale it runs in -->
+            <buildArg>-H:IncludeLocales=en-GB</buildArg>
           </buildArgs>
         </configuration>
       </plugin>
@@ -252,16 +258,13 @@
       <id>graal-metadata</id>
       <build>
         <plugins>
+          <!-- The agent is passed to the test JVM directly rather than through native-maven-plugin, which
+               adds an access filter of its own that overrides the exclusions in ours. The agent replaces the
+               metadata files when the test JVM exits, so metadata for code that is gone is dropped too. -->
           <plugin>
-            <groupId>org.graalvm.buildtools</groupId>
-            <artifactId>native-maven-plugin</artifactId>
+            <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <agent>
-                <enabled>true</enabled>
-                <options>
-                  <option>config-merge-dir=${project.basedir}/src/main/resources/META-INF/native-image</option>
-                </options>
-              </agent>
+              <argLine>-agentlib:native-image-agent=config-output-dir=${project.basedir}/src/main/resources/META-INF/native-image,access-filter-file=${project.basedir}/src/test/resources/graal-agent/access-filter.json,caller-filter-file=${project.basedir}/src/test/resources/graal-agent/caller-filter.json</argLine>
             </configuration>
           </plugin>
         </plugins>

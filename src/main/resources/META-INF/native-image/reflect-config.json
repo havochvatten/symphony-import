@@ -6,10 +6,61 @@
   "name":"Object"
 },
 {
+  "name":"[B"
+},
+{
+  "name":"[I"
+},
+{
+  "name":"[Ljava.lang.Class;"
+},
+{
   "name":"[Ljava.lang.Object;"
 },
 {
   "name":"[Ljava.lang.String;"
+},
+{
+  "name":"[Ljava.lang.annotation.Annotation;"
+},
+{
+  "name":"[Ljava.lang.annotation.ElementType;"
+},
+{
+  "name":"[Ljava.lang.invoke.LambdaForm$Name;"
+},
+{
+  "name":"[Ljava.time.format.DateTimeFormatterBuilder$DateTimePrinterParser;"
+},
+{
+  "name":"[Ljavax.crypto.CryptoPermission;"
+},
+{
+  "name":"[Ljavax.xml.namespace.QName;"
+},
+{
+  "name":"[Lorg.apache.commons.cli.Option;"
+},
+{
+  "name":"[Lorg.apache.commons.compress.archivers.zip.ZipExtraField;"
+},
+{
+  "name":"[Lorg.apache.logging.log4j.core.Appender;"
+},
+{
+  "name":"[Lorg.apache.logging.log4j.core.config.AppenderControl;"
+},
+{
+  "name":"[Lorg.apache.xmlbeans.SchemaProperty;"
+},
+{
+  "name":"[Lorg.apache.xmlbeans.SchemaTypeLoader;"
+},
+{
+  "name":"[Lorg.geotools.api.referencing.ReferenceIdentifier;"
+},
+{
+  "name":"[Lorg.geotools.api.util.GenericName;"
 },
 {
   "name":"[Lorg.geotools.util.WeakHashSet$Entry;"
@@ -39,13 +90,81 @@
   "name":"[Lorg.hsqldb.index.Index;"
 },
 {
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTBorder;"
+},
+{
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTCell;"
+},
+{
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTCol;"
+},
+{
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTCols;"
+},
+{
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTFill;"
+},
+{
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTFont;"
+},
+{
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTNumFmt;"
+},
+{
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTRow;"
+},
+{
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTRst;"
+},
+{
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTSheet;"
+},
+{
+  "name":"[Lorg.openxmlformats.schemas.spreadsheetml.x2006.main.CTXf;"
+},
+{
+  "name":"[Lse.havochvatten.symphonyconfig.setup.model.MetaValue;"
+},
+{
+  "name":"[Lse.havochvatten.symphonyconfig.setup.model.SymphonyBand;"
+},
+{
+  "name":"[Lsun.security.jca.ProviderConfig;"
+},
+{
+  "name":"[[Ljava.lang.String;"
+},
+{
+  "name":"com.fasterxml.jackson.annotation.JacksonAnnotation",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
+  "name":"com.fasterxml.jackson.annotation.JsonValue",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
   "name":"com.fasterxml.jackson.core.JsonParser"
+},
+{
+  "name":"com.fasterxml.jackson.databind.DeserializationFeature",
+  "methods":[{"name":"values","parameterTypes":[] }]
 },
 {
   "name":"com.fasterxml.jackson.databind.JsonNode"
 },
 {
   "name":"com.fasterxml.jackson.databind.ObjectMapper"
+},
+{
+  "name":"com.fasterxml.jackson.databind.SerializationFeature",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"com.fasterxml.jackson.databind.annotation.JacksonStdImpl",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
 },
 {
   "name":"com.fasterxml.jackson.databind.ext.Java7SupportImpl",
@@ -82,6 +201,18 @@
   "name":"com.sun.jndi.url.java.javaURLContextFactory"
 },
 {
+  "name":"com.sun.management.internal.PlatformMBeanProviderImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"jakarta.servlet.Servlet"
 },
 {
@@ -92,16 +223,49 @@
   "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
 },
 {
+  "name":"java.io.Serializable"
+},
+{
   "name":"java.lang.Boolean",
   "fields":[{"name":"TYPE"}]
+},
+{
+  "name":"java.lang.Class",
+  "methods":[{"name":"cast","parameterTypes":["java.lang.Object"] }, {"name":"getAnnotatedSuperclass","parameterTypes":[] }, {"name":"getModule","parameterTypes":[] }, {"name":"getNestHost","parameterTypes":[] }, {"name":"getNestHost","parameterTypes":["java.lang.Class"] }, {"name":"getNestMembers","parameterTypes":[] }, {"name":"getNestMembers","parameterTypes":["java.lang.Class"] }, {"name":"getRecordComponents","parameterTypes":[] }, {"name":"getRecordComponents","parameterTypes":["java.lang.Class"] }, {"name":"isRecord","parameterTypes":[] }, {"name":"isSealed","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.Cloneable"
+},
+{
+  "name":"java.lang.Comparable"
+},
+{
+  "name":"java.lang.Deprecated",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
+  "name":"java.lang.Enum"
 },
 {
   "name":"java.lang.Integer",
   "fields":[{"name":"TYPE"}]
 },
 {
+  "name":"java.lang.Iterable"
+},
+{
+  "name":"java.lang.Module",
+  "methods":[{"name":"canRead","parameterTypes":["java.lang.Module"] }, {"name":"isExported","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.Number"
+},
+{
   "name":"java.lang.Object",
-  "queryAllPublicMethods":true
+  "queryAllPublicMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"readResolve","parameterTypes":[] }, {"name":"writeReplace","parameterTypes":[] }]
 },
 {
   "name":"java.lang.ObjectBeanInfo"
@@ -110,8 +274,44 @@
   "name":"java.lang.ObjectCustomizer"
 },
 {
+  "name":"java.lang.ProcessEnvironment",
+  "allRecordComponents":true,
+  "allPermittedSubclasses":true,
+  "allNestMembers":true
+},
+{
+  "name":"java.lang.ProcessEnvironment$Value"
+},
+{
+  "name":"java.lang.ProcessEnvironment$Variable"
+},
+{
+  "name":"java.lang.ProcessHandle",
+  "methods":[{"name":"current","parameterTypes":[] }, {"name":"pid","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.Runtime",
+  "methods":[{"name":"version","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.Runtime$Version",
+  "methods":[{"name":"feature","parameterTypes":[] }]
+},
+{
   "name":"java.lang.SecurityManager",
   "methods":[{"name":"checkPermission","parameterTypes":["java.security.Permission"] }]
+},
+{
+  "name":"java.lang.StackWalker$Option",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.String",
+  "methods":[{"name":"valueOf","parameterTypes":["double"] }]
+},
+{
+  "name":"java.lang.StringConcatHelper",
+  "methods":[{"name":"mix","parameterTypes":["long","char"] }, {"name":"mix","parameterTypes":["long","int"] }, {"name":"mix","parameterTypes":["long","long"] }, {"name":"mix","parameterTypes":["long","java.lang.String"] }, {"name":"newArray","parameterTypes":["long"] }, {"name":"newArrayWithSuffix","parameterTypes":["java.lang.String","long"] }, {"name":"newString","parameterTypes":["byte[]","long"] }, {"name":"prepend","parameterTypes":["long","byte[]","char","java.lang.String"] }, {"name":"prepend","parameterTypes":["long","byte[]","int","java.lang.String"] }, {"name":"prepend","parameterTypes":["long","byte[]","long","java.lang.String"] }, {"name":"prepend","parameterTypes":["long","byte[]","java.lang.String","java.lang.String"] }, {"name":"simpleConcat","parameterTypes":["java.lang.Object","java.lang.Object"] }, {"name":"stringOf","parameterTypes":["java.lang.Object"] }]
 },
 {
   "name":"java.lang.System",
@@ -119,24 +319,312 @@
 },
 {
   "name":"java.lang.Thread",
-  "fields":[{"name":"threadLocalRandomProbe"}]
+  "fields":[{"name":"contextClassLoader"}, {"name":"inheritableThreadLocals"}, {"name":"inheritedAccessControlContext"}, {"name":"parkBlocker"}, {"name":"threadLocalRandomProbe"}, {"name":"threadLocalRandomSecondarySeed"}, {"name":"threadLocalRandomSeed"}, {"name":"threadLocals"}]
+},
+{
+  "name":"java.lang.Thread$ThreadNumbering",
+  "fields":[{"name":"next"}]
+},
+{
+  "name":"java.lang.ThreadGroup",
+  "fields":[{"name":"parent"}]
+},
+{
+  "name":"java.lang.annotation.Documented",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
+  "name":"java.lang.annotation.ElementType",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.annotation.Inherited",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
+  "name":"java.lang.annotation.Repeatable",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
+  "name":"java.lang.annotation.Retention",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
+  "name":"java.lang.annotation.RetentionPolicy",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.annotation.Target",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
+  "name":"java.lang.constant.Constable"
+},
+{
+  "name":"java.lang.constant.ConstantDesc"
+},
+{
+  "name":"java.lang.instrument.Instrumentation",
+  "methods":[{"name":"addTransformer","parameterTypes":["java.lang.instrument.ClassFileTransformer","boolean"] }, {"name":"isRetransformClassesSupported","parameterTypes":[] }, {"name":"retransformClasses","parameterTypes":["java.lang.Class[]"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle$Species_LI",
+  "fields":[{"name":"argI1"}, {"name":"argL0"}],
+  "methods":[{"name":"make","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm","java.lang.Object","int"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle$Species_LJ",
+  "fields":[{"name":"argJ1"}, {"name":"argL0"}],
+  "methods":[{"name":"make","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm","java.lang.Object","long"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle$Species_LL",
+  "fields":[{"name":"argL0"}, {"name":"argL1"}],
+  "methods":[{"name":"make","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm","java.lang.Object","java.lang.Object"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle$Species_LLJ",
+  "fields":[{"name":"argJ2"}, {"name":"argL0"}, {"name":"argL1"}],
+  "methods":[{"name":"make","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm","java.lang.Object","java.lang.Object","long"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle$Species_LLL",
+  "fields":[{"name":"argL0"}, {"name":"argL1"}, {"name":"argL2"}],
+  "methods":[{"name":"make","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm","java.lang.Object","java.lang.Object","java.lang.Object"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle$Species_LLLJ",
+  "fields":[{"name":"argJ3"}, {"name":"argL0"}, {"name":"argL1"}, {"name":"argL2"}],
+  "methods":[{"name":"make","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm","java.lang.Object","java.lang.Object","java.lang.Object","long"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle$Species_LLLL",
+  "fields":[{"name":"argL0"}, {"name":"argL1"}, {"name":"argL2"}, {"name":"argL3"}],
+  "methods":[{"name":"make","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle$Species_LLLLL",
+  "fields":[{"name":"argL0"}, {"name":"argL1"}, {"name":"argL2"}, {"name":"argL3"}, {"name":"argL4"}],
+  "methods":[{"name":"make","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle$Species_LLLLLL",
+  "fields":[{"name":"argL0"}, {"name":"argL1"}, {"name":"argL2"}, {"name":"argL3"}, {"name":"argL4"}, {"name":"argL5"}],
+  "methods":[{"name":"make","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object"] }]
+},
+{
+  "name":"java.lang.invoke.BoundMethodHandle$Species_LLLLLLL",
+  "fields":[{"name":"argL0"}, {"name":"argL1"}, {"name":"argL2"}, {"name":"argL3"}, {"name":"argL4"}, {"name":"argL5"}, {"name":"argL6"}],
+  "methods":[{"name":"make","parameterTypes":["java.lang.invoke.MethodType","java.lang.invoke.LambdaForm","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object","java.lang.Object"] }]
+},
+{
+  "name":"java.lang.invoke.MethodHandleImpl",
+  "methods":[{"name":"checkSpreadArgument","parameterTypes":["java.lang.Object","int"] }]
+},
+{
+  "name":"java.lang.invoke.MethodHandleImpl$ArrayAccessor",
+  "methods":[{"name":"getElementL","parameterTypes":["java.lang.Object[]","int"] }, {"name":"lengthL","parameterTypes":["java.lang.Object[]"] }, {"name":"setElementL","parameterTypes":["java.lang.Object[]","int","java.lang.Object"] }]
+},
+{
+  "name":"java.lang.invoke.MethodHandleImpl$BindCaller",
+  "methods":[{"name":"checkCallerClass","parameterTypes":["java.lang.Class"] }]
+},
+{
+  "name":"java.lang.invoke.VarHandle",
+  "fields":[{"name":"vform"}]
+},
+{
+  "name":"java.lang.reflect.AnnotatedArrayType",
+  "methods":[{"name":"getAnnotatedGenericComponentType","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.reflect.AnnotatedParameterizedType",
+  "methods":[{"name":"getAnnotatedActualTypeArguments","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.reflect.Array",
+  "methods":[{"name":"newInstance","parameterTypes":["java.lang.Class","int"] }]
+},
+{
+  "name":"java.lang.reflect.Executable",
+  "methods":[{"name":"getAnnotatedParameterTypes","parameterTypes":[] }, {"name":"getAnnotatedReceiverType","parameterTypes":[] }, {"name":"getParameterCount","parameterTypes":[] }, {"name":"getParameters","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.reflect.Field",
+  "methods":[{"name":"getAnnotatedType","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.reflect.Method",
+  "methods":[{"name":"getAnnotatedReturnType","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.reflect.Parameter",
+  "methods":[{"name":"getModifiers","parameterTypes":[] }, {"name":"isNamePresent","parameterTypes":[] }]
+},
+{
+  "name":"java.net.Inet6Address",
+  "fields":[{"name":"holder6"}]
+},
+{
+  "name":"java.net.InetAddress",
+  "fields":[{"name":"holder"}]
+},
+{
+  "name":"java.net.InetSocketAddress",
+  "fields":[{"name":"holder"}]
+},
+{
+  "name":"java.net.Socket",
+  "fields":[{"name":"in"}, {"name":"out"}, {"name":"state"}]
+},
+{
+  "name":"java.nio.ByteBuffer",
+  "fields":[{"name":"hb"}, {"name":"offset"}]
+},
+{
+  "name":"java.nio.DirectByteBufferR",
+  "methods":[{"name":"<init>","parameterTypes":["int","long","java.io.FileDescriptor","java.lang.Runnable","boolean","java.lang.foreign.MemorySegment"] }]
+},
+{
+  "name":"java.nio.channels.FileChannel$MapMode",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.nio.file.FileVisitOption",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"java.nio.file.StandardOpenOption",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"java.nio.file.attribute.PosixFilePermission",
+  "methods":[{"name":"values","parameterTypes":[] }]
 },
 {
   "name":"java.security.AccessController",
-  "methods":[{"name":"doPrivileged","parameterTypes":["java.security.PrivilegedExceptionAction"] }]
+  "methods":[{"name":"doPrivileged","parameterTypes":["java.security.PrivilegedAction"] }, {"name":"doPrivileged","parameterTypes":["java.security.PrivilegedAction","java.lang.Class"] }, {"name":"doPrivileged","parameterTypes":["java.security.PrivilegedExceptionAction"] }, {"name":"doPrivileged","parameterTypes":["java.security.PrivilegedExceptionAction","java.lang.Class"] }]
 },
 {
   "name":"java.security.SecureRandomParameters"
 },
 {
+  "name":"java.sql.Connection"
+},
+{
   "name":"java.sql.Date"
+},
+{
+  "name":"java.sql.PreparedStatement"
+},
+{
+  "name":"java.sql.ResultSet"
 },
 {
   "name":"java.sql.Timestamp"
 },
 {
+  "name":"java.util.AbstractCollection"
+},
+{
+  "name":"java.util.AbstractList"
+},
+{
+  "name":"java.util.Collection"
+},
+{
+  "name":"java.util.HashMap"
+},
+{
+  "name":"java.util.ImmutableCollections$Access"
+},
+{
+  "name":"java.util.List"
+},
+{
+  "name":"java.util.Map"
+},
+{
+  "name":"java.util.Random",
+  "fields":[{"name":"seed"}]
+},
+{
+  "name":"java.util.RandomAccess"
+},
+{
   "name":"java.util.ResourceBundle",
   "methods":[{"name":"getBundle","parameterTypes":["java.lang.String","java.util.Locale","java.lang.ClassLoader"] }]
+},
+{
+  "name":"java.util.SequencedCollection"
+},
+{
+  "name":"java.util.Set"
+},
+{
+  "name":"java.util.concurrent.CompletableFuture",
+  "fields":[{"name":"result"}, {"name":"stack"}]
+},
+{
+  "name":"java.util.concurrent.CompletableFuture$Completion",
+  "fields":[{"name":"next"}]
+},
+{
+  "name":"java.util.concurrent.ConcurrentLinkedDeque",
+  "fields":[{"name":"head"}, {"name":"tail"}]
+},
+{
+  "name":"java.util.concurrent.ConcurrentLinkedDeque$Node",
+  "fields":[{"name":"item"}, {"name":"next"}, {"name":"prev"}]
+},
+{
+  "name":"java.util.concurrent.ConcurrentLinkedQueue",
+  "fields":[{"name":"head"}, {"name":"tail"}]
+},
+{
+  "name":"java.util.concurrent.ConcurrentLinkedQueue$Node",
+  "fields":[{"name":"item"}, {"name":"next"}]
+},
+{
+  "name":"java.util.concurrent.ConcurrentSkipListMap",
+  "fields":[{"name":"adder"}, {"name":"head"}]
+},
+{
+  "name":"java.util.concurrent.ConcurrentSkipListMap$Index",
+  "fields":[{"name":"right"}]
+},
+{
+  "name":"java.util.concurrent.ConcurrentSkipListMap$Node",
+  "fields":[{"name":"next"}, {"name":"val"}]
+},
+{
+  "name":"java.util.concurrent.ForkJoinPool",
+  "fields":[{"name":"ctl"}, {"name":"parallelism"}, {"name":"poolIds"}, {"name":"runState"}, {"name":"threadIds"}]
+},
+{
+  "name":"java.util.concurrent.ForkJoinTask",
+  "fields":[{"name":"aux"}, {"name":"status"}]
+},
+{
+  "name":"java.util.concurrent.FutureTask",
+  "fields":[{"name":"runner"}, {"name":"state"}, {"name":"waiters"}]
+},
+{
+  "name":"java.util.concurrent.LinkedTransferQueue",
+  "fields":[{"name":"head"}, {"name":"sweepVotes"}, {"name":"tail"}]
+},
+{
+  "name":"java.util.concurrent.LinkedTransferQueue$DualNode",
+  "fields":[{"name":"item"}, {"name":"next"}]
 },
 {
   "name":"java.util.concurrent.atomic.AtomicBoolean",
@@ -151,13 +639,114 @@
   "fields":[{"name":"base"}, {"name":"cellsBusy"}]
 },
 {
+  "name":"java.util.concurrent.locks.AbstractQueuedSynchronizer$Node",
+  "fields":[{"name":"next"}, {"name":"prev"}, {"name":"status"}]
+},
+{
+  "name":"java.util.logging.Level$KnownLevel$$InjectedInvoker/0x000074572c3a4000",
+  "methods":[{"name":"invoke_V","parameterTypes":["java.lang.invoke.MethodHandle","java.lang.Object[]"] }]
+},
+{
+  "name":"javax.annotation.Nonnull"
+},
+{
   "name":"javax.imageio.spi.RegisterableService"
 },
 {
-  "name":"javax.media.jai.JAI"
+  "name":"javax.servlet.Servlet"
 },
 {
-  "name":"javax.servlet.Servlet"
+  "name":"javax.xml.namespace.QName"
+},
+{
+  "name":"javax.xml.parsers.DocumentBuilderFactory"
+},
+{
+  "name":"javax.xml.parsers.SAXParserFactory"
+},
+{
+  "name":"jdk.internal.misc.Unsafe"
+},
+{
+  "name":"jdk.internal.reflect.CallerSensitive",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
+  "name":"jdk.internal.reflect.GeneratedSerializationConstructorAccessor2",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"jdk.internal.util.OperatingSystem",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"jdk.internal.vm.SharedThreadContainer",
+  "fields":[{"name":"closed"}, {"name":"virtualThreads"}]
+},
+{
+  "name":"jdk.internal.vm.annotation.IntrinsicCandidate",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
+  "name":"jdk.management.jfr.internal.FlightRecorderMXBeanProvider",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"jdk.net.ExtendedSocketOptions"
+},
+{
+  "name":"jdk.net.LinuxSocketOptions",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.columns.BooleanColumnHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.columns.ByteColumnHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.columns.DoubleColumnHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.columns.FloatColumnHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.columns.IntegerColumnHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.columns.LongColumnHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.columns.SQLXMLColumnHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.columns.ShortColumnHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.columns.StringColumnHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.columns.TimestampColumnHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.properties.DatePropertyHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.dbutils.handlers.properties.StringEnumPropertyHandler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"org.apache.logging.log4j.Level",
@@ -398,6 +987,11 @@
   "name":"org.apache.logging.log4j.core.config.MonitorResources"
 },
 {
+  "name":"org.apache.logging.log4j.core.config.Order",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
   "name":"org.apache.logging.log4j.core.config.PropertiesPlugin"
 },
 {
@@ -427,6 +1021,11 @@
 {
   "name":"org.apache.logging.log4j.core.config.json.JsonConfigurationFactory",
   "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.config.plugins.Plugin",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
 },
 {
   "name":"org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$BigDecimalConverter"
@@ -568,6 +1167,14 @@
 },
 {
   "name":"org.apache.logging.log4j.core.filter.TimeFilter"
+},
+{
+  "name":"org.apache.logging.log4j.core.impl.Log4jProvider",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.core.impl.ThreadContextDataProvider",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"org.apache.logging.log4j.core.layout.CsvLogEventLayout"
@@ -861,6 +1468,59 @@
   "name":"org.apache.logging.log4j.core.util.KeyValuePair"
 },
 {
+  "name":"org.apache.logging.log4j.spi.StandardLevel",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.util.EnvironmentPropertySource",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.logging.log4j.util.SystemPropertiesPropertySource",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.xerces.util.SecurityManager"
+},
+{
+  "name":"org.apache.xmlbeans.metadata.system.sXMLCONFIG.TypeSystemHolder",
+  "fields":[{"name":"typeSystem"}]
+},
+{
+  "name":"org.apache.xmlbeans.metadata.system.sXMLLANG.TypeSystemHolder",
+  "fields":[{"name":"typeSystem"}]
+},
+{
+  "name":"org.apache.xmlbeans.metadata.system.sXMLSCHEMA.TypeSystemHolder",
+  "fields":[{"name":"typeSystem"}]
+},
+{
+  "name":"org.apache.xmlbeans.metadata.system.sXMLTOOLS.TypeSystemHolder",
+  "fields":[{"name":"typeSystem"}]
+},
+{
+  "name":"org.apiguardian.api.API",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
+  "name":"org.apiguardian.api.API$Status",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.annotation.Obligation",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.annotation.Specification",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.api.annotation.UML",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.reflect.InvocationHandler"] }]
+},
+{
   "name":"org.geotools.api.feature.FeatureFactory"
 },
 {
@@ -933,6 +1593,30 @@
   "name":"org.geotools.api.referencing.operation.MathTransformFactory"
 },
 {
+  "name":"org.geotools.feature.LenientFeatureFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.feature.ValidatingFeatureFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.feature.type.FeatureTypeFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.filter.FilterFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.geopkg.GeoPkgMetadataExtension$Factory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.geopkg.GeoPkgSchemaExtension$Factory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"org.geotools.metadata.iso.IdentifierImpl",
   "methods":[{"name":"setAuthority","parameterTypes":["org.geotools.api.metadata.citation.Citation"] }, {"name":"setCode","parameterTypes":["java.lang.String"] }]
 },
@@ -965,6 +1649,10 @@
   "methods":[{"name":"setInclusion","parameterTypes":["java.lang.Boolean"] }]
 },
 {
+  "name":"org.geotools.referencing.factory.DatumAliases",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"org.geotools.referencing.factory.FallbackAuthorityFactory",
   "methods":[{"name":"toBackingFactoryCode","parameterTypes":["java.lang.String"] }]
 },
@@ -973,60 +1661,320 @@
   "methods":[{"name":"toBackingFactoryCode","parameterTypes":["java.lang.String"] }]
 },
 {
+  "name":"org.geotools.referencing.factory.HTTP_AuthorityFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.HTTP_URI_AuthorityFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.ReferencingObjectFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.URN_AuthorityFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.epsg.CartesianAuthorityFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.epsg.FactoryUsingWKT",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.epsg.LongitudeFirstEpsgDecorator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.epsg.LongitudeFirstFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.epsg.hsql.ThreadedHsqlEpsgFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.wms.AutoCRSFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.wms.OGCAPICRSFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.factory.wms.WebCRSFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.geotools.referencing.operation.DefaultMathTransformFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"org.hsqldb.dbinfo.DatabaseInformationFull",
   "methods":[{"name":"<init>","parameterTypes":["org.hsqldb.Database"] }]
 },
 {
-  "name":"org.hsqldb.jdbc.JDBCDriver"
+  "name":"org.hsqldb.jdbc.JDBCDriver",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.locationtech.jts.io.Ordinate",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.openxmlformats.schemas.drawingml.x2006.main.impl.ThemeDocumentImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.officeDocument.x2006.relationships.impl.STRelationshipIdImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.officeDocument.x2006.sharedTypes.impl.STXstringImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.STCellType$Enum",
+  "fields":[{"name":"table"}]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTBookViewImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTBookViewsImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTBorderImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTBordersImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTCellImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTCellStyleXfsImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTCellXfsImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTColImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTColsImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTDxfsImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTFillImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTFillsImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTFontImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTFontsImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTNumFmtImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTNumFmtsImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTRowImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTRstImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTSheetDataImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTSheetImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTSheetsImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTSstImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTStylesheetImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTTableStylesImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTWorkbookImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTWorksheetImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.CTXfImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.STCellRefImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.STCellTypeImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.STNumFmtIdImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.SstDocumentImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.StyleSheetDocumentImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.WorkbookDocumentImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
+},
+{
+  "name":"org.openxmlformats.schemas.spreadsheetml.x2006.main.impl.WorksheetDocumentImpl",
+  "methods":[{"name":"<init>","parameterTypes":["org.apache.xmlbeans.SchemaType"] }]
 },
 {
   "name":"org.osgi.framework.FrameworkUtil"
 },
 {
-  "name":"org.postgresql.Driver"
+  "name":"org.postgresql.Driver",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.postgresql.Driver$$InjectedInvoker/0x000074572c13d000",
+  "methods":[{"name":"reflect_invoke_V","parameterTypes":["java.lang.invoke.MethodHandle","java.lang.Object","java.lang.Object[]"] }]
 },
 {
   "name":"org.postgresql.core.QueryExecutorCloseAction",
   "fields":[{"name":"pgStream"}]
 },
 {
+  "name":"org.postgresql.hostchooser.HostRequirement",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.postgresql.jdbc.AutoSave",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.postgresql.jdbc.PgConnection$ReadOnlyBehavior",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
   "name":"org.postgresql.jdbc.PgStatement",
   "fields":[{"name":"cancelTimerTask"}, {"name":"isClosed"}, {"name":"statementState"}]
 },
 {
-  "name":"org.sqlite.JDBC"
+  "name":"org.postgresql.shaded.com.ongres.stringprep.Option",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.sqlite.JDBC",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.sqlite.SQLiteConfig$DateClass",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.sqlite.SQLiteConfig$DatePrecision",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.sqlite.SQLiteConfig$TransactionMode",
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"org.xml.sax.InputSource"
+},
+{
+  "name":"schemaorg_apache_xmlbeans.system.sXMLCONFIG.TypeSystemHolder"
+},
+{
+  "name":"schemaorg_apache_xmlbeans.system.sXMLLANG.TypeSystemHolder"
+},
+{
+  "name":"schemaorg_apache_xmlbeans.system.sXMLSCHEMA.TypeSystemHolder"
+},
+{
+  "name":"schemaorg_apache_xmlbeans.system.sXMLTOOLS.TypeSystemHolder"
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.SymphonySetup$UpdateMode",
   "allDeclaredFields":true,
-  "queryAllDeclaredMethods":true
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"values","parameterTypes":[] }]
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
   "queryAllDeclaredConstructors":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setBaseline","parameterTypes":["se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$BaselineConfig"] }, {"name":"setCalculationAreas","parameterTypes":["se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$CalculationAreasConfig"] }, {"name":"setMatrices","parameterTypes":["java.util.List"] }, {"name":"setMetadata","parameterTypes":["java.util.List"] }, {"name":"setOperation","parameterTypes":["se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$Operation"] }]
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getBaseline","parameterTypes":[] }, {"name":"getCalculationAreas","parameterTypes":[] }, {"name":"getCsvSettings","parameterTypes":[] }, {"name":"getMatrices","parameterTypes":[] }, {"name":"getMetadata","parameterTypes":[] }, {"name":"getNationalAreas","parameterTypes":[] }, {"name":"getOperation","parameterTypes":[] }, {"name":"setBaseline","parameterTypes":["se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$BaselineConfig"] }, {"name":"setCalculationAreas","parameterTypes":["se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$CalculationAreasConfig"] }, {"name":"setCsvSettings","parameterTypes":["se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$CsvSettingsConfig"] }, {"name":"setMatrices","parameterTypes":["java.util.List"] }, {"name":"setMetadata","parameterTypes":["java.util.List"] }, {"name":"setNationalAreas","parameterTypes":["java.util.List"] }, {"name":"setOperation","parameterTypes":["se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$Operation"] }]
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$BaselineConfig",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
   "queryAllDeclaredConstructors":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setDescription","parameterTypes":["java.lang.String"] }, {"name":"setEcoPath","parameterTypes":["java.lang.String"] }, {"name":"setLocale","parameterTypes":["java.lang.String"] }, {"name":"setName","parameterTypes":["java.lang.String"] }, {"name":"setPressurePath","parameterTypes":["java.lang.String"] }, {"name":"setTitle","parameterTypes":["java.lang.String"] }, {"name":"setValidFrom","parameterTypes":["java.lang.String"] }]
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getDescription","parameterTypes":[] }, {"name":"getEcoPath","parameterTypes":[] }, {"name":"getId","parameterTypes":[] }, {"name":"getLocale","parameterTypes":[] }, {"name":"getName","parameterTypes":[] }, {"name":"getPressurePath","parameterTypes":[] }, {"name":"getTitle","parameterTypes":[] }, {"name":"getUpdateMode","parameterTypes":[] }, {"name":"getValidFrom","parameterTypes":[] }, {"name":"setDescription","parameterTypes":["java.lang.String"] }, {"name":"setEcoPath","parameterTypes":["java.lang.String"] }, {"name":"setId","parameterTypes":["java.lang.Integer"] }, {"name":"setLocale","parameterTypes":["java.lang.String"] }, {"name":"setName","parameterTypes":["java.lang.String"] }, {"name":"setPressurePath","parameterTypes":["java.lang.String"] }, {"name":"setTitle","parameterTypes":["java.lang.String"] }, {"name":"setUpdateMode","parameterTypes":["se.havochvatten.symphonyconfig.setup.SymphonySetup$UpdateMode"] }, {"name":"setValidFrom","parameterTypes":["java.lang.String"] }]
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$CalculationAreasConfig",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
   "queryAllDeclaredConstructors":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setAllDefault","parameterTypes":["java.lang.Boolean"] }, {"name":"setFile","parameterTypes":["java.lang.String"] }, {"name":"setNameProperty","parameterTypes":["java.lang.String"] }]
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setAllDefault","parameterTypes":["java.lang.Boolean"] }, {"name":"setDecimals","parameterTypes":["java.lang.Integer"] }, {"name":"setDefaultAreas","parameterTypes":["java.util.List"] }, {"name":"setFile","parameterTypes":["java.lang.String"] }, {"name":"setNameProperty","parameterTypes":["java.lang.String"] }]
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$CsvSettingsConfig",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
-  "queryAllDeclaredConstructors":true
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setDelimiter","parameterTypes":["java.lang.String"] }]
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$MatrixConfig",
@@ -1040,18 +1988,24 @@
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
   "queryAllDeclaredConstructors":true,
-  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setFile","parameterTypes":["java.lang.String"] }, {"name":"setLanguage","parameterTypes":["java.lang.String"] }]
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getFile","parameterTypes":[] }, {"name":"getLanguage","parameterTypes":[] }, {"name":"setFile","parameterTypes":["java.lang.String"] }, {"name":"setLanguage","parameterTypes":["java.lang.String"] }]
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$NationalAreaConfig",
   "allDeclaredFields":true,
   "queryAllDeclaredMethods":true,
-  "queryAllDeclaredConstructors":true
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setCountryISO","parameterTypes":["java.lang.String"] }, {"name":"setFile","parameterTypes":["java.lang.String"] }, {"name":"setType","parameterTypes":["java.lang.String"] }]
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.config.ImportConfigFile$Operation",
   "allDeclaredFields":true,
-  "queryAllDeclaredMethods":true
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"values","parameterTypes":[] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.config.SupportedTabularFileFormat",
+  "methods":[{"name":"values","parameterTypes":[] }]
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.model.BaselineVersion",
@@ -1065,6 +2019,17 @@
   "name":"se.havochvatten.symphonyconfig.setup.model.BaselineVersionCustomizer"
 },
 {
+  "name":"se.havochvatten.symphonyconfig.setup.model.DbCalculationArea",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setDefaultArea","parameterTypes":["boolean"] }, {"name":"setDefaultSensitivityMatrixId","parameterTypes":["java.lang.Integer"] }, {"name":"setId","parameterTypes":["int"] }, {"name":"setName","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.DbCalculationAreaBeanInfo"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.DbCalculationAreaCustomizer"
+},
+{
   "name":"se.havochvatten.symphonyconfig.setup.model.DbMatrix",
   "queryAllPublicMethods":true,
   "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setId","parameterTypes":["int"] }, {"name":"setName","parameterTypes":["java.lang.String"] }]
@@ -1074,6 +2039,17 @@
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.model.DbMatrixCustomizer"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.DbNationalArea",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setTypesString","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.DbNationalAreaBeanInfo"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.DbNationalAreaCustomizer"
 },
 {
   "name":"se.havochvatten.symphonyconfig.setup.model.MetaValue",
@@ -1087,6 +2063,17 @@
   "name":"se.havochvatten.symphonyconfig.setup.model.MetaValueCustomizer"
 },
 {
+  "name":"se.havochvatten.symphonyconfig.setup.model.NationalArea",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setAreasJson","parameterTypes":["java.lang.String"] }, {"name":"setCountryCode","parameterTypes":["java.lang.String"] }, {"name":"setId","parameterTypes":["int"] }, {"name":"setType","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.NationalAreaBeanInfo"
+},
+{
+  "name":"se.havochvatten.symphonyconfig.setup.model.NationalAreaCustomizer"
+},
+{
   "name":"se.havochvatten.symphonyconfig.setup.model.SymphonyBand",
   "queryAllPublicMethods":true,
   "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setBandNumber","parameterTypes":["int"] }, {"name":"setDefaultSelected","parameterTypes":["boolean"] }, {"name":"setId","parameterTypes":["int"] }]
@@ -1098,15 +2085,36 @@
   "name":"se.havochvatten.symphonyconfig.setup.model.SymphonyBandCustomizer"
 },
 {
-  "name":"sun.reflect.Reflection"
+  "name":"se.havochvatten.symphonyconfig.setup.model.SymphonyCategory",
+  "methods":[{"name":"values","parameterTypes":[] }]
 },
 {
-  "name":"sun.security.provider.DRBG",
-  "methods":[{"name":"<init>","parameterTypes":["java.security.SecureRandomParameters"] }]
+  "name":"sun.invoke.util.ValueConversions",
+  "methods":[{"name":"boxBoolean","parameterTypes":["boolean"] }, {"name":"boxDouble","parameterTypes":["double"] }, {"name":"boxInteger","parameterTypes":["int"] }, {"name":"boxLong","parameterTypes":["long"] }, {"name":"unboxBoolean","parameterTypes":["java.lang.Object","boolean"] }, {"name":"unboxInteger","parameterTypes":["java.lang.Object","boolean"] }, {"name":"unboxLong","parameterTypes":["java.lang.Object","boolean"] }]
+},
+{
+  "name":"sun.net.spi.DefaultProxySelector",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.net.www.protocol.http.Handler",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.nio.cs.MS1252",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.ec.SunEC",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"sun.security.provider.MD5",
   "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.NativePRNG",
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"<init>","parameterTypes":["java.security.SecureRandomParameters"] }]
 },
 {
   "name":"sun.security.provider.SHA",
@@ -1126,6 +2134,86 @@
 },
 {
   "name":"sun.security.provider.SHA5$SHA512",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.smartcardio.SunPCSC",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.text.resources.cldr.FormatData",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.text.resources.cldr.FormatData_en",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.text.resources.cldr.ext.FormatData_en_001",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.text.resources.cldr.ext.FormatData_en_GB",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.calendar.JulianCalendar",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.cldr.CLDRLocaleProviderAdapter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.locale.provider.JRELocaleProviderAdapter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.logging.internal.LoggingProviderImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.resources.TimeZoneNames",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.resources.TimeZoneNames_en",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.resources.cldr.CalendarData",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.resources.cldr.LocaleNames",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.resources.cldr.LocaleNames_en",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.resources.cldr.TimeZoneNames",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.resources.cldr.TimeZoneNames_en",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.resources.cldr.provider.CLDRLocaleDataMetaInfo",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.resources.provider.LocaleDataProvider",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.util.resources.provider.NonBaseLocaleDataMetaInfo",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"tech.units.indriya.function.DefaultNumberSystem",
   "methods":[{"name":"<init>","parameterTypes":[] }]
 }
 ]
