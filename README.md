@@ -5,7 +5,7 @@ Command line utility facilitating installation and update of "baseline versions"
 The principal mode of operation of the utility is to interpret a command that specifies input data in supported formats (eg. csv, xlsx, GeoTIFF) to automatically update the service's datasource, a PostgreSQL database (>= v14 with PostGIS extension), with that data. It can also (via the `-s`/`--status` option) be useful for quickly determining the state of a baseline version.   
 
 Notably, this package substantially utilizes [**Apache Commons CLI**](https://commons.apache.org/proper/commons-cli/) and [**Apache Commons DbUtils**](https://commons.apache.org/proper/commons-dbutils/).  
-Other notable dependencies to this project are [**GeoTools**](https://geotools.org/) (for parsing GeoTIFFs and GeoPackage), and [**GraalVM**](https://www.graalvm.org/) (for packaging the tool as a standalone executable).
+Other notable dependencies to this project are [**GeoTools**](https://geotools.org/) (for GeoPackage, GeoJSON and coordinate reference systems), [**Apache Commons Imaging**](https://commons.apache.org/proper/commons-imaging/) (for reading the tags of GeoTIFFs), and [**GraalVM**](https://www.graalvm.org/) (for packaging the tool as a standalone executable).
 
 This program is designed to be invoked on the command line of the machine hosting the application server (typically, [Wildfly](https://www.wildfly.org)) where the Symphony web service is deployed.   
 This requirement is due to two things: 
@@ -201,6 +201,15 @@ For practical examples of supported formats, refer to the [test resources direct
 > [!TIP]
 > Files containing the word "faulty" in the name indicate that they're invalid by design for testing purposes.  
 > All other files in that directory may serve as valid templates.
+
+### GeoTIFF rasters
+Each baseline version has two GeoTIFF files, one with a band per ecosystem component and one with a band per pressure.  
+Both must carry their georeferencing in their own GeoTIFF tags: a coordinate reference system (the GeoKeyDirectory tag) and the position of the raster (the ModelTransformation tag, or the ModelPixelScale and ModelTiepoint tags). Symphony reads a raster without a coordinate reference system as WGS84, which places it on the wrong area, and cannot read a raster without georeferencing at all.  
+Georeferencing in `.tfw`/`.prj` files next to a plain TIFF is not accepted, since Symphony stores only the path of the raster. GDAL embeds it in a new file:
+```
+gdal_translate -a_srs <raster>.prj <raster> <new raster>
+```
+Only the tags of the rasters are read, not their pixel data, so the size of the files does not matter.
 
 ### Metadata
 Metadata files can be provided as CSV or XLSX (Microsoft Excel).  
