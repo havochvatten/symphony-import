@@ -7,7 +7,6 @@ import java.io.File;
 import java.util.*;
 
 import static se.havochvatten.symphonyconfig.setup.SymphonySetup.Util.*;
-import static se.havochvatten.symphonyconfig.setup.config.BandsBasedSettingsBase.countBands;
 
 public class Baseline {
 
@@ -41,7 +40,7 @@ public class Baseline {
         for (Map.Entry<SymphonyCategory, String> pathEntry : version.tiffFilePaths().entrySet()) {
             SymphonyCategory category = pathEntry.getKey();
             int cOrdinal = category.ordinal();
-            int bandCount = countBands(pathEntry.getValue());
+            int bandCount = GeoTiff.read(pathEntry.getValue()).bandCount();
 
             bandsCount.put(category, bandCount);
 

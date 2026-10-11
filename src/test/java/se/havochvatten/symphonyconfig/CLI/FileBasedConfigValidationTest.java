@@ -58,6 +58,21 @@ public class FileBasedConfigValidationTest extends CliTestBase {
     }
 
     @Test
+    void rasterWithoutGeoreferencingIsRejected() {
+        // Symphony cannot read such a raster, so the baseline would install and every calculation fail
+        String raster = absoluteResourcePath("/baseline/geotiff-crs-without-georeferencing.tif");
+        String[] args = testCaseArgs("-f", MINIMAL_CONFIG, "-bvpE", raster, "-bvpP", TEST_TIFF_P_PATH);
+
+        queueInteraction(() -> new SymphonySetup(args), "y");
+
+        assertTrue(displaceErr.toString().contains("has no georeferencing"),
+            "Expected the reason for the rejection. stderr was: " + displaceErr);
+
+        assertNull(getDbInterface().getBaselineVersionByName("minimal-baseline"),
+            "A rejected raster must not install a baseline version");
+    }
+
+    @Test
     void missingNationalAreaFileIsRejectedBeforeAnyRowIsDeleted() throws Exception {
         // Establish a good import first
         queueInteraction(() -> new SymphonySetup(
