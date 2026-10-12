@@ -1,0 +1,16 @@
+{
+  "rules": [
+    {"includeClasses": "**"},
+    {"excludeClasses": "org.junit.**"},
+    {"excludeClasses": "org.opentest4j.**"},
+    {"excludeClasses": "org.apache.maven.**"},
+    {"excludeClasses": "net.bytebuddy.**"},
+    {"excludeClasses": "uk.org.webcompere.**"},
+    {"excludeClasses": "com.github.stefanbirkner.**"},
+    {"excludeClasses": "se.havochvatten.symphonyconfig.CLI.**"},
+    {"excludeClasses": "se.havochvatten.symphonyconfig.TestBase"},
+    {"excludeClasses": "se.havochvatten.symphonyconfig.setup.ConfirmImportTest"},
+    {"excludeClasses": "se.havochvatten.symphonyconfig.setup.database.DbTestInterface"},
+    {"excludeClasses": "se.havochvatten.symphonyconfig.setup.model.GeoTiffTest"}
+  ]
+}

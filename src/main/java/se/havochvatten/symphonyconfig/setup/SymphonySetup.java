@@ -4,18 +4,17 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.commons.cli.*;
 import org.apache.commons.cli.help.HelpFormatter;
 import org.apache.commons.lang3.ArrayUtils;
-import org.geotools.gce.geotiff.GeoTiffFormat;
 import se.havochvatten.symphonyconfig.setup.config.*;
 import se.havochvatten.symphonyconfig.setup.database.ClearScope;
 import se.havochvatten.symphonyconfig.setup.database.DbInterface;
 import se.havochvatten.symphonyconfig.setup.database.ReplacementImpact;
 import se.havochvatten.symphonyconfig.setup.model.Baseline;
 import se.havochvatten.symphonyconfig.setup.model.BaselineVersion;
+import se.havochvatten.symphonyconfig.setup.model.GeoTiff;
 import se.havochvatten.symphonyconfig.setup.model.converter.UpdateModeConverter;
 import se.havochvatten.symphonyconfig.setup.process.*;
 
 import javax.annotation.Nullable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -28,7 +27,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.geotools.coverage.grid.io.GridFormatFinder.findFormat;
 import static se.havochvatten.symphonyconfig.setup.ConfirmImport.*;
 import static se.havochvatten.symphonyconfig.setup.SymphonySetupOptionBuilder.newOption;
 import static se.havochvatten.symphonyconfig.setup.SymphonySetupVersion.*;
@@ -926,9 +924,7 @@ public class SymphonySetup {
             throw new ParseException(String.format("%s raster file not readable: %s", type, path));
         }
 
-        if (!(findFormat(new File(path)) instanceof GeoTiffFormat)) {
-            throw new ParseException(String.format("File is not a valid GeoTiff raster: %s", path));
-        }
+        GeoTiff.read(path).validateGeoreferencing();
     }
 
     private CSVSettings getCSVSettings(ImportConfigFile config) {

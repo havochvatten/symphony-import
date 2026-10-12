@@ -1,0 +1,277 @@
+{
+  "resources":{
+  "includes":[{
+    "pattern":"\\QMETA-INF/log4j-provider.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/maven/org.xerial/sqlite-jdbc/pom.properties\\E"
+  }, {
+    "pattern":"\\QMETA-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.net.spi.InetAddressResolverProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.net.spi.URLStreamHandlerProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.sql.Driver\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.util.spi.ResourceBundleControlProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/javax.xml.parsers.DocumentBuilderFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/javax.xml.parsers.SAXParserFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.commons.dbutils.ColumnHandler\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.commons.dbutils.PropertyHandler\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.logging.log4j.core.util.ContextDataProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.logging.log4j.core.util.WatchEventService\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.logging.log4j.spi.Provider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.logging.log4j.util.PropertySource\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.apache.maven.surefire.spi.MasterProcessChannelProcessorFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.feature.FeatureFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.feature.type.FeatureTypeFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.filter.FilterFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.referencing.crs.CRSAuthorityFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.referencing.crs.CRSFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.referencing.cs.CSFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.referencing.datum.DatumFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.api.referencing.operation.MathTransformFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.geopkg.GeoPkgExtensionFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.geotools.referencing.factory.ReferencingFactoryContainer\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.engine.TestEngine\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.launcher.LauncherDiscoveryListener\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.launcher.LauncherSessionListener\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.launcher.PostDiscoveryFilter\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.junit.platform.launcher.TestExecutionListener\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/tech.units.indriya.spi.NumberSystem\\E"
+  }, {
+    "pattern":"\\Qbaseline/geotiff-crs-without-georeferencing.tif\\E"
+  }, {
+    "pattern":"\\Qbaseline/symphony-import-test-BaselineE.tiff\\E"
+  }, {
+    "pattern":"\\Qbaseline/symphony-import-test-BaselineP.tiff\\E"
+  }, {
+    "pattern":"\\Qbaseline/test-baseline-extent.json\\E"
+  }, {
+    "pattern":"\\Qimport/calcarea-package.gpkg\\E"
+  }, {
+    "pattern":"\\Qimport/metadata-wellformed-complete-en.csv\\E"
+  }, {
+    "pattern":"\\Qimport/metadata-wellformed-complete-sv.csv\\E"
+  }, {
+    "pattern":"\\Qimport/national-area/test-national-boundary.json\\E"
+  }, {
+    "pattern":"\\Qimport/national-area/test-national-selectable.json\\E"
+  }, {
+    "pattern":"\\Qjava/lang/ProcessEnvironment.class\\E"
+  }, {
+    "pattern":"\\Qjndi.properties\\E"
+  }, {
+    "pattern":"\\Qjunit-platform.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.jsn\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.json\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.xml\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.yaml\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test.yml\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test2626b418.jsn\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test2626b418.json\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test2626b418.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test2626b418.xml\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test2626b418.yaml\\E"
+  }, {
+    "pattern":"\\Qlog4j2-test2626b418.yml\\E"
+  }, {
+    "pattern":"\\Qlog4j2.StatusLogger.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2.component.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2.jsn\\E"
+  }, {
+    "pattern":"\\Qlog4j2.json\\E"
+  }, {
+    "pattern":"\\Qlog4j2.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2.system.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j2.xml\\E"
+  }, {
+    "pattern":"\\Qlog4j2.yaml\\E"
+  }, {
+    "pattern":"\\Qlog4j2.yml\\E"
+  }, {
+    "pattern":"\\Qlog4j22626b418.jsn\\E"
+  }, {
+    "pattern":"\\Qlog4j22626b418.json\\E"
+  }, {
+    "pattern":"\\Qlog4j22626b418.properties\\E"
+  }, {
+    "pattern":"\\Qlog4j22626b418.xml\\E"
+  }, {
+    "pattern":"\\Qlog4j22626b418.yaml\\E"
+  }, {
+    "pattern":"\\Qlog4j22626b418.yml\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctbookviewf677type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctbookviewsb864type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctborderf935type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctborders0d66type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctcell842btype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctcellstylexfsa81ftype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctcellxfs1322type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctcola95ftype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctcols627ctype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctdxfsb26atype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctfill550ctype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctfills2c6ftype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctfont14d8type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctfonts6623type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctnumfmt3870type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctnumfmtsb58btype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctrowdd39type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctrsta472type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctsheet4dbetype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctsheetdata8408type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctsheets49fdtype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctsst44f3type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctstylesheet4257type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/cttablestyles872ftype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctworkbook83c3type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctworksheet530dtype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/ctxf97f7type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/index.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/sstf81fdoctype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/stcellrefe4e0type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/stcelltypebf95type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/stnumfmtid76fbtype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/strelationshipid1e94type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/stxstringf179type.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/stylesheet5d8bdoctype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/themefd26doctype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/workbookec17doctype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/poi/schemas/ooxml/system/ooxml/worksheetf539doctype.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/xmlbeans/metadata/system/sXMLCONFIG/index.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/xmlbeans/metadata/system/sXMLLANG/index.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/xmlbeans/metadata/system/sXMLSCHEMA/index.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/apache/xmlbeans/metadata/system/sXMLTOOLS/index.xsb\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/metadata/i18n/Loggings.utf\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/metadata/i18n/Loggings_en.utf\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/metadata/i18n/Vocabulary.utf\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/metadata/i18n/Vocabulary_en.utf\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/referencing/factory/DatumAliasesTable.txt\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/referencing/factory/epsg/epsg.properties\\E"
+  }, {
+    "pattern":"\\Qorg/geotools/util/factory/GeoTools.properties\\E"
+  }, {
+    "pattern":"\\Qorg/hsqldb/resources/information-schema.sql\\E"
+  }, {
+    "pattern":"\\Qorg/hsqldb/resources/lob-schema.sql\\E"
+  }, {
+    "pattern":"\\Qorg/postgresql/driverconfig.properties\\E"
+  }, {
+    "pattern":"\\Qorg/sqlite/native/Linux/x86_64/libsqlitejdbc.so\\E"
+  }, {
+    "pattern":"\\Qsqlite-jdbc.properties\\E"
+  }, {
+    "pattern":"\\Qsystem-stubs-interceptor.jar\\E"
+  }, {
+    "pattern":"java.base:\\Qjava/lang/ProcessEnvironment.class\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfkc.nrm\\E"
+  }]},
+  "bundles":[{
+    "name":"org.apache.xmlbeans.impl.regex.message",
+    "locales":[""]
+  }, {
+    "name":"org.geotools.metadata.i18n.Loggings",
+    "classNames":["org.geotools.metadata.i18n.Loggings", "org.geotools.metadata.i18n.Loggings_en"]
+  }, {
+    "name":"org.geotools.metadata.i18n.Vocabulary",
+    "classNames":["org.geotools.metadata.i18n.Vocabulary", "org.geotools.metadata.i18n.Vocabulary_en"]
+  }, {
+    "name":"org.hsqldb.resources.sql-state-messages",
+    "locales":[""]
+  }]
+}
